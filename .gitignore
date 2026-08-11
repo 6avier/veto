@@ -35,6 +35,9 @@ pnpm-debug.log*
 .idea/
 *.swp
 
+# --- Agent skill packs (vendored per-machine, not project source) ---
+.agents/
+
 # --- Claude Code (personal, per-machine) ---
 .claude/settings.local.json
 

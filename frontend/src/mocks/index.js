@@ -22,10 +22,24 @@ import vehicleProfiles from '@contract/vehicle-profiles.list.json'
 
 const clone = (value) => structuredClone(value)
 
-// Mirrors the stub thresholds in backend/apps/validation/views.py so mocked and
-// live behaviour agree on which payloads HOLD.
-const CLIENT_GROSS_LIMIT_KG = 24000
-const AXLE_LIMITS_KG = [10000, 16100]
+/**
+ * Thresholds the mock uses to decide PASS vs HOLD.
+ *
+ * The two that appear in the HOLD fixture are read straight out of it, so they
+ * can never disagree with the contract the backend is tested against. This
+ * previously drifted: the mock kept 16100 kg after the seeded rule pack moved
+ * to 16000, which made a 16050 kg load pass on mocks and hold live.
+ *
+ * The rest are not in any fixture, so they mirror the seeded CENTRAL pack in
+ * backend/apps/rules/migrations/0002_seed_odol_central_rules.py. If that
+ * migration changes, change these in the same commit.
+ */
+const limitFromFixture = (dimension, fallback) =>
+  validateHold.violations.find((v) => v.dimension === dimension)?.limit_value ?? fallback
+
+const GROSS_LIMIT_KG = limitFromFixture('GROSS_WEIGHT', 24000)
+const REAR_AXLE_LIMIT_KG = limitFromFixture('AXLE_LOAD', 16000)
+const FRONT_AXLE_LIMIT_KG = 10000 // seeded: PM 18/2021 Pasal 4 ayat (1) huruf a
 const DIMENSION_LIMITS_MM = { length: 18000, width: 2500, height: 4200 }
 
 function isCompliant(payload) {
@@ -33,8 +47,11 @@ function isCompliant(payload) {
   const axles = load.axle_loads_kg ?? []
   const dimensions = load.dimensions_mm ?? {}
 
-  if ((load.gross_weight_kg ?? 0) > CLIENT_GROSS_LIMIT_KG) return false
-  if (!axles.every((value, index) => value <= (AXLE_LIMITS_KG[index] ?? AXLE_LIMITS_KG.at(-1)))) return false
+  if ((load.gross_weight_kg ?? 0) > GROSS_LIMIT_KG) return false
+
+  const axleLimit = (index) => (index === 0 ? FRONT_AXLE_LIMIT_KG : REAR_AXLE_LIMIT_KG)
+  if (!axles.every((value, index) => value <= axleLimit(index))) return false
+
   return Object.entries(DIMENSION_LIMITS_MM).every(
     ([axis, limit]) => (dimensions[axis] ?? 0) <= limit,
   )
