@@ -71,8 +71,11 @@ class DocumentUploadView(View):
         if file.size > 10 * 1024 * 1024:
             return JsonResponse({"error": {"code": "VALIDATION_ERROR", "message": "File exceeds 10MB limit"}}, status=400)
             
-        # Save file locally
-        file_path = os.path.join(settings.MEDIA_ROOT, 'documents', file.name)
+        # Save file locally. MEDIA_ROOT is gitignored, so the directory does not
+        # exist on a fresh clone or a new deploy and has to be created here.
+        upload_dir = os.path.join(settings.MEDIA_ROOT, 'documents')
+        os.makedirs(upload_dir, exist_ok=True)
+        file_path = os.path.join(upload_dir, os.path.basename(file.name))
         with open(file_path, 'wb+') as destination:
             for chunk in file.chunks():
                 destination.write(chunk)
