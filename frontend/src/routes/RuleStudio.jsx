@@ -7,8 +7,7 @@
  */
 export default function RuleStudio() {
   return (
-    <div className="min-h-[calc(100dvh-5.25rem)] bg-paper text-ink-900">
-      <div className="mx-auto max-w-[1400px] px-4 py-6">
+    <div className="mx-auto max-w-[1400px] px-4 py-6">
         <h1 className="text-h1">Rule Studio</h1>
         <p className="mt-2 max-w-[65ch] text-body text-ink-500">
           Unggah kebijakan internal, tinjau aturan yang diekstraksi berdampingan dengan
@@ -18,7 +17,6 @@ export default function RuleStudio() {
         <p className="mt-6 font-mono text-mono-xs text-ink-400">
           Belum dibangun. Lihat docs/plans/2026-08-11-rule-studio.md
         </p>
-      </div>
     </div>
   )
 }
