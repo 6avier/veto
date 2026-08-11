@@ -1,4 +1,96 @@
 @import "tailwindcss";
 
-/* Design tokens land here. The visual system is the frontend lane's work —
-   see CLAUDE.md §7 (Taste / Impeccable) before styling anything. */
+/* Self-hosted. Never link Google Fonts. DESIGN.md §2. */
+@import "@fontsource-variable/archivo";
+@import "@fontsource-variable/jetbrains-mono";
+
+/* Design tokens. The system of record is DESIGN.md — change it there first. */
+@theme {
+  --font-sans: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", monospace;
+
+  /* Graphite. DESIGN.md §4. */
+  --color-ink-950: #0e1013;
+  --color-ink-900: #14171a;
+  --color-ink-800: #1b1f23;
+  --color-ink-700: #262b31;
+  --color-ink-600: #363c44;
+  --color-ink-500: #4c545e;
+  --color-ink-400: #6c757f;
+  --color-ink-300: #98a0a9;
+  --color-ink-200: #c4cad0;
+  --color-ink-100: #e3e7ea;
+  --color-ink-50: #f4f6f7;
+  --color-paper: #f7f8f8;
+
+  /* The only accent. HOLD and nothing else. PASS has no colour. */
+  --color-hold: #f2a93b;
+  --color-hold-ink: #8a5200;
+
+  --text-display: 32px;
+  --text-display--line-height: 36px;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 600;
+
+  --text-h1: 24px;
+  --text-h1--line-height: 30px;
+  --text-h1--letter-spacing: -0.015em;
+  --text-h1--font-weight: 600;
+
+  --text-h2: 18px;
+  --text-h2--line-height: 24px;
+  --text-h2--letter-spacing: -0.01em;
+  --text-h2--font-weight: 500;
+
+  --text-body: 15px;
+  --text-body--line-height: 23px;
+
+  --text-label: 13px;
+  --text-label--line-height: 16px;
+  --text-label--letter-spacing: 0.01em;
+  --text-label--font-weight: 500;
+
+  --text-data-lg: 22px;
+  --text-data-lg--line-height: 26px;
+  --text-data-lg--letter-spacing: -0.01em;
+  --text-data-lg--font-weight: 500;
+
+  --text-data: 14px;
+  --text-data--line-height: 20px;
+
+  --text-mono: 13px;
+  --text-mono--line-height: 18px;
+
+  --text-mono-xs: 11px;
+  --text-mono-xs--line-height: 16px;
+  --text-mono-xs--letter-spacing: 0.03em;
+
+  /* One radius. Instruments have square corners. DESIGN.md §5. */
+  --radius-veto: 2px;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Every numeric holds its column. DESIGN.md §2. */
+  .tnum,
+  input[type="number"] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Focus is never removed, only restyled. */
+  :focus-visible {
+    outline: 2px solid var(--color-hold);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* Light text on the graphite ground optically thins. Compensate on all three
+     axes rather than one, and never by raising size. DESIGN.md §2. */
+  .on-dark {
+    letter-spacing: 0.005em;
+  }
+}

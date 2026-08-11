@@ -1,39 +1,63 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
+
 import { USE_MOCKS } from '@/api'
 
-const NAV = [
-  { to: '/dispatch', label: 'Dispatch', owner: 'frontend lane' },
-  { to: '/rule-studio', label: 'Rule Studio', owner: 'rule studio lane' },
-  { to: '/audit', label: 'Audit Log', owner: 'frontend lane' },
-]
+/**
+ * The shell. Two products share it: the client's ERP and VETO.
+ *
+ * DESIGN.md §1 — the segmented control is visible at all times so nobody has to
+ * be told there are two systems. The chrome stays constant while the content
+ * changes completely, which is what makes the switch legible.
+ */
+
+const VETO_PATHS = ['/rule-studio', '/audit']
 
 export default function App() {
+  const { pathname } = useLocation()
+  const inVeto = VETO_PATHS.some((path) => pathname.startsWith(path))
+
   return (
-    <div className="min-h-screen bg-white text-neutral-900">
-      <header className="border-b border-neutral-200">
-        <nav className="mx-auto flex max-w-5xl items-center gap-6 px-6 py-4">
-          <span className="font-semibold tracking-tight">VETO</span>
-          {NAV.map(({ to, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                isActive ? 'text-neutral-900 underline underline-offset-4' : 'text-neutral-500 hover:text-neutral-900'
-              }
-            >
-              {label}
-            </NavLink>
-          ))}
-          {USE_MOCKS && (
-            <span className="ml-auto rounded bg-amber-100 px-2 py-1 font-mono text-xs text-amber-900">
-              MOCKS ON
-            </span>
-          )}
-        </nav>
+    <div className="min-h-[100dvh] bg-ink-950 font-sans text-ink-100">
+      <header className="flex h-11 items-center gap-4 border-b border-ink-800 px-4">
+        <div className="flex" role="group" aria-label="Pilih sistem">
+          <SystemTab to="/dispatch" active={!inVeto}>
+            Client ERP
+          </SystemTab>
+          <SystemTab to="/rule-studio" active={inVeto}>
+            VETO
+          </SystemTab>
+        </div>
+
+        <p className="ml-auto font-mono text-mono-xs text-ink-400">
+          {inVeto ? 'Sari · Compliance' : 'Budi · Gudang Cikarang'}
+        </p>
+
+        {USE_MOCKS && (
+          <span
+            className="rounded-veto border border-ink-700 px-1.5 py-0.5 font-mono text-mono-xs text-ink-400"
+            title="Berjalan dengan data contoh, tanpa backend"
+          >
+            MOCKS
+          </span>
+        )}
       </header>
-      <main className="mx-auto max-w-5xl px-6 py-8">
-        <Outlet />
-      </main>
+
+      <Outlet />
     </div>
+  )
+}
+
+function SystemTab({ to, active, children }) {
+  return (
+    <NavLink
+      to={to}
+      aria-current={active ? 'page' : undefined}
+      className={[
+        'rounded-veto px-3 py-1 text-label transition-colors',
+        active ? 'bg-ink-100 text-ink-950' : 'text-ink-400 hover:text-ink-200',
+      ].join(' ')}
+    >
+      {children}
+    </NavLink>
   )
 }
