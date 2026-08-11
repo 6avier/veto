@@ -1,0 +1,20 @@
+{
+  "document_id": "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d5e",
+  "candidates": [
+    {
+      "candidate_id": "d3e4f5a6-b7c8-4d9e-8f0a-1b2c3d4e5f60",
+      "dimension": "GROSS_WEIGHT",
+      "operator": "LTE",
+      "threshold": 24000,
+      "unit": "kg",
+      "applies_to": { "axle_config": ["1.2", "1.22"] },
+      "source_reference": "SOP Internal Gudang Cikarang v2 §3.1",
+      "source_text_excerpt": "Muatan total tidak boleh melebihi 24 ton untuk kendaraan sumbu ganda…",
+      "source_page": 3,
+      "tags": ["internal", "stricter_than_legal"],
+      "status": "PENDING"
+    }
+  ],
+  "extraction_ms": 4120,
+  "used_fallback": false
+}

@@ -1,0 +1,18 @@
+{
+  "results": [
+    {
+      "rule_id": "f5a6b7c8-d9e0-4f1a-8b2c-3d4e5f607182",
+      "dimension": "AXLE_LOAD",
+      "operator": "LTE",
+      "threshold": 16100,
+      "unit": "kg",
+      "applies_to": { "axle_config": ["1.2"], "axle_index": 1 },
+      "legal_citation": "PM 111/2015 Pasal 4 ayat (2)",
+      "origin": "CENTRAL",
+      "rule_pack_version": 3,
+      "status": "ACTIVE",
+      "effective_from": "2026-01-01T00:00:00+07:00"
+    }
+  ],
+  "total": 1
+}

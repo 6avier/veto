@@ -1,0 +1,14 @@
+{
+  "dispatch_ref": "DO-2026-08-11-0042",
+  "vehicle": {
+    "profile_id": "8f1c2e4a-3b7d-4c1e-9a2f-5d6e7f8a9b0c",
+    "axle_config": "1.2",
+    "tare_weight_kg": 8500
+  },
+  "load": {
+    "gross_weight_kg": 24500,
+    "axle_loads_kg": [7200, 17300],
+    "dimensions_mm": { "length": 12500, "width": 2500, "height": 4100 }
+  },
+  "loading_point_id": "LP-CIKARANG-01"
+}

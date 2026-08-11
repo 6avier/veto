@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "axle_loads_kg must contain at least one entry",
+    "field": "axle_loads_kg"
+  }
+}
