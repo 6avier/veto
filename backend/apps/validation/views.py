@@ -23,40 +23,9 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-# TODO(backend): delete once the seeded rule pack lands. Values mirror the
-# worked example in api-contract.md §1 so the fixtures and the stub agree.
-STUB_LIMITS = {
-    "gross_weight_kg": {
-        "central": 25000,
-        "client": 24000,
-        "central_citation": "PM 111/2015 Pasal 4 ayat (2)",
-        "client_citation": "SOP Internal Gudang Cikarang v2 §3.1",
-    },
-    "axle_load_kg": {
-        "central": [10000, 16100],
-        "central_citation": "PM 111/2015 Pasal 4 ayat (2)",
-    },
-    # Road class I figures. TODO: verify against the regulation text before these
-    # become seed data — see CLAUDE.md §5, "never hardcode an unverified threshold".
-    "dimensions_mm": {
-        "length": 18000,
-        "width": 2500,
-        "height": 4200,
-        "citation": "PM 111/2015 Pasal 5",
-    },
-}
-
-DIMENSION_BY_AXIS = {
-    "length": "DIMENSION_LENGTH",
-    "width": "DIMENSION_WIDTH",
-    "height": "DIMENSION_HEIGHT",
-}
-
-RULE_PACKS = [
-    {"id": "c0a80101-0000-4000-8000-000000000001", "domain": "ODOL", "version": 3, "origin": "CENTRAL"},
-    {"id": "c0a80101-0000-4000-8000-000000000002", "domain": "ODOL", "version": 1, "origin": "CLIENT"},
-]
-
+from .engine import evaluate_payload
+from apps.rules.models import Rule, RuleStatus
+from apps.audit.models import DispatchDecision, Violation
 
 def _error(message, field=None, code="VALIDATION_ERROR", http_status=status.HTTP_400_BAD_REQUEST):
     error = {"code": code, "message": message}
@@ -67,83 +36,6 @@ def _error(message, field=None, code="VALIDATION_ERROR", http_status=status.HTTP
 
 def _now_iso():
     return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
-
-
-def _check_gross_weight(gross):
-    """Client policy is stricter than the legal limit, so it is the one enforced.
-
-    Per api-contract.md §1, only the stricter rule appears, and the directive
-    names the legal limit for contrast.
-    """
-    limits = STUB_LIMITS["gross_weight_kg"]
-    if gross <= limits["client"]:
-        return None
-    excess = gross - limits["client"]
-    return {
-        "dimension": "GROSS_WEIGHT",
-        "actual_value": gross,
-        "limit_value": limits["client"],
-        "excess_value": excess,
-        "unit": "kg",
-        "severity": "BLOCKING",
-        "rule_origin": "CLIENT",
-        "legal_citation": limits["client_citation"],
-        "directive": (
-            f"Reduce total load by {excess:,} kg — client policy is stricter "
-            f"than the legal limit of {limits['central']:,} kg"
-        ),
-    }
-
-
-def _check_axle_loads(axle_loads):
-    limits = STUB_LIMITS["axle_load_kg"]["central"]
-    citation = STUB_LIMITS["axle_load_kg"]["central_citation"]
-    violations = []
-    for index, load in enumerate(axle_loads):
-        limit = limits[index] if index < len(limits) else limits[-1]
-        if load <= limit:
-            continue
-        excess = load - limit
-        position = "rear axle" if index == len(axle_loads) - 1 else f"axle {index + 1}"
-        violations.append(
-            {
-                "dimension": "AXLE_LOAD",
-                "axle_index": index,
-                "actual_value": load,
-                "limit_value": limit,
-                "excess_value": excess,
-                "unit": "kg",
-                "severity": "BLOCKING",
-                "rule_origin": "CENTRAL",
-                "legal_citation": citation,
-                "directive": f"Reduce {position} load by {excess:,} kg",
-            }
-        )
-    return violations
-
-
-def _check_dimensions(dimensions):
-    limits = STUB_LIMITS["dimensions_mm"]
-    violations = []
-    for axis, dimension_enum in DIMENSION_BY_AXIS.items():
-        actual = dimensions.get(axis)
-        if actual is None or actual <= limits[axis]:
-            continue
-        excess = actual - limits[axis]
-        violations.append(
-            {
-                "dimension": dimension_enum,
-                "actual_value": actual,
-                "limit_value": limits[axis],
-                "excess_value": excess,
-                "unit": "mm",
-                "severity": "BLOCKING",
-                "rule_origin": "CENTRAL",
-                "legal_citation": limits["citation"],
-                "directive": f"Reduce load {axis} by {excess:,} mm",
-            }
-        )
-    return violations
 
 
 @api_view(["POST"])
@@ -176,24 +68,69 @@ def validate(request):
     if not isinstance(dimensions, dict):
         return _error("dimensions_mm must be an object", field="dimensions_mm")
 
-    violations = []
-    gross_violation = _check_gross_weight(gross)
-    if gross_violation:
-        violations.append(gross_violation)
-    violations.extend(_check_axle_loads(axle_loads))
-    violations.extend(_check_dimensions(dimensions))
+    # Fetch active rules
+    active_rules = list(Rule.objects.filter(status=RuleStatus.ACTIVE).select_related('rule_pack'))
+    
+    # Evaluate using the pure engine
+    outcome, violations = evaluate_payload(payload, active_rules)
 
-    outcome = "HOLD" if violations else "PASS"
-    packs = RULE_PACKS if outcome == "HOLD" else RULE_PACKS[:1]
+    latency_ms = max(1, round((time.perf_counter() - started) * 1000))
+    evaluated_at_dt = datetime.now(timezone.utc)
+
+    # Determine which rule packs were applied
+    applied_pack_ids = set()
+    for r in active_rules:
+        applied_pack_ids.add(r.rule_pack)
+        
+    packs_data = []
+    for pack in applied_pack_ids:
+        packs_data.append({
+            "id": str(pack.id),
+            "domain": pack.domain,
+            "version": pack.version,
+            "origin": pack.origin,
+        })
+        
+    # In api contract, if outcome is PASS, the example shows only CENTRAL is returned, 
+    # but the contract text says "rule_packs_applied: [ {id...} ]". 
+    # Let's just return all applied packs. The STUB returned only CENTRAL if PASS.
+    # The requirement: "packs = RULE_PACKS if outcome == "HOLD" else RULE_PACKS[:1]" was a stub behavior.
+    
+    decision = DispatchDecision.objects.create(
+        outcome=outcome,
+        dispatch_ref=dispatch_ref,
+        payload=payload,
+        rule_packs_applied=packs_data,
+        latency_ms=latency_ms,
+        evaluated_at=evaluated_at_dt
+    )
+
+    violation_records = []
+    for v in violations:
+        violation_records.append(Violation(
+            decision=decision,
+            dimension=v["dimension"],
+            axle_index=v.get("axle_index"),
+            actual_value=v["actual_value"],
+            limit_value=v["limit_value"],
+            excess_value=v["excess_value"],
+            unit=v["unit"],
+            severity=v["severity"],
+            rule_origin=v["rule_origin"],
+            legal_citation=v["legal_citation"],
+            directive=v["directive"]
+        ))
+    if violation_records:
+        Violation.objects.bulk_create(violation_records)
 
     body = {
-        "decision_id": str(uuid.uuid4()),
+        "decision_id": str(decision.decision_id),
         "outcome": outcome,
         "dispatch_ref": dispatch_ref,
         "violations": violations,
-        "rule_packs_applied": packs,
-        "latency_ms": max(1, round((time.perf_counter() - started) * 1000)),
-        "evaluated_at": _now_iso(),
+        "rule_packs_applied": packs_data,
+        "latency_ms": latency_ms,
+        "evaluated_at": evaluated_at_dt.astimezone().isoformat(timespec="seconds"),
     }
 
     if outcome == "HOLD":

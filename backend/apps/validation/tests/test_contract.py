@@ -9,10 +9,11 @@ import json
 
 from django.conf import settings
 from django.test import Client, TestCase
+from apps.rules.models import Rule, RulePack
 
 
 def fixture(name):
-    with open(settings.CONTRACT_DIR / name) as handle:
+    with open(settings.CONTRACT_DIR / name, encoding="utf-8") as handle:
         return json.load(handle)
 
 
@@ -23,6 +24,22 @@ def keys_of(obj):
 class ValidateContractTests(TestCase):
     def setUp(self):
         self.client = Client()
+        # The test database already has the CENTRAL rule pack seeded.
+        # We need to add the CLIENT rule pack for testing the exact fixture output.
+        client_pack = RulePack.objects.create(
+            id="c0a80101-0000-4000-8000-000000000002",
+            domain="ODOL",
+            version=1,
+            origin="CLIENT"
+        )
+        Rule.objects.create(
+            rule_pack=client_pack,
+            dimension="GROSS_WEIGHT",
+            operator="LTE",
+            threshold=24000,
+            unit="kg",
+            legal_citation="SOP Internal Gudang Cikarang v2 §3.1"
+        )
 
     def post(self, payload):
         return self.client.post("/api/v1/validate", data=payload, content_type="application/json")

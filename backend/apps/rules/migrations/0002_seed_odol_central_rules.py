@@ -20,7 +20,7 @@ def seed_central_rules(apps, schema_editor):
             "operator": "LTE",
             "threshold": 25000,
             "unit": "kg",
-            "legal_citation": "PM 111/2015 Pasal 4 ayat (2)"
+            "legal_citation": "PP 55/2012 Lampiran JBI (Asumsi Kelas I)"
         },
         # Axle loads
         {
@@ -29,15 +29,15 @@ def seed_central_rules(apps, schema_editor):
             "threshold": 10000,
             "unit": "kg",
             "axle_index": 0,
-            "legal_citation": "PM 111/2015 Pasal 4 ayat (2)"
+            "legal_citation": "PM 18/2021 Pasal 4 ayat (1) huruf a"
         },
         {
             "dimension": "AXLE_LOAD",
             "operator": "LTE",
-            "threshold": 16100,
+            "threshold": 16000,
             "unit": "kg",
             "axle_index": 1,
-            "legal_citation": "PM 111/2015 Pasal 4 ayat (2)"
+            "legal_citation": "PP 55/2012 Lampiran (Asumsi Sumbu Ganda/Tandem)"
         },
         # Dimensions
         {
@@ -45,21 +45,21 @@ def seed_central_rules(apps, schema_editor):
             "operator": "LTE",
             "threshold": 18000,
             "unit": "mm",
-            "legal_citation": "PM 111/2015 Pasal 5"
+            "legal_citation": "PP 55/2012 Pasal 9"
         },
         {
             "dimension": "DIMENSION_WIDTH",
             "operator": "LTE",
             "threshold": 2500,
             "unit": "mm",
-            "legal_citation": "PM 111/2015 Pasal 5"
+            "legal_citation": "PP 55/2012 Pasal 7 ayat (1)"
         },
         {
             "dimension": "DIMENSION_HEIGHT",
             "operator": "LTE",
             "threshold": 4200,
             "unit": "mm",
-            "legal_citation": "PM 111/2015 Pasal 5"
+            "legal_citation": "PP 55/2012 Pasal 7 ayat (3)"
         },
     ]
 

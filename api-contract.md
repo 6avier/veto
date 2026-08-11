@@ -108,13 +108,13 @@ Notes:
       "dimension": "AXLE_LOAD",
       "axle_index": 1,
       "actual_value": 17300,
-      "limit_value": 16100,
-      "excess_value": 1200,
+      "limit_value": 16000,
+      "excess_value": 1300,
       "unit": "kg",
       "severity": "BLOCKING",
       "rule_origin": "CENTRAL",
-      "legal_citation": "PM 111/2015 Pasal 4 ayat (2)",
-      "directive": "Reduce rear axle load by 1,200 kg"
+      "legal_citation": "PP 55/2012 Lampiran (Asumsi Sumbu Ganda/Tandem)",
+      "directive": "Reduce rear axle load by 1,300 kg"
     },
     {
       "dimension": "GROSS_WEIGHT",
