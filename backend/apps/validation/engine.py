@@ -1,4 +1,4 @@
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional, Tuple, Union
 
 # Dimension mapping for easy lookup
 DIMENSION_NAMES = {
@@ -10,14 +10,16 @@ DIMENSION_NAMES = {
 def _format_number(num: int) -> str:
     return f"{num:,}"
 
-def _find_stricter_rule(central_rule, client_rule, operator):
+def _find_stricter_rule(central_rule: Any, client_rule: Any, operator: str) -> Tuple[Any, Any]:
     """
     Returns (strictest_rule, other_rule).
     For LTE (Less Than or Equal), lower threshold is stricter.
     For GTE, higher threshold is stricter.
     """
-    if not central_rule: return client_rule, None
-    if not client_rule: return central_rule, None
+    if not central_rule:
+        return client_rule, None
+    if not client_rule:
+        return central_rule, None
     
     if operator == "LTE":
         if client_rule.threshold < central_rule.threshold:
@@ -29,7 +31,7 @@ def _find_stricter_rule(central_rule, client_rule, operator):
         return central_rule, client_rule
     return central_rule, client_rule
 
-def _get_applicable_rule(rules, origin, axle_index):
+def _get_applicable_rule(rules: List[Any], origin: str, axle_index: Optional[int]) -> Any:
     origin_rules = [r for r in rules if r.rule_pack.origin == origin]
     # Try exact match first
     exact_rule = next((r for r in origin_rules if r.axle_index == axle_index), None)
@@ -38,7 +40,14 @@ def _get_applicable_rule(rules, origin, axle_index):
     # Fallback to general rule
     return next((r for r in origin_rules if r.axle_index is None), None)
 
-def _evaluate_dimension(dimension: str, actual_value: int, rules: List[Any], unit: str, axle_index: int = None, total_axles: int = 1) -> dict | None:
+def _evaluate_dimension(
+    dimension: str,
+    actual_value: int,
+    rules: List[Any],
+    unit: str,
+    axle_index: Optional[int] = None,
+    total_axles: int = 1
+) -> Optional[Dict[str, Any]]:
     if actual_value is None:
         return None
         
@@ -80,7 +89,7 @@ def _evaluate_dimension(dimension: str, actual_value: int, rules: List[Any], uni
             directive += f" \u2014 client policy is stricter than the legal limit of {_format_number(other_rule.threshold)} {unit}"
 
         # Build violation dict
-        violation = {
+        violation: Dict[str, Any] = {
             "dimension": dimension,
             "actual_value": actual_value,
             "limit_value": strictest_rule.threshold,
@@ -97,7 +106,7 @@ def _evaluate_dimension(dimension: str, actual_value: int, rules: List[Any], uni
         return violation
     return None
 
-def evaluate_payload(payload: Dict[str, Any], active_rules: List[Any]) -> tuple[str, List[dict]]:
+def evaluate_payload(payload: Dict[str, Any], active_rules: List[Any]) -> Tuple[str, List[Dict[str, Any]]]:
     """
     Evaluates the vehicle payload against active rules.
     Returns (outcome, violations).
