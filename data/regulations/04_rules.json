@@ -1,0 +1,417 @@
+[
+  {
+    "rule_id": "RULE_001",
+    "regulation_id": "PP_55_2012",
+    "article": "7",
+    "paragraph": "1",
+    "rule_type": "MAX_DIMENSION",
+    "parameter": "vehicle_width",
+    "operator": "<=",
+    "value": 2500,
+    "unit": "mm",
+    "formula": null,
+    "conditions": [],
+    "vehicle_types": [
+      "all"
+    ],
+    "road_classes": [
+      "Kelas I",
+      "Kelas II"
+    ],
+    "cargo_types": [
+      "any"
+    ],
+    "action_if_violated": "HOLD",
+    "legal_text": "Lebar kendaraan bermotor paling tinggi 2.500 milimeter.",
+    "source_url": "https://peraturan.bpk.go.id/Details/5307/pp-no-55-tahun-2012",
+    "effective_from": "2012-04-25",
+    "effective_until": null
+  },
+  {
+    "rule_id": "RULE_002",
+    "regulation_id": "UU_22_2009",
+    "article": "22",
+    "paragraph": "1",
+    "rule_type": "MAX_DIMENSION",
+    "parameter": "vehicle_width",
+    "operator": "<=",
+    "value": 2100,
+    "unit": "mm",
+    "formula": null,
+    "conditions": [
+      {
+        "field": "road_class",
+        "operator": "==",
+        "value": "Kelas III"
+      }
+    ],
+    "vehicle_types": [
+      "all"
+    ],
+    "road_classes": [
+      "Kelas III"
+    ],
+    "cargo_types": [
+      "any"
+    ],
+    "action_if_violated": "HOLD",
+    "legal_text": "Jalan kelas III dapat dilalui kendaraan bermotor dengan lebar tidak melebihi 2.100 milimeter.",
+    "source_url": "https://peraturan.bpk.go.id/Details/38946/uu-no-22-tahun-2009",
+    "effective_from": "2009-06-22",
+    "effective_until": null
+  },
+  {
+    "rule_id": "RULE_003",
+    "regulation_id": "PP_55_2012",
+    "article": "7",
+    "paragraph": "2",
+    "rule_type": "MAX_DIMENSION",
+    "parameter": "vehicle_length",
+    "operator": "<=",
+    "value": 12000,
+    "unit": "mm",
+    "formula": null,
+    "conditions": [
+      {
+        "field": "vehicle_type",
+        "operator": "!=",
+        "value": "combination"
+      }
+    ],
+    "vehicle_types": [
+      "single"
+    ],
+    "road_classes": [
+      "all"
+    ],
+    "cargo_types": [
+      "any"
+    ],
+    "action_if_violated": "HOLD",
+    "legal_text": "Panjang kendaraan bermotor paling tinggi 12.000 milimeter.",
+    "source_url": "https://peraturan.bpk.go.id/Details/5307/pp-no-55-tahun-2012",
+    "effective_from": "2012-04-25",
+    "effective_until": null
+  },
+  {
+    "rule_id": "RULE_004",
+    "regulation_id": "UU_22_2009",
+    "article": "22",
+    "paragraph": "1",
+    "rule_type": "MAX_DIMENSION",
+    "parameter": "vehicle_length",
+    "operator": "<=",
+    "value": 9000,
+    "unit": "mm",
+    "formula": null,
+    "conditions": [
+      {
+        "field": "road_class",
+        "operator": "==",
+        "value": "Kelas III"
+      }
+    ],
+    "vehicle_types": [
+      "single"
+    ],
+    "road_classes": [
+      "Kelas III"
+    ],
+    "cargo_types": [
+      "any"
+    ],
+    "action_if_violated": "HOLD",
+    "legal_text": "Jalan kelas III dapat dilalui kendaraan bermotor dengan panjang tidak melebihi 9.000 milimeter.",
+    "source_url": "https://peraturan.bpk.go.id/Details/38946/uu-no-22-tahun-2009",
+    "effective_from": "2009-06-22",
+    "effective_until": null
+  },
+  {
+    "rule_id": "RULE_005",
+    "regulation_id": "PP_55_2012",
+    "article": "9",
+    "paragraph": "1",
+    "rule_type": "MAX_DIMENSION",
+    "parameter": "vehicle_length_combination",
+    "operator": "<=",
+    "value": 18000,
+    "unit": "mm",
+    "formula": null,
+    "conditions": [
+      {
+        "field": "vehicle_type",
+        "operator": "in",
+        "value": [
+          "combination",
+          "semitrailer",
+          "gandengan"
+        ]
+      }
+    ],
+    "vehicle_types": [
+      "combination",
+      "semitrailer",
+      "gandengan"
+    ],
+    "road_classes": [
+      "Kelas I"
+    ],
+    "cargo_types": [
+      "any"
+    ],
+    "action_if_violated": "HOLD",
+    "legal_text": "Panjang kereta gandengan atau kereta tempelan beserta kendaraan penariknya paling tinggi 18.000 milimeter.",
+    "source_url": "https://peraturan.bpk.go.id/Details/5307/pp-no-55-tahun-2012",
+    "effective_from": "2012-04-25",
+    "effective_until": null
+  },
+  {
+    "rule_id": "RULE_006",
+    "regulation_id": "PP_55_2012",
+    "article": "7",
+    "paragraph": "3",
+    "rule_type": "MAX_DIMENSION",
+    "parameter": "vehicle_height",
+    "operator": "<=",
+    "value": 4200,
+    "unit": "mm",
+    "formula": null,
+    "conditions": [],
+    "vehicle_types": [
+      "all"
+    ],
+    "road_classes": [
+      "Kelas I",
+      "Kelas II",
+      "Kelas Khusus"
+    ],
+    "cargo_types": [
+      "any"
+    ],
+    "action_if_violated": "HOLD",
+    "legal_text": "Tinggi kendaraan bermotor paling tinggi 4.200 milimeter dan tidak melebihi 1,7 kali lebar kendaraan.",
+    "source_url": "https://peraturan.bpk.go.id/Details/5307/pp-no-55-tahun-2012",
+    "effective_from": "2012-04-25",
+    "effective_until": null
+  },
+  {
+    "rule_id": "RULE_007",
+    "regulation_id": "UU_22_2009",
+    "article": "22",
+    "paragraph": "1",
+    "rule_type": "MAX_DIMENSION",
+    "parameter": "vehicle_height",
+    "operator": "<=",
+    "value": 3500,
+    "unit": "mm",
+    "formula": null,
+    "conditions": [
+      {
+        "field": "road_class",
+        "operator": "==",
+        "value": "Kelas III"
+      }
+    ],
+    "vehicle_types": [
+      "all"
+    ],
+    "road_classes": [
+      "Kelas III"
+    ],
+    "cargo_types": [
+      "any"
+    ],
+    "action_if_violated": "HOLD",
+    "legal_text": "Jalan kelas III dapat dilalui kendaraan bermotor dengan tinggi paling tinggi 3.500 milimeter.",
+    "source_url": "https://peraturan.bpk.go.id/Details/38946/uu-no-22-tahun-2009",
+    "effective_from": "2009-06-22",
+    "effective_until": null
+  },
+  {
+    "rule_id": "RULE_008",
+    "regulation_id": "PP_55_2012",
+    "article": "7",
+    "paragraph": "3",
+    "rule_type": "MAX_RATIO",
+    "parameter": "height_to_width_ratio",
+    "operator": "<=",
+    "value": 1.7,
+    "unit": "ratio",
+    "formula": "vehicle_height / vehicle_width <= 1.7",
+    "conditions": [],
+    "vehicle_types": [
+      "all"
+    ],
+    "road_classes": [
+      "all"
+    ],
+    "cargo_types": [
+      "any"
+    ],
+    "action_if_violated": "HOLD",
+    "legal_text": "Tinggi kendaraan bermotor tidak melebihi 1,7 kali lebar kendaraan.",
+    "source_url": "https://peraturan.bpk.go.id/Details/5307/pp-no-55-tahun-2012",
+    "effective_from": "2012-04-25",
+    "effective_until": null
+  },
+  {
+    "rule_id": "RULE_009",
+    "regulation_id": "PERMENHUB_18_2021",
+    "article": "4",
+    "paragraph": "1",
+    "rule_type": "MAX_WEIGHT",
+    "parameter": "MST",
+    "operator": "<=",
+    "value": 10000,
+    "unit": "kg",
+    "formula": null,
+    "conditions": [
+      {
+        "field": "road_class",
+        "operator": "==",
+        "value": "Kelas I"
+      }
+    ],
+    "vehicle_types": [
+      "all"
+    ],
+    "road_classes": [
+      "Kelas I"
+    ],
+    "cargo_types": [
+      "any"
+    ],
+    "action_if_violated": "HOLD",
+    "legal_text": "MST yang diizinkan di Jalan Kelas I: paling tinggi 10 ton.",
+    "source_url": "https://jdih.kemenhub.go.id/regulasi/view/pm/18/2021",
+    "effective_from": "2021-03-01",
+    "effective_until": null
+  },
+  {
+    "rule_id": "RULE_010",
+    "regulation_id": "PERMENHUB_18_2021",
+    "article": "4",
+    "paragraph": "1",
+    "rule_type": "MAX_WEIGHT",
+    "parameter": "MST",
+    "operator": "<=",
+    "value": 8000,
+    "unit": "kg",
+    "formula": null,
+    "conditions": [
+      {
+        "field": "road_class",
+        "operator": "==",
+        "value": "Kelas II"
+      }
+    ],
+    "vehicle_types": [
+      "all"
+    ],
+    "road_classes": [
+      "Kelas II"
+    ],
+    "cargo_types": [
+      "any"
+    ],
+    "action_if_violated": "HOLD",
+    "legal_text": "MST yang diizinkan di Jalan Kelas II: paling tinggi 8 ton.",
+    "source_url": "https://jdih.kemenhub.go.id/regulasi/view/pm/18/2021",
+    "effective_from": "2021-03-01",
+    "effective_until": null
+  },
+  {
+    "rule_id": "RULE_011",
+    "regulation_id": "PERMENHUB_18_2021",
+    "article": "4",
+    "paragraph": "1",
+    "rule_type": "MAX_WEIGHT",
+    "parameter": "MST",
+    "operator": "<=",
+    "value": 8000,
+    "unit": "kg",
+    "formula": null,
+    "conditions": [
+      {
+        "field": "road_class",
+        "operator": "==",
+        "value": "Kelas III"
+      }
+    ],
+    "vehicle_types": [
+      "all"
+    ],
+    "road_classes": [
+      "Kelas III"
+    ],
+    "cargo_types": [
+      "any"
+    ],
+    "action_if_violated": "HOLD",
+    "legal_text": "MST yang diizinkan di Jalan Kelas III: paling tinggi 8 ton.",
+    "source_url": "https://jdih.kemenhub.go.id/regulasi/view/pm/18/2021",
+    "effective_from": "2021-03-01",
+    "effective_until": null
+  },
+  {
+    "rule_id": "RULE_012",
+    "regulation_id": "UU_22_2009",
+    "article": "169",
+    "paragraph": "1",
+    "rule_type": "PROHIBITION",
+    "parameter": "gross_vehicle_weight",
+    "operator": "<=",
+    "value": null,
+    "unit": "kg",
+    "formula": "gross_vehicle_weight <= vehicle_JBI",
+    "conditions": [],
+    "vehicle_types": [
+      "mobil_barang",
+      "angkutan_umum_barang"
+    ],
+    "road_classes": [
+      "all"
+    ],
+    "cargo_types": [
+      "any"
+    ],
+    "action_if_violated": "HOLD",
+    "legal_text": "Pengemudi dan/atau perusahaan angkutan umum barang dilarang menggunakan kendaraan bermotor untuk mengangkut muatan yang melebihi daya angkut.",
+    "source_url": "https://peraturan.bpk.go.id/Details/38946/uu-no-22-tahun-2009",
+    "effective_from": "2009-06-22",
+    "effective_until": null
+  },
+  {
+    "rule_id": "RULE_013",
+    "regulation_id": "PERMENHUB_19_2021",
+    "article": "5",
+    "paragraph": "1",
+    "rule_type": "COMPLIANCE_DOCUMENT",
+    "parameter": "uji_berkala_valid",
+    "operator": "==",
+    "value": true,
+    "unit": "boolean",
+    "formula": "days_since_last_uji_berkala <= 180",
+    "conditions": [
+      {
+        "field": "vehicle_type",
+        "operator": "==",
+        "value": "mobil_barang"
+      }
+    ],
+    "vehicle_types": [
+      "mobil_barang"
+    ],
+    "road_classes": [
+      "all"
+    ],
+    "cargo_types": [
+      "any"
+    ],
+    "action_if_violated": "HOLD",
+    "legal_text": "Kendaraan angkutan barang wajib melaksanakan pengujian berkala setiap 6 bulan.",
+    "source_url": "https://jdih.kemenhub.go.id/regulasi/view/pm/19/2021",
+    "effective_from": "2021-03-01",
+    "effective_until": null
+  }
+]

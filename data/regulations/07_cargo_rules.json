@@ -1,0 +1,53 @@
+[
+  {
+    "rule_id": "CRULE_001",
+    "cargo_category": "Muatan Umum",
+    "cargo_type": "Barang Umum (General Cargo)",
+    "max_weight_over_JBI": false,
+    "load_distribution_required": true,
+    "axle_distribution_check": true,
+    "securing_required": true,
+    "permit_required": false,
+    "max_rear_overhang_mm": 1500,
+    "legal_basis": "PM 60/2019; PP 55/2012",
+    "notes": "Julur muatan ke belakang maks ~1.500 mm — perlu verifikasi dari PM 60/2019",
+    "verification_required": true
+  },
+  {
+    "rule_id": "CRULE_002",
+    "cargo_category": "Muatan Khusus",
+    "cargo_type": "Barang Berbahaya (B3/Hazmat)",
+    "max_weight_over_JBI": false,
+    "load_distribution_required": true,
+    "axle_distribution_check": true,
+    "securing_required": true,
+    "permit_required": true,
+    "additional_requirements": [
+      "Izin khusus angkutan B3",
+      "Pengemudi bersertifikat B3",
+      "Label/rambu B3",
+      "Dokumen manifest B3"
+    ],
+    "legal_basis": "PM 60/2019; peraturan B3",
+    "notes": "Memerlukan izin dan persyaratan khusus",
+    "verification_required": true
+  },
+  {
+    "rule_id": "CRULE_003",
+    "cargo_category": "Muatan Khusus",
+    "cargo_type": "Alat Berat / Barang Oversize",
+    "max_weight_over_JBI": false,
+    "load_distribution_required": true,
+    "axle_distribution_check": true,
+    "securing_required": true,
+    "permit_required": true,
+    "additional_requirements": [
+      "Izin angkutan barang khusus",
+      "Escort kendaraan (jika dimensi melebihi batas)",
+      "Survei rute"
+    ],
+    "legal_basis": "PM 60/2019",
+    "notes": "Memerlukan izin khusus dan mungkin escort",
+    "verification_required": true
+  }
+]

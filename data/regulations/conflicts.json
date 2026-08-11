@@ -1,0 +1,29 @@
+[
+  {
+    "conflict_id": "CONF_001",
+    "rule_a": "THR_006 — PP 55/2012 Pasal 7(3): tinggi maks 4.200 mm (umum)",
+    "rule_b": "THR_007 — UU 22/2009 Pasal 22: tinggi maks 3.500 mm (Kelas III)",
+    "conflict_type": "CONDITIONAL_OVERRIDE",
+    "possible_reason": "Bukan konflik nyata. UU 22/2009 Pasal 22 adalah lex specialis untuk Kelas III.",
+    "resolution": "APPLY_STRICTER_RULE_FOR_CLASS_III",
+    "notes": "Di Kelas III gunakan 3.500 mm; di kelas lain gunakan 4.200 mm."
+  },
+  {
+    "conflict_id": "CONF_002",
+    "rule_a": "THR_001 — PP 55/2012: lebar maks 2.500 mm (umum)",
+    "rule_b": "THR_002 — UU 22/2009 Pasal 22: lebar maks 2.100 mm (Kelas III)",
+    "conflict_type": "CONDITIONAL_OVERRIDE",
+    "possible_reason": "UU 22/2009 Pasal 22 adalah lex specialis untuk Kelas III.",
+    "resolution": "APPLY_STRICTER_RULE_FOR_CLASS_III",
+    "notes": "Di Kelas III gunakan 2.100 mm; di kelas lain gunakan 2.500 mm."
+  },
+  {
+    "conflict_id": "CONF_003",
+    "rule_a": "THR_018 — PM 18/2021 Pasal 5: toleransi 5% dari JBI di jembatan timbang",
+    "rule_b": "RULE_012 — UU 22/2009 Pasal 169: dilarang melebihi JBI",
+    "conflict_type": "APPARENT_CONFLICT",
+    "possible_reason": "Toleransi 5% adalah toleransi teknis alat ukur, bukan allowance hukum tambahan.",
+    "resolution": "REQUIRES_LEGAL_REVIEW",
+    "notes": "VETO HARUS menggunakan JBI sebagai batas keras. Toleransi 5% TIDAK boleh ditambahkan ke JBI. Perlu konfirmasi dari teks resmi PM 18/2021."
+  }
+]

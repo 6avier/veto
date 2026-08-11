@@ -1,0 +1,65 @@
+[
+  {
+    "sanction_id": "SAN_001",
+    "violation_type": "Muatan Lebih / Daya Angkut Melebihi JBI",
+    "sanction_type": "PIDANA",
+    "sanction_category": "DENDA",
+    "value": 500000,
+    "unit": "IDR",
+    "alternative": "Kurungan paling lama 2 bulan",
+    "applies_to": "Pengemudi dan/atau perusahaan angkutan umum barang",
+    "legal_basis": "UU 22/2009 Pasal 307",
+    "verification_required": false
+  },
+  {
+    "sanction_id": "SAN_002",
+    "violation_type": "Pelanggaran Dimensi (Ukuran Lebih)",
+    "sanction_type": "PIDANA",
+    "sanction_category": "DENDA",
+    "value": 500000,
+    "unit": "IDR",
+    "alternative": "Kurungan paling lama 2 bulan",
+    "applies_to": "Pengemudi dan/atau perusahaan angkutan umum barang",
+    "legal_basis": "UU 22/2009 Pasal 307",
+    "verification_required": false
+  },
+  {
+    "sanction_id": "SAN_003",
+    "violation_type": "Muatan Lebih — Tindakan Operasional",
+    "sanction_type": "ADMINISTRATIF",
+    "sanction_category": "NORMALISASI/PEMBONGKARAN",
+    "value": null,
+    "unit": null,
+    "alternative": null,
+    "applies_to": "Kendaraan yang tertimbang melebihi JBI di jembatan timbang",
+    "legal_basis": "PM 18/2021; PP 80/2012",
+    "notes": "Kendaraan wajib mengurangi muatan (normalisasi) di tempat",
+    "verification_required": false
+  },
+  {
+    "sanction_id": "SAN_004",
+    "violation_type": "Kendaraan Tidak Laik Jalan (Uji Berkala Kadaluarsa)",
+    "sanction_type": "ADMINISTRATIF",
+    "sanction_category": "PENAHANAN KENDARAAN",
+    "value": null,
+    "unit": null,
+    "alternative": null,
+    "applies_to": "Kendaraan tanpa sertifikat uji berkala yang valid",
+    "legal_basis": "UU 22/2009; PM 19/2021",
+    "notes": "Kendaraan dapat ditahan sampai uji berkala dilaksanakan",
+    "verification_required": false
+  },
+  {
+    "sanction_id": "SAN_005",
+    "violation_type": "Dimensi Lebih (Tanpa Izin Khusus)",
+    "sanction_type": "ADMINISTRATIF",
+    "sanction_category": "LARANGAN BEROPERASI",
+    "value": null,
+    "unit": null,
+    "alternative": null,
+    "applies_to": "Kendaraan dimensi melebihi standar tanpa izin angkutan khusus",
+    "legal_basis": "PM 60/2019; UU 22/2009",
+    "notes": "Kendaraan dimensi lebih tanpa izin tidak boleh beroperasi di jalan umum",
+    "verification_required": false
+  }
+]

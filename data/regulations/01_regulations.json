@@ -1,0 +1,944 @@
+[
+  {
+    "id": "UU_22_2009",
+    "type": "UU",
+    "number": "22",
+    "year": 2009,
+    "title": "Lalu Lintas dan Angkutan Jalan",
+    "issuer": "DPR RI / Presiden RI",
+    "issued_date": "2009-06-22",
+    "effective_date": "2009-06-22",
+    "status": "BERLAKU",
+    "subjects": [
+      "LLAJ",
+      "angkutan jalan",
+      "kendaraan bermotor",
+      "penindakan",
+      "JBI",
+      "MST",
+      "dimensi"
+    ],
+    "official_urls": [
+      "https://peraturan.bpk.go.id/Details/38946/uu-no-22-tahun-2009"
+    ],
+    "pdf_urls": [
+      "https://peraturan.bpk.go.id/Details/38946"
+    ],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [
+      "UU_14_1992"
+    ],
+    "revoked_by": [],
+    "related_regulations": [
+      "PP_55_2012",
+      "PP_74_2014",
+      "PP_79_2013",
+      "PP_80_2012",
+      "PP_30_2021"
+    ],
+    "notes": "UU induk LLAJ. Pasal 19–22 kelas jalan+MST, Pasal 169 larangan muatan lebih, Pasal 307 sanksi.",
+    "verification_required": false
+  },
+  {
+    "id": "UU_38_2004",
+    "type": "UU",
+    "number": "38",
+    "year": 2004,
+    "title": "Jalan",
+    "issuer": "DPR RI / Presiden RI",
+    "issued_date": "2004-10-18",
+    "effective_date": "2004-10-18",
+    "status": "DIUBAH",
+    "subjects": [
+      "jalan",
+      "kelas jalan",
+      "daya dukung jalan"
+    ],
+    "official_urls": [
+      "https://peraturan.bpk.go.id/Details/40712/uu-no-38-tahun-2004"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [
+      "UU_2_2022"
+    ],
+    "revokes": [
+      "UU_13_1980"
+    ],
+    "revoked_by": [],
+    "related_regulations": [
+      "PP_34_2006",
+      "PP_15_2005"
+    ],
+    "notes": "UU Jalan. Mendefinisikan kelas jalan dan daya dukung. Diubah oleh UU 2/2022.",
+    "verification_required": false
+  },
+  {
+    "id": "UU_2_2022",
+    "type": "UU",
+    "number": "2",
+    "year": 2022,
+    "title": "Perubahan Kedua atas Undang-Undang Nomor 38 Tahun 2004 tentang Jalan",
+    "issuer": "DPR RI / Presiden RI",
+    "issued_date": "2022-01-03",
+    "effective_date": "2022-01-03",
+    "status": "BERLAKU",
+    "subjects": [
+      "jalan",
+      "kelas jalan",
+      "daya dukung jalan",
+      "jalan tol"
+    ],
+    "official_urls": [
+      "https://peraturan.bpk.go.id/Details/227605/uu-no-2-tahun-2022"
+    ],
+    "pdf_urls": [],
+    "amends": [
+      "UU_38_2004"
+    ],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [
+      "UU_38_2004"
+    ],
+    "notes": "Perubahan kedua UU Jalan. Status UU 38/2004: DIUBAH.",
+    "verification_required": false
+  },
+  {
+    "id": "PP_55_2012",
+    "type": "PP",
+    "number": "55",
+    "year": 2012,
+    "title": "Kendaraan",
+    "issuer": "Presiden RI",
+    "issued_date": "2012-04-25",
+    "effective_date": "2012-04-25",
+    "status": "BERLAKU",
+    "subjects": [
+      "kendaraan bermotor",
+      "persyaratan teknis",
+      "dimensi kendaraan",
+      "JBI",
+      "JBB",
+      "JBKB",
+      "JBKI",
+      "MST",
+      "uji tipe",
+      "rancang bangun",
+      "modifikasi"
+    ],
+    "official_urls": [
+      "https://peraturan.bpk.go.id/Details/5307/pp-no-55-tahun-2012"
+    ],
+    "pdf_urls": [
+      "https://peraturan.bpk.go.id/Details/5307"
+    ],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [
+      "PP_44_1993"
+    ],
+    "revoked_by": [],
+    "related_regulations": [
+      "UU_22_2009",
+      "PP_74_2014",
+      "PERMENHUB_23_2021"
+    ],
+    "notes": "PP utama kendaraan bermotor. KRITIS — mendefinisikan JBI/MST/dimensi, lampiran berisi tabel JBI per konfigurasi sumbu.",
+    "verification_required": false
+  },
+  {
+    "id": "PP_74_2014",
+    "type": "PP",
+    "number": "74",
+    "year": 2014,
+    "title": "Angkutan Jalan",
+    "issuer": "Presiden RI",
+    "issued_date": "2014-09-15",
+    "effective_date": "2014-09-15",
+    "status": "BERLAKU",
+    "subjects": [
+      "angkutan jalan",
+      "angkutan barang",
+      "mobil barang",
+      "izin angkutan",
+      "muatan"
+    ],
+    "official_urls": [
+      "https://peraturan.bpk.go.id/Details/41098/pp-no-74-tahun-2014"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [
+      "PP_41_1993"
+    ],
+    "revoked_by": [],
+    "related_regulations": [
+      "UU_22_2009",
+      "PERMENHUB_60_2019",
+      "PERMENHUB_25_2021"
+    ],
+    "notes": "PP angkutan jalan. Perizinan dan ketentuan operasional angkutan barang.",
+    "verification_required": false
+  },
+  {
+    "id": "PP_79_2013",
+    "type": "PP",
+    "number": "79",
+    "year": 2013,
+    "title": "Jaringan Lalu Lintas dan Angkutan Jalan",
+    "issuer": "Presiden RI",
+    "issued_date": "2013-12-05",
+    "effective_date": "2013-12-05",
+    "status": "BERLAKU",
+    "subjects": [
+      "jaringan jalan",
+      "kelas jalan",
+      "daya dukung jalan",
+      "MST"
+    ],
+    "official_urls": [
+      "https://peraturan.bpk.go.id/Details/38736/pp-no-79-tahun-2013"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [
+      "UU_22_2009",
+      "UU_38_2004",
+      "PP_34_2006"
+    ],
+    "notes": "Jaringan jalan nasional dan kapasitas daya dukung.",
+    "verification_required": false
+  },
+  {
+    "id": "PP_80_2012",
+    "type": "PP",
+    "number": "80",
+    "year": 2012,
+    "title": "Tata Cara Pemeriksaan Kendaraan Bermotor di Jalan dan Penindakan Pelanggaran LLAJ",
+    "issuer": "Presiden RI",
+    "issued_date": "2012-05-30",
+    "effective_date": "2012-05-30",
+    "status": "BERLAKU",
+    "subjects": [
+      "pemeriksaan kendaraan",
+      "penindakan",
+      "jembatan timbang",
+      "penimbangan",
+      "pelanggaran LLAJ"
+    ],
+    "official_urls": [
+      "https://peraturan.bpk.go.id/Details/5308/pp-no-80-tahun-2012"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [
+      "UU_22_2009",
+      "PERMENHUB_18_2021"
+    ],
+    "notes": "Pemeriksaan kendaraan di jalan dan penindakan muatan lebih. Dasar hukum jembatan timbang.",
+    "verification_required": false
+  },
+  {
+    "id": "PP_30_2021",
+    "type": "PP",
+    "number": "30",
+    "year": 2021,
+    "title": "Penyelenggaraan Bidang Lalu Lintas dan Angkutan Jalan",
+    "issuer": "Presiden RI",
+    "issued_date": "2021-02-02",
+    "effective_date": "2021-02-02",
+    "status": "BERLAKU",
+    "subjects": [
+      "penyelenggaraan LLAJ",
+      "standar pelayanan",
+      "perizinan",
+      "kendaraan bermotor"
+    ],
+    "official_urls": [
+      "https://peraturan.bpk.go.id/Details/162840/pp-no-30-tahun-2021"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [
+      "UU_22_2009",
+      "PERMENHUB_25_2021"
+    ],
+    "notes": "PP terbaru penyelenggaraan LLAJ.",
+    "verification_required": false
+  },
+  {
+    "id": "PP_34_2006",
+    "type": "PP",
+    "number": "34",
+    "year": 2006,
+    "title": "Jalan",
+    "issuer": "Presiden RI",
+    "issued_date": "2006-10-26",
+    "effective_date": "2006-10-26",
+    "status": "BERLAKU",
+    "subjects": [
+      "kelas jalan",
+      "MST jalan",
+      "daya dukung jalan",
+      "jalan nasional",
+      "jalan kota"
+    ],
+    "official_urls": [
+      "https://peraturan.bpk.go.id/Details/65066/pp-no-34-tahun-2006"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [
+      "PP_26_1985"
+    ],
+    "revoked_by": [],
+    "related_regulations": [
+      "UU_38_2004",
+      "PP_79_2013"
+    ],
+    "notes": "Mendefinisikan kelas jalan I/II/III dan MST diizinkan per kelas. KRITIS untuk validasi rute.",
+    "verification_required": false
+  },
+  {
+    "id": "PP_15_2005",
+    "type": "PP",
+    "number": "15",
+    "year": 2005,
+    "title": "Jalan Tol",
+    "issuer": "Presiden RI",
+    "issued_date": "2005-01-28",
+    "effective_date": "2005-01-28",
+    "status": "DIUBAH",
+    "subjects": [
+      "jalan tol",
+      "kendaraan tol",
+      "pembatasan kendaraan tol"
+    ],
+    "official_urls": [
+      "https://peraturan.bpk.go.id/Details/64989/pp-no-15-tahun-2005"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [
+      "PP_44_2009"
+    ],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [
+      "UU_38_2004"
+    ],
+    "notes": "Kendaraan yang boleh masuk jalan tol, termasuk batas dimensi dan berat.",
+    "verification_required": false
+  },
+  {
+    "id": "PERMENHUB_60_2019",
+    "type": "PERMENHUB",
+    "number": "60",
+    "year": 2019,
+    "title": "Penyelenggaraan Angkutan Barang dengan Kendaraan Bermotor di Jalan",
+    "issuer": "Menteri Perhubungan",
+    "issued_date": "2019-08-01",
+    "effective_date": "2019-08-01",
+    "status": "BERLAKU",
+    "subjects": [
+      "angkutan barang",
+      "mobil barang",
+      "daya angkut",
+      "JBI",
+      "dimensi",
+      "muatan",
+      "kelas jalan",
+      "tata cara pemuatan"
+    ],
+    "official_urls": [
+      "https://jdih.kemenhub.go.id/regulasi/view/pm/60/2019",
+      "https://peraturan.bpk.go.id/Details/117424"
+    ],
+    "pdf_urls": [
+      "https://jdih.kemenhub.go.id/uploads/files/PM_2019_60.pdf"
+    ],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [
+      "PP_74_2014",
+      "PERMENHUB_18_2021"
+    ],
+    "notes": "Permenhub utama angkutan barang. Tata cara operasional, persyaratan kendaraan, daya angkut, rute. KRITIS.",
+    "verification_required": false
+  },
+  {
+    "id": "PERMENHUB_18_2021",
+    "type": "PERMENHUB",
+    "number": "18",
+    "year": 2021,
+    "title": "Pengawasan Muatan Angkutan Barang dan Penyelenggaraan Penimbangan Kendaraan Bermotor di Jalan",
+    "issuer": "Menteri Perhubungan",
+    "issued_date": "2021-03-01",
+    "effective_date": "2021-03-01",
+    "status": "BERLAKU",
+    "subjects": [
+      "pengawasan muatan",
+      "penimbangan",
+      "jembatan timbang",
+      "WIM",
+      "weigh in motion",
+      "muatan lebih",
+      "ODOL",
+      "berat sumbu",
+      "MST",
+      "normalisasi"
+    ],
+    "official_urls": [
+      "https://jdih.kemenhub.go.id/regulasi/view/pm/18/2021",
+      "https://peraturan.bpk.go.id/Details/165393"
+    ],
+    "pdf_urls": [
+      "https://jdih.kemenhub.go.id/uploads/files/PM_2021_18.pdf"
+    ],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [
+      "PERMENHUB_134_2015"
+    ],
+    "revoked_by": [],
+    "related_regulations": [
+      "UU_22_2009",
+      "PP_80_2012",
+      "PERMENHUB_60_2019"
+    ],
+    "notes": "KRITIS. MST per kelas jalan, prosedur penimbangan, WIM, toleransi 5%, penindakan (normalisasi).",
+    "verification_required": false
+  },
+  {
+    "id": "PERMENHUB_19_2021",
+    "type": "PERMENHUB",
+    "number": "19",
+    "year": 2021,
+    "title": "Pengujian Berkala Kendaraan Bermotor",
+    "issuer": "Menteri Perhubungan",
+    "issued_date": "2021-03-01",
+    "effective_date": "2021-03-01",
+    "status": "BERLAKU",
+    "subjects": [
+      "uji berkala",
+      "pengujian kendaraan",
+      "laik jalan",
+      "mobil barang",
+      "sertifikat uji berkala"
+    ],
+    "official_urls": [
+      "https://jdih.kemenhub.go.id/regulasi/view/pm/19/2021",
+      "https://peraturan.bpk.go.id/Details/165394"
+    ],
+    "pdf_urls": [
+      "https://jdih.kemenhub.go.id/uploads/files/PM_2021_19.pdf"
+    ],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [
+      "PERMENHUB_133_2015"
+    ],
+    "revoked_by": [],
+    "related_regulations": [
+      "PP_55_2012",
+      "PERMENHUB_23_2021"
+    ],
+    "notes": "Uji berkala kendaraan bermotor termasuk mobil barang — interval 6 bulan.",
+    "verification_required": false
+  },
+  {
+    "id": "PERMENHUB_23_2021",
+    "type": "PERMENHUB",
+    "number": "23",
+    "year": 2021,
+    "title": "Pengujian Tipe Kendaraan Bermotor",
+    "issuer": "Menteri Perhubungan",
+    "issued_date": "2021-03-01",
+    "effective_date": "2021-03-01",
+    "status": "BERLAKU",
+    "subjects": [
+      "uji tipe",
+      "rancang bangun",
+      "modifikasi kendaraan",
+      "type approval",
+      "persyaratan teknis"
+    ],
+    "official_urls": [
+      "https://jdih.kemenhub.go.id/regulasi/view/pm/23/2021",
+      "https://peraturan.bpk.go.id/Details/165395"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [
+      "PERMENHUB_33_2018"
+    ],
+    "revoked_by": [],
+    "related_regulations": [
+      "PP_55_2012",
+      "PERMENHUB_19_2021"
+    ],
+    "notes": "Uji tipe dan modifikasi. Perubahan dimensi/berat memerlukan sertifikat uji tipe baru.",
+    "verification_required": false
+  },
+  {
+    "id": "PERMENHUB_25_2021",
+    "type": "PERMENHUB",
+    "number": "25",
+    "year": 2021,
+    "title": "Penyelenggaraan Bidang Angkutan Jalan",
+    "issuer": "Menteri Perhubungan",
+    "issued_date": "2021-03-01",
+    "effective_date": "2021-03-01",
+    "status": "BERLAKU",
+    "subjects": [
+      "angkutan jalan",
+      "perizinan angkutan",
+      "angkutan barang",
+      "angkutan khusus"
+    ],
+    "official_urls": [
+      "https://jdih.kemenhub.go.id/regulasi/view/pm/25/2021"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [
+      "PP_30_2021",
+      "PP_74_2014"
+    ],
+    "notes": "Penyelenggaraan angkutan jalan termasuk perizinan angkutan barang.",
+    "verification_required": false
+  },
+  {
+    "id": "PERMENHUB_47_2021",
+    "type": "PERMENHUB",
+    "number": "47",
+    "year": 2021,
+    "title": "Alat Penimbangan Kendaraan Bermotor yang dapat Bergerak",
+    "issuer": "Menteri Perhubungan",
+    "issued_date": "2021-07-01",
+    "effective_date": "2021-07-01",
+    "status": "BERLAKU",
+    "subjects": [
+      "alat penimbangan",
+      "mobile weighing",
+      "penimbangan bergerak",
+      "WIM"
+    ],
+    "official_urls": [
+      "https://jdih.kemenhub.go.id/regulasi/view/pm/47/2021"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [
+      "PERMENHUB_18_2021"
+    ],
+    "notes": "Alat penimbangan bergerak (mobile weighing unit) untuk pengawasan muatan di lapangan.",
+    "verification_required": true
+  },
+  {
+    "id": "PERMENHUB_134_2015",
+    "type": "PERMENHUB",
+    "number": "134",
+    "year": 2015,
+    "title": "Penyelenggaraan Penimbangan Kendaraan Bermotor di Jalan",
+    "issuer": "Menteri Perhubungan",
+    "issued_date": "2015-12-01",
+    "effective_date": "2015-12-01",
+    "status": "DICABUT",
+    "subjects": [
+      "penimbangan",
+      "jembatan timbang",
+      "muatan lebih"
+    ],
+    "official_urls": [
+      "https://jdih.kemenhub.go.id/regulasi/view/pm/134/2015"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [
+      "PERMENHUB_18_2021"
+    ],
+    "related_regulations": [
+      "PERMENHUB_18_2021"
+    ],
+    "notes": "Dicabut oleh PM 18/2021.",
+    "verification_required": false
+  },
+  {
+    "id": "PERMENHUB_133_2015",
+    "type": "PERMENHUB",
+    "number": "133",
+    "year": 2015,
+    "title": "Pengujian Berkala Kendaraan Bermotor",
+    "issuer": "Menteri Perhubungan",
+    "issued_date": "2015-11-01",
+    "effective_date": "2015-11-01",
+    "status": "DICABUT",
+    "subjects": [
+      "uji berkala",
+      "pengujian kendaraan"
+    ],
+    "official_urls": [],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [
+      "PERMENHUB_19_2021"
+    ],
+    "related_regulations": [
+      "PERMENHUB_19_2021"
+    ],
+    "notes": "Dicabut oleh PM 19/2021.",
+    "verification_required": false
+  },
+  {
+    "id": "PERMENHUB_33_2018",
+    "type": "PERMENHUB",
+    "number": "33",
+    "year": 2018,
+    "title": "Pengujian Tipe Kendaraan Bermotor",
+    "issuer": "Menteri Perhubungan",
+    "issued_date": "2018-01-01",
+    "effective_date": "2018-01-01",
+    "status": "DICABUT",
+    "subjects": [
+      "uji tipe",
+      "rancang bangun"
+    ],
+    "official_urls": [],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [
+      "PERMENHUB_23_2021"
+    ],
+    "related_regulations": [
+      "PERMENHUB_23_2021"
+    ],
+    "notes": "Dicabut oleh PM 23/2021.",
+    "verification_required": false
+  },
+  {
+    "id": "PERMENHUB_1_2015",
+    "type": "PERMENHUB",
+    "number": "1",
+    "year": 2015,
+    "title": "Angkutan Barang Berbahaya",
+    "issuer": "Menteri Perhubungan",
+    "issued_date": "2015-01-01",
+    "effective_date": "2015-01-01",
+    "status": "UNKNOWN",
+    "subjects": [
+      "barang berbahaya",
+      "angkutan khusus",
+      "B3",
+      "hazmat"
+    ],
+    "official_urls": [
+      "https://jdih.kemenhub.go.id/"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [
+      "PP_74_2014"
+    ],
+    "notes": "Angkutan barang berbahaya. Status terkini perlu verifikasi.",
+    "verification_required": true
+  },
+  {
+    "id": "SE_MENHUB_21_2019",
+    "type": "SE_MENHUB",
+    "number": "21",
+    "year": 2019,
+    "title": "Pengawasan Terhadap Mobil Barang atas Pelanggaran Muatan Lebih dan/atau Pelanggaran Ukuran Lebih",
+    "issuer": "Menteri Perhubungan",
+    "issued_date": "2019-01-01",
+    "effective_date": "2019-01-01",
+    "status": "BERLAKU",
+    "subjects": [
+      "muatan lebih",
+      "ukuran lebih",
+      "ODOL",
+      "pengawasan",
+      "mobil barang",
+      "penindakan"
+    ],
+    "official_urls": [
+      "https://jdih.kemenhub.go.id/regulasi/view/se/21/2019"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [
+      "PERMENHUB_60_2019",
+      "PERMENHUB_18_2021"
+    ],
+    "notes": "Surat edaran khusus ODOL. Dasar operasional program Zero ODOL.",
+    "verification_required": false
+  },
+  {
+    "id": "SE_DJPD_2023_ODOL",
+    "type": "SE_DIRJEN",
+    "number": "UNKNOWN",
+    "year": 2023,
+    "title": "Surat Edaran Dirjen Perhubungan Darat tentang ODOL / Normalisasi Kendaraan",
+    "issuer": "Direktur Jenderal Perhubungan Darat",
+    "issued_date": "2023-01-01",
+    "effective_date": "2023-01-01",
+    "status": "UNKNOWN",
+    "subjects": [
+      "ODOL",
+      "normalisasi kendaraan",
+      "zero ODOL",
+      "penindakan"
+    ],
+    "official_urls": [
+      "https://jdih.kemenhub.go.id/"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [
+      "SE_MENHUB_21_2019"
+    ],
+    "notes": "Nomor perlu dikonfirmasi dari JDIH Kemenhub.",
+    "verification_required": true
+  },
+  {
+    "id": "PERDIRJEN_PD_004_2022",
+    "type": "PERDIRJEN",
+    "number": "SK.4234/AJ.309/DRJD/2022",
+    "year": 2022,
+    "title": "Petunjuk Teknis Penyelenggaraan Penimbangan Kendaraan Bermotor dengan Alat Penimbangan yang dapat Bergerak",
+    "issuer": "Direktur Jenderal Perhubungan Darat",
+    "issued_date": "2022-01-01",
+    "effective_date": "2022-01-01",
+    "status": "BERLAKU",
+    "subjects": [
+      "WIM",
+      "weigh in motion",
+      "penimbangan bergerak",
+      "alat penimbangan"
+    ],
+    "official_urls": [
+      "https://jdih.kemenhub.go.id/"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [
+      "PERMENHUB_18_2021",
+      "PERMENHUB_47_2021"
+    ],
+    "notes": "Petunjuk teknis WIM. Nomor surat perlu verifikasi.",
+    "verification_required": true
+  },
+  {
+    "id": "KEPMENHUB_52_2004",
+    "type": "KEPMENHUB",
+    "number": "KM_52",
+    "year": 2004,
+    "title": "Penyelenggaraan Angkutan Barang Berbahaya",
+    "issuer": "Menteri Perhubungan",
+    "issued_date": "2004-01-01",
+    "effective_date": "2004-01-01",
+    "status": "UNKNOWN",
+    "subjects": [
+      "barang berbahaya",
+      "B3",
+      "angkutan khusus"
+    ],
+    "official_urls": [],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [
+      "PP_74_2014"
+    ],
+    "notes": "Status terkini perlu verifikasi — mungkin sudah digantikan.",
+    "verification_required": true
+  },
+  {
+    "id": "PERMENHUB_2024_ODOL",
+    "type": "PERMENHUB",
+    "number": "UNKNOWN",
+    "year": 2024,
+    "title": "Permenhub terkait ODOL / Zero ODOL 2027 (2024)",
+    "issuer": "Menteri Perhubungan",
+    "issued_date": "2024-01-01",
+    "effective_date": "2024-01-01",
+    "status": "UNKNOWN",
+    "subjects": [
+      "ODOL",
+      "Zero ODOL 2027",
+      "normalisasi kendaraan"
+    ],
+    "official_urls": [
+      "https://jdih.kemenhub.go.id/"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [],
+    "notes": "Regulasi 2024 terkait Zero ODOL. Nomor spesifik perlu dikonfirmasi dari JDIH.",
+    "verification_required": true
+  },
+  {
+    "id": "INPRES_ODOL_2024",
+    "type": "INPRES",
+    "number": "UNKNOWN",
+    "year": 2024,
+    "title": "Instruksi Presiden terkait Program ODOL / Kendaraan Tua",
+    "issuer": "Presiden RI",
+    "issued_date": "2024-01-01",
+    "effective_date": "2024-01-01",
+    "status": "UNKNOWN",
+    "subjects": [
+      "kendaraan tua",
+      "ODOL",
+      "normalisasi",
+      "Zero ODOL 2027"
+    ],
+    "official_urls": [
+      "https://peraturan.go.id/"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [],
+    "notes": "Perlu verifikasi nomor dan status.",
+    "verification_required": true
+  },
+  {
+    "id": "PERGUB_DKI_117_2017",
+    "type": "PERGUB",
+    "number": "117",
+    "year": 2017,
+    "title": "Pembatasan Lalu Lintas Kendaraan Angkutan Barang di DKI Jakarta",
+    "issuer": "Gubernur DKI Jakarta",
+    "issued_date": "2017-01-01",
+    "effective_date": "2017-01-01",
+    "status": "DIUBAH",
+    "subjects": [
+      "pembatasan kendaraan",
+      "angkutan barang",
+      "DKI Jakarta",
+      "jam operasional"
+    ],
+    "official_urls": [
+      "https://jdih.jakarta.go.id/"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [
+      "PERGUB_DKI_83_2020"
+    ],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [],
+    "notes": "Pembatasan jam operasional truk besar di Jakarta.",
+    "verification_required": true
+  },
+  {
+    "id": "PERGUB_DKI_83_2020",
+    "type": "PERGUB",
+    "number": "83",
+    "year": 2020,
+    "title": "Perubahan Pergub 117/2017 tentang Pembatasan Lalu Lintas Kendaraan Angkutan Barang",
+    "issuer": "Gubernur DKI Jakarta",
+    "issued_date": "2020-01-01",
+    "effective_date": "2020-01-01",
+    "status": "BERLAKU",
+    "subjects": [
+      "pembatasan kendaraan",
+      "angkutan barang",
+      "DKI Jakarta",
+      "jam operasional"
+    ],
+    "official_urls": [
+      "https://jdih.jakarta.go.id/"
+    ],
+    "pdf_urls": [],
+    "amends": [
+      "PERGUB_DKI_117_2017"
+    ],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [
+      "PERGUB_DKI_117_2017"
+    ],
+    "notes": "Perubahan pergub pembatasan angkutan barang DKI.",
+    "verification_required": true
+  },
+  {
+    "id": "PERDA_DKI_5_2014",
+    "type": "PERDA",
+    "number": "5",
+    "year": 2014,
+    "title": "Transportasi",
+    "issuer": "Pemerintah DKI Jakarta",
+    "issued_date": "2014-01-01",
+    "effective_date": "2014-01-01",
+    "status": "BERLAKU",
+    "subjects": [
+      "transportasi",
+      "angkutan jalan",
+      "DKI Jakarta",
+      "pembatasan kendaraan"
+    ],
+    "official_urls": [
+      "https://jdih.jakarta.go.id/"
+    ],
+    "pdf_urls": [],
+    "amends": [],
+    "amended_by": [],
+    "revokes": [],
+    "revoked_by": [],
+    "related_regulations": [],
+    "notes": "Perda transportasi DKI Jakarta.",
+    "verification_required": true
+  }
+]

@@ -1,0 +1,229 @@
+[
+  {
+    "id": "LOCAL_DKI_001",
+    "type": "PERGUB",
+    "number": "117",
+    "year": 2017,
+    "province": "DKI Jakarta",
+    "city": null,
+    "title": "Pembatasan Lalu Lintas Kendaraan Angkutan Barang di DKI Jakarta",
+    "issuer": "Gubernur DKI Jakarta",
+    "status": "DIUBAH",
+    "amended_by": "Pergub DKI No. 83/2020",
+    "key_provisions": [
+      "Kendaraan angkutan barang JBI > 8 ton dilarang pada jam tertentu di ruas tertentu"
+    ],
+    "official_urls": [
+      "https://jdih.jakarta.go.id/"
+    ],
+    "verification_required": true
+  },
+  {
+    "id": "LOCAL_DKI_002",
+    "type": "PERGUB",
+    "number": "83",
+    "year": 2020,
+    "province": "DKI Jakarta",
+    "city": null,
+    "title": "Perubahan Pergub 117/2017 tentang Pembatasan Lalu Lintas Kendaraan Angkutan Barang",
+    "issuer": "Gubernur DKI Jakarta",
+    "status": "BERLAKU",
+    "amended_by": null,
+    "key_provisions": [
+      "Memperbarui jam dan ruas jalan yang dilarang untuk kendaraan angkutan barang"
+    ],
+    "official_urls": [
+      "https://jdih.jakarta.go.id/"
+    ],
+    "verification_required": true
+  },
+  {
+    "id": "LOCAL_DKI_003",
+    "type": "PERDA",
+    "number": "5",
+    "year": 2014,
+    "province": "DKI Jakarta",
+    "city": null,
+    "title": "Transportasi",
+    "issuer": "Pemerintah DKI Jakarta",
+    "status": "BERLAKU",
+    "amended_by": null,
+    "key_provisions": [
+      "Perda transportasi DKI Jakarta termasuk angkutan barang"
+    ],
+    "official_urls": [
+      "https://jdih.jakarta.go.id/"
+    ],
+    "verification_required": true
+  },
+  {
+    "id": "LOCAL_JATIM_001",
+    "type": "PERGUB",
+    "number": "UNKNOWN",
+    "year": 2019,
+    "province": "Jawa Timur",
+    "city": null,
+    "title": "Pembatasan Kendaraan Angkutan Barang di Jawa Timur",
+    "issuer": "Gubernur Jawa Timur",
+    "status": "UNKNOWN",
+    "amended_by": null,
+    "key_provisions": [],
+    "official_urls": [
+      "https://jdih.jatimprov.go.id/"
+    ],
+    "verification_required": true
+  },
+  {
+    "id": "LOCAL_JABAR_001",
+    "type": "PERGUB",
+    "number": "UNKNOWN",
+    "year": 2019,
+    "province": "Jawa Barat",
+    "city": null,
+    "title": "Pembatasan Kendaraan Angkutan Barang di Jawa Barat",
+    "issuer": "Gubernur Jawa Barat",
+    "status": "UNKNOWN",
+    "amended_by": null,
+    "key_provisions": [],
+    "official_urls": [
+      "https://jdih.jabarprov.go.id/"
+    ],
+    "verification_required": true
+  },
+  {
+    "id": "LOCAL_BANTEN_001",
+    "type": "PERGUB",
+    "number": "UNKNOWN",
+    "year": 2019,
+    "province": "Banten",
+    "city": null,
+    "title": "Pembatasan Kendaraan Angkutan Barang di Banten",
+    "issuer": "Gubernur Banten",
+    "status": "UNKNOWN",
+    "amended_by": null,
+    "key_provisions": [],
+    "official_urls": [
+      "https://jdih.bantenprov.go.id/"
+    ],
+    "verification_required": true
+  },
+  {
+    "id": "LOCAL_SUMUT_001",
+    "type": "PERGUB",
+    "number": "UNKNOWN",
+    "year": 2020,
+    "province": "Sumatera Utara",
+    "city": null,
+    "title": "Pembatasan Kendaraan Angkutan Barang di Sumatera Utara",
+    "issuer": "Gubernur Sumatera Utara",
+    "status": "UNKNOWN",
+    "amended_by": null,
+    "key_provisions": [],
+    "official_urls": [
+      "https://jdih.sumutprov.go.id/"
+    ],
+    "verification_required": true
+  },
+  {
+    "id": "LOCAL_KALTIM_001",
+    "type": "PERGUB",
+    "number": "UNKNOWN",
+    "year": 2019,
+    "province": "Kalimantan Timur",
+    "city": null,
+    "title": "Pembatasan Kendaraan Angkutan/Tambang di Kalimantan Timur",
+    "issuer": "Gubernur Kalimantan Timur",
+    "status": "UNKNOWN",
+    "amended_by": null,
+    "key_provisions": [],
+    "official_urls": [
+      "https://jdih.kaltimprov.go.id/"
+    ],
+    "verification_required": true
+  },
+  {
+    "id": "LOCAL_SULSEL_001",
+    "type": "PERGUB",
+    "number": "UNKNOWN",
+    "year": 2020,
+    "province": "Sulawesi Selatan",
+    "city": null,
+    "title": "Pembatasan Kendaraan Angkutan Barang di Sulawesi Selatan",
+    "issuer": "Gubernur Sulawesi Selatan",
+    "status": "UNKNOWN",
+    "amended_by": null,
+    "key_provisions": [],
+    "official_urls": [
+      "https://jdih.sulselprov.go.id/"
+    ],
+    "verification_required": true
+  },
+  {
+    "id": "LOCAL_LAMPUNG_001",
+    "type": "PERGUB",
+    "number": "UNKNOWN",
+    "year": 2020,
+    "province": "Lampung",
+    "city": null,
+    "title": "Pembatasan Kendaraan Angkutan Barang di Lampung",
+    "issuer": "Gubernur Lampung",
+    "status": "UNKNOWN",
+    "amended_by": null,
+    "key_provisions": [],
+    "official_urls": [
+      "https://jdih.lampungprov.go.id/"
+    ],
+    "verification_required": true
+  },
+  {
+    "id": "LOCAL_SUMSEL_001",
+    "type": "PERGUB",
+    "number": "UNKNOWN",
+    "year": 2020,
+    "province": "Sumatera Selatan",
+    "city": null,
+    "title": "Pembatasan Kendaraan Angkutan Barang di Sumatera Selatan",
+    "issuer": "Gubernur Sumatera Selatan",
+    "status": "UNKNOWN",
+    "amended_by": null,
+    "key_provisions": [],
+    "official_urls": [
+      "https://jdih.sumselprov.go.id/"
+    ],
+    "verification_required": true
+  },
+  {
+    "id": "LOCAL_RIAU_001",
+    "type": "PERGUB",
+    "number": "UNKNOWN",
+    "year": 2020,
+    "province": "Riau",
+    "city": null,
+    "title": "Pembatasan Kendaraan Angkutan Barang di Riau",
+    "issuer": "Gubernur Riau",
+    "status": "UNKNOWN",
+    "amended_by": null,
+    "key_provisions": [],
+    "official_urls": [
+      "https://jdih.riauprovinsi.go.id/"
+    ],
+    "verification_required": true
+  },
+  {
+    "id": "LOCAL_JATENG_001",
+    "type": "PERGUB",
+    "number": "UNKNOWN",
+    "year": 2019,
+    "province": "Jawa Tengah",
+    "city": null,
+    "title": "Pembatasan Kendaraan Angkutan Barang di Jawa Tengah",
+    "issuer": "Gubernur Jawa Tengah",
+    "status": "UNKNOWN",
+    "amended_by": null,
+    "key_provisions": [],
+    "official_urls": [
+      "https://jdih.jatengprov.go.id/"
+    ],
+    "verification_required": true
+  }
+]

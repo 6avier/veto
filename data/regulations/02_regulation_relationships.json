@@ -1,0 +1,116 @@
+[
+  {
+    "from": "UU_22_2009",
+    "relationship": "IMPLEMENTS",
+    "to": "PP_55_2012",
+    "description": "PP 55/2012 peraturan pelaksana UU 22/2009 tentang kendaraan"
+  },
+  {
+    "from": "UU_22_2009",
+    "relationship": "IMPLEMENTS",
+    "to": "PP_74_2014",
+    "description": "PP 74/2014 peraturan pelaksana UU 22/2009 tentang angkutan jalan"
+  },
+  {
+    "from": "UU_22_2009",
+    "relationship": "IMPLEMENTS",
+    "to": "PP_79_2013",
+    "description": "PP 79/2013 peraturan pelaksana UU 22/2009 tentang jaringan LLAJ"
+  },
+  {
+    "from": "UU_22_2009",
+    "relationship": "IMPLEMENTS",
+    "to": "PP_80_2012",
+    "description": "PP 80/2012 peraturan pelaksana UU 22/2009 tentang pemeriksaan kendaraan"
+  },
+  {
+    "from": "UU_22_2009",
+    "relationship": "IMPLEMENTS",
+    "to": "PP_30_2021",
+    "description": "PP 30/2021 peraturan pelaksana UU 22/2009"
+  },
+  {
+    "from": "UU_38_2004",
+    "relationship": "IMPLEMENTS",
+    "to": "PP_34_2006",
+    "description": "PP 34/2006 peraturan pelaksana UU 38/2004 tentang jalan"
+  },
+  {
+    "from": "UU_2_2022",
+    "relationship": "AMENDS",
+    "to": "UU_38_2004",
+    "description": "UU 2/2022 mengubah UU 38/2004"
+  },
+  {
+    "from": "PP_74_2014",
+    "relationship": "IMPLEMENTS",
+    "to": "PERMENHUB_60_2019",
+    "description": "PM 60/2019 mengatur detail pelaksanaan PP 74/2014"
+  },
+  {
+    "from": "PP_55_2012",
+    "relationship": "IMPLEMENTS",
+    "to": "PERMENHUB_23_2021",
+    "description": "PM 23/2021 mengatur uji tipe sesuai amanat PP 55/2012"
+  },
+  {
+    "from": "PP_80_2012",
+    "relationship": "IMPLEMENTS",
+    "to": "PERMENHUB_18_2021",
+    "description": "PM 18/2021 mengatur penimbangan sesuai amanat PP 80/2012"
+  },
+  {
+    "from": "PP_55_2012",
+    "relationship": "IMPLEMENTS",
+    "to": "PERMENHUB_19_2021",
+    "description": "PM 19/2021 mengatur uji berkala sesuai amanat PP 55/2012"
+  },
+  {
+    "from": "PP_30_2021",
+    "relationship": "IMPLEMENTS",
+    "to": "PERMENHUB_25_2021",
+    "description": "PM 25/2021 mengatur penyelenggaraan angkutan jalan berdasarkan PP 30/2021"
+  },
+  {
+    "from": "PERMENHUB_18_2021",
+    "relationship": "IMPLEMENTS",
+    "to": "PERDIRJEN_PD_004_2022",
+    "description": "Perdirjen 2022 mengatur teknis WIM berdasarkan PM 18/2021"
+  },
+  {
+    "from": "PERMENHUB_18_2021",
+    "relationship": "REVOKES",
+    "to": "PERMENHUB_134_2015",
+    "description": "PM 18/2021 mencabut PM 134/2015"
+  },
+  {
+    "from": "PERMENHUB_19_2021",
+    "relationship": "REVOKES",
+    "to": "PERMENHUB_133_2015",
+    "description": "PM 19/2021 mencabut PM 133/2015"
+  },
+  {
+    "from": "PERMENHUB_23_2021",
+    "relationship": "REVOKES",
+    "to": "PERMENHUB_33_2018",
+    "description": "PM 23/2021 mencabut PM 33/2018"
+  },
+  {
+    "from": "UU_22_2009",
+    "relationship": "REVOKES",
+    "to": "UU_14_1992",
+    "description": "UU 22/2009 mencabut UU 14/1992"
+  },
+  {
+    "from": "PERGUB_DKI_83_2020",
+    "relationship": "AMENDS",
+    "to": "PERGUB_DKI_117_2017",
+    "description": "Pergub DKI 83/2020 mengubah Pergub DKI 117/2017"
+  },
+  {
+    "from": "SE_MENHUB_21_2019",
+    "relationship": "IMPLEMENTS",
+    "to": "PERMENHUB_60_2019",
+    "description": "SE 21/2019 menguatkan enforcement PM 60/2019 terkait ODOL"
+  }
+]

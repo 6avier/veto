@@ -1,0 +1,51 @@
+[
+  {
+    "source_id": "SRC_001",
+    "name": "JDIH BPK",
+    "url": "https://peraturan.bpk.go.id/",
+    "type": "PRIMARY",
+    "coverage": "UU, PP, Perpres, Permen"
+  },
+  {
+    "source_id": "SRC_002",
+    "name": "JDIH Kemenhub",
+    "url": "https://jdih.kemenhub.go.id/",
+    "type": "PRIMARY",
+    "coverage": "Permenhub, Kepmenhub, SE Menhub, Perdirjen"
+  },
+  {
+    "source_id": "SRC_003",
+    "name": "peraturan.go.id",
+    "url": "https://peraturan.go.id/",
+    "type": "PRIMARY",
+    "coverage": "UU, PP, Perpres"
+  },
+  {
+    "source_id": "SRC_004",
+    "name": "JDIH DKI Jakarta",
+    "url": "https://jdih.jakarta.go.id/",
+    "type": "PRIMARY",
+    "coverage": "Perda, Pergub DKI Jakarta"
+  },
+  {
+    "source_id": "SRC_005",
+    "name": "JDIH Jawa Timur",
+    "url": "https://jdih.jatimprov.go.id/",
+    "type": "PRIMARY",
+    "coverage": "Perda, Pergub Jawa Timur"
+  },
+  {
+    "source_id": "SRC_006",
+    "name": "JDIH Jawa Barat",
+    "url": "https://jdih.jabarprov.go.id/",
+    "type": "PRIMARY",
+    "coverage": "Perda, Pergub Jawa Barat"
+  },
+  {
+    "source_id": "SRC_007",
+    "name": "JDIH Kemenkumham",
+    "url": "https://jdih.kemenkumham.go.id/",
+    "type": "PRIMARY",
+    "coverage": "UU, PP"
+  }
+]

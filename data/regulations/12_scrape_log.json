@@ -1,0 +1,72 @@
+[
+  {
+    "timestamp": "2026-08-11T16:12:57.056809",
+    "level": "INFO",
+    "message": "=== VETO Regulatory Corpus Builder — START ==="
+  },
+  {
+    "timestamp": "2026-08-11T16:12:57.060772",
+    "level": "INFO",
+    "message": "Saved 01_regulations.json — 29 records"
+  },
+  {
+    "timestamp": "2026-08-11T16:12:57.063919",
+    "level": "INFO",
+    "message": "Saved 02_regulation_relationships.json — 19 records"
+  },
+  {
+    "timestamp": "2026-08-11T16:12:57.065928",
+    "level": "INFO",
+    "message": "Saved 03_articles.json — 16 records"
+  },
+  {
+    "timestamp": "2026-08-11T16:12:57.067834",
+    "level": "INFO",
+    "message": "Saved 04_rules.json — 13 records"
+  },
+  {
+    "timestamp": "2026-08-11T16:12:57.070362",
+    "level": "INFO",
+    "message": "Saved 05_numeric_thresholds.json — 18 records"
+  },
+  {
+    "timestamp": "2026-08-11T16:12:57.071259",
+    "level": "INFO",
+    "message": "Saved 06_vehicle_rules.json — 3 records"
+  },
+  {
+    "timestamp": "2026-08-11T16:12:57.071259",
+    "level": "INFO",
+    "message": "Saved 07_cargo_rules.json — 3 records"
+  },
+  {
+    "timestamp": "2026-08-11T16:12:57.073273",
+    "level": "INFO",
+    "message": "Saved 08_road_rules.json — 5 records"
+  },
+  {
+    "timestamp": "2026-08-11T16:12:57.073273",
+    "level": "INFO",
+    "message": "Saved 09_violation_sanctions.json — 5 records"
+  },
+  {
+    "timestamp": "2026-08-11T16:12:57.075424",
+    "level": "INFO",
+    "message": "Saved 10_sources.json — 7 records"
+  },
+  {
+    "timestamp": "2026-08-11T16:12:57.075424",
+    "level": "INFO",
+    "message": "Saved 11_local_regulations.json — 13 records"
+  },
+  {
+    "timestamp": "2026-08-11T16:12:57.075424",
+    "level": "INFO",
+    "message": "Saved conflicts.json — 3 records"
+  },
+  {
+    "timestamp": "2026-08-11T16:12:57.075424",
+    "level": "INFO",
+    "message": "Pipeline complete"
+  }
+]
