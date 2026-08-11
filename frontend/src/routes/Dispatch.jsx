@@ -2,17 +2,18 @@ import { useState } from 'react'
 
 import { ApiError, validateDispatch } from '@/api'
 import DispatchForm from '@/components/dispatch/DispatchForm'
-import { axleCountFor, formatNumber } from '@/lib/format'
+import VerdictPanel from '@/components/dispatch/VerdictPanel'
+import ViolationDialog from '@/components/dispatch/ViolationDialog'
+import { axleCountFor } from '@/lib/format'
 
 /**
  * /dispatch — the client's dispatch screen, with VETO intervening inline.
  *
- * PRODUCT.md F2. The gate is real: "Cetak Surat Jalan" stays locked until the
- * engine returns PASS, and editing any figure re-locks it, because a verdict
- * about numbers that have since changed is not a verdict.
- *
- * The verdict panel is deliberately minimal here. F2 of the plan makes it the
- * moment that lands.
+ * PRODUCT.md F2. A HOLD announces itself in a dialog, then settles into the
+ * side panel while each violation stays pinned under the field that caused it.
+ * The gate is real: Cetak Surat Jalan stays locked until the engine returns
+ * PASS, and editing any figure re-locks it, because a verdict about numbers
+ * that have since changed is not a verdict.
  */
 
 const DEFAULTS = {
@@ -24,6 +25,26 @@ const DEFAULTS = {
   length: '12000',
   width: '2500',
   height: '4100',
+}
+
+/** Which form field each violation belongs under. PRODUCT.md F2. */
+const FIELD_FOR_DIMENSION = {
+  GROSS_WEIGHT: 'grossWeight',
+  DIMENSION_LENGTH: 'length',
+  DIMENSION_WIDTH: 'width',
+  DIMENSION_HEIGHT: 'height',
+}
+
+function violationsByField(decision) {
+  if (decision?.outcome !== 'HOLD') return {}
+  return decision.violations.reduce((map, violation) => {
+    const key =
+      violation.dimension === 'AXLE_LOAD'
+        ? `axle${violation.axle_index}`
+        : FIELD_FOR_DIMENSION[violation.dimension]
+    if (key) map[key] = violation
+    return map
+  }, {})
 }
 
 function validate(form) {
@@ -70,8 +91,10 @@ export default function Dispatch() {
   const [error, setError] = useState(null)
   const [errors, setErrors] = useState({})
   const [pending, setPending] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   const passed = decision?.outcome === 'PASS'
+  const fieldViolations = violationsByField(decision)
 
   // Editing invalidates the verdict. Otherwise the gate could be opened by a
   // PASS for figures that are no longer on screen.
@@ -91,7 +114,9 @@ export default function Dispatch() {
     setError(null)
     setDecision(null)
     try {
-      setDecision(await validateDispatch(toPayload(form)))
+      const result = await validateDispatch(toPayload(form))
+      setDecision(result)
+      if (result.outcome === 'HOLD') setDialogOpen(true)
     } catch (caught) {
       setError(caught instanceof ApiError ? caught : ApiError.from(caught))
     } finally {
@@ -137,78 +162,25 @@ export default function Dispatch() {
           onSubmit={handleSubmit}
           pending={pending}
           errors={errors}
+          violations={fieldViolations}
         />
 
-        <VerdictPanel decision={decision} error={error} pending={pending} />
+        <VerdictPanel
+          decision={decision}
+          error={error}
+          pending={pending}
+          settled={Boolean(decision) && !dialogOpen}
+        />
       </div>
 
       <p className="mt-4 max-w-[65ch] text-label text-[#6b757f]">
         VETO memeriksa angka yang dideklarasikan pada surat jalan, bukan hasil timbangan.
         Data masukan yang keliru tetap dapat lolos.
       </p>
+
+      {dialogOpen && (
+        <ViolationDialog decision={decision} onClose={() => setDialogOpen(false)} />
+      )}
     </div>
-  )
-}
-
-/**
- * VETO speaking inside someone else's software. It does not adopt the ERP's
- * styling: the graphite ground is how you can tell the two systems apart.
- */
-function VerdictPanel({ decision, error, pending }) {
-  return (
-    <aside className="bg-ink-900 text-ink-100 lg:sticky lg:top-4">
-      <div className="flex items-center gap-2 border-b border-ink-800 px-4 py-2">
-        <span className="font-mono text-mono-xs tracking-[0.14em] text-ink-400">VETO</span>
-        {pending && <span className="font-mono text-mono-xs text-ink-300">memeriksa…</span>}
-      </div>
-
-      <div className="px-4 py-4">
-        {!decision && !error && !pending && (
-          <p className="text-label text-ink-400">
-            Belum ada pemeriksaan. Isi data muatan lalu jalankan validasi.
-          </p>
-        )}
-
-        {error && (
-          <div>
-            <p className="font-mono text-mono-xs text-hold">{error.code}</p>
-            <p className="mt-1 text-body on-dark text-ink-100">{error.message}</p>
-          </div>
-        )}
-
-        {decision && (
-          <div>
-            <p
-              className={[
-                'text-display on-dark',
-                decision.outcome === 'HOLD' ? 'text-hold' : 'text-ink-100',
-              ].join(' ')}
-            >
-              {decision.outcome === 'HOLD' ? 'TAHAN' : 'LOLOS'}
-            </p>
-            <p className="mt-1 font-mono text-mono-xs text-ink-400">
-              {decision.dispatch_ref} · {formatNumber(decision.latency_ms)} ms
-            </p>
-
-            <ul className="mt-4 space-y-3">
-              {decision.violations.map((violation, index) => (
-                <li key={index} className="border-l-2 border-hold pl-3">
-                  <p className="text-body on-dark text-ink-100">{violation.directive}</p>
-                  <p className="mt-1 tnum text-data on-dark text-ink-300">
-                    {formatNumber(violation.actual_value)} / batas{' '}
-                    {formatNumber(violation.limit_value)} {violation.unit}
-                  </p>
-                  <p className="mt-0.5 font-mono text-mono-xs text-ink-400">
-                    {violation.rule_origin === 'CLIENT'
-                      ? `[ SOP KLIEN ] ${violation.legal_citation}`
-                      : violation.legal_citation}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    </aside>
   )
 }

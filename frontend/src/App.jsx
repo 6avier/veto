@@ -12,6 +12,10 @@ import { USE_MOCKS } from '@/api'
 
 const VETO_PATHS = ['/rule-studio', '/audit']
 
+// The shell switches products and does nothing else. Who is signed in belongs
+// to the system they are signed into, so the operator's name lives in the ERP
+// chrome. DESIGN.md §1.
+
 export default function App() {
   const { pathname } = useLocation()
   const inVeto = VETO_PATHS.some((path) => pathname.startsWith(path))
@@ -28,13 +32,9 @@ export default function App() {
           </SystemTab>
         </div>
 
-        <p className="ml-auto font-mono text-mono-xs text-ink-400">
-          {inVeto ? 'Sari · Compliance' : 'Budi · Gudang Cikarang'}
-        </p>
-
         {USE_MOCKS && (
           <span
-            className="rounded-veto border border-ink-700 px-1.5 py-0.5 font-mono text-mono-xs text-ink-400"
+            className="ml-auto rounded-veto border border-ink-700 px-1.5 py-0.5 font-mono text-mono-xs text-ink-400"
             title="Berjalan dengan data contoh, tanpa backend"
           >
             MOCKS

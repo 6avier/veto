@@ -27,6 +27,9 @@ export default function ErpLayout() {
           <span className="ml-auto font-mono text-mono-xs text-[#6b757f]">
             GUDANG CIKARANG 01
           </span>
+          <span className="text-[#c9ced4]">|</span>
+          <span className="text-label text-[#4a545e]">Budi Santoso</span>
+          <span className="font-mono text-mono-xs text-[#6b757f]">PETUGAS GUDANG</span>
         </div>
         <nav className="flex gap-0 px-2">
           {TABS.map((tab) => (

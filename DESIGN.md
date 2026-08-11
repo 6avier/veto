@@ -26,7 +26,7 @@ VETO is middleware. The design has to make that legible, so the app is two produ
 
 ```
 ┌────────────────────────────────────────────────┐
-│  [ Client ERP ] [ VETO ]        Budi · Cikarang│  ← shell, always present
+│  [ Client ERP ] [ VETO ]                       │  ← shell: switching only
 ├────────────────────────────────────────────────┤
 │                                                │
 │   Client ERP              VETO                 │
@@ -39,7 +39,11 @@ VETO is middleware. The design has to make that legible, so the app is two produ
 
 **VETO is the instrument.** When VETO speaks inside the ERP — the verdict panel — it does not adopt the ERP's styling. It arrives as a different material, clearly not part of the host. That contrast is the product demo.
 
+The verdict surface is **white, not graphite**. Graphite was tried and rejected: a dark block dropped into a light enterprise page read as a foreign widget rather than an intervention, and it fought the page instead of interrupting it. VETO is now distinguished from the host by being *cleaner* than it — the ERP is grey, boxy and crowded; VETO's panel is white, quiet, hairline-ruled, and carries mono citations and a single amber marker. Same argument, calmer execution.
+
 **Switcher:** a segmented control in the shell, top left. Instant swap, no transition. It is visible at all times so a judge never has to be told there are two systems.
+
+The shell carries **nothing else**. Who is signed in belongs to the system they are signed into, so the operator's name sits in the NUSANTARA WMS chrome, not in the bar that switches between products.
 
 The old green-sidebar / navy-sidebar coding from the proposal is retired. The two systems are distinguished by **density and material**, not by hue.
 
@@ -230,7 +234,8 @@ Three things animate. Everything else is instant.
 
 | Moment | Change | Duration | Easing |
 |---|---|---|---|
-| Verdict arrives | `opacity 0→1`, `translateY 4px→0` | 180ms | `cubic-bezier(0.16, 1, 0.3, 1)` |
+| Verdict dialog opens | backdrop blur in, panel `opacity 0→1` `scale 0.98→1` | 180ms | `cubic-bezier(0.16, 1, 0.3, 1)` |
+| Dialog settles to the side | dialog fades, side panel slides in from the right | 240ms | `cubic-bezier(0.16, 1, 0.3, 1)` |
 | HOLD → PASS on resubmit | ground settles, gate unlocks | 240ms | same |
 | Rule Studio stage reveal | each stage resolves in turn | 400ms per stage | same |
 
@@ -271,7 +276,7 @@ From `CLAUDE.md` §7, plus what this system specifically rejects:
 - Inter as the UI face.
 - Decorative status dots.
 - Section-number eyebrows (`01 / DISPATCH`).
-- Modal dialogs that dismiss a compliance result. The HOLD is inline and it gates the action.
+- Modal dialogs that **dismiss** a compliance result. A HOLD may *announce* itself in a dialog over a blurred backdrop, because dismissing that dialog clears nothing: the violations stay inline under the offending fields, the verdict stays in the side panel, and *Cetak Surat Jalan* stays locked until a fresh evaluation returns PASS. What is banned is a dialog whose close button is the end of the story.
 - Spinners. Async states show discrete stages or skeletons that match the final shape.
 - Fake precision. Every number on screen traces to a real response field.
 

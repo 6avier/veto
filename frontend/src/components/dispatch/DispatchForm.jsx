@@ -25,7 +25,7 @@ function axleLabel(index, count) {
   return AXLE_NAMES[1]
 }
 
-export default function DispatchForm({ value, onChange, onSubmit, pending, errors = {} }) {
+export default function DispatchForm({ value, onChange, onSubmit, pending, errors = {}, violations = {} }) {
   const axleCount = axleCountFor(value.axleConfig)
 
   const set = (patch) => onChange({ ...value, ...patch })
@@ -49,7 +49,7 @@ export default function DispatchForm({ value, onChange, onSubmit, pending, error
   return (
     <form onSubmit={onSubmit} className="divide-y divide-[#c9ced4] border border-[#c9ced4] bg-white">
       <Section title="1. Identifikasi Kendaraan">
-        <Field label="Nomor Surat Jalan" error={errors.dispatchRef}>
+        <Field label="Nomor Surat Jalan" error={errors.dispatchRef} violation={violations.dispatchRef}>
           <TextInput
             value={value.dispatchRef}
             onChange={(e) => set({ dispatchRef: e.target.value })}
@@ -69,7 +69,7 @@ export default function DispatchForm({ value, onChange, onSubmit, pending, error
             ))}
           </select>
         </Field>
-        <Field label="Berat Kosong (kg)" error={errors.tareWeight}>
+        <Field label="Berat Kosong (kg)" error={errors.tareWeight} violation={violations.tareWeight}>
           <NumberInput
             value={value.tareWeight}
             onChange={(e) => set({ tareWeight: e.target.value })}
@@ -78,7 +78,7 @@ export default function DispatchForm({ value, onChange, onSubmit, pending, error
       </Section>
 
       <Section title="2. Data Muatan">
-        <Field label="Berat Kotor (kg)" error={errors.grossWeight} hint="Berat total kendaraan bermuatan">
+        <Field label="Berat Kotor (kg)" error={errors.grossWeight} violation={violations.grossWeight} hint="Berat total kendaraan bermuatan">
           <NumberInput
             value={value.grossWeight}
             onChange={(e) => set({ grossWeight: e.target.value })}
@@ -89,6 +89,7 @@ export default function DispatchForm({ value, onChange, onSubmit, pending, error
             key={index}
             label={`${axleLabel(index, axleCount)} (kg)`}
             error={errors[`axle${index}`]}
+            violation={violations[`axle${index}`]}
           >
             <NumberInput value={load} onChange={(e) => setAxle(index, e.target.value)} />
           </Field>
@@ -96,13 +97,13 @@ export default function DispatchForm({ value, onChange, onSubmit, pending, error
       </Section>
 
       <Section title="3. Dimensi Muatan">
-        <Field label="Panjang (mm)">
+        <Field label="Panjang (mm)" violation={violations.length}>
           <NumberInput value={value.length} onChange={(e) => set({ length: e.target.value })} />
         </Field>
-        <Field label="Lebar (mm)">
+        <Field label="Lebar (mm)" violation={violations.width}>
           <NumberInput value={value.width} onChange={(e) => set({ width: e.target.value })} />
         </Field>
-        <Field label="Tinggi (mm)">
+        <Field label="Tinggi (mm)" violation={violations.height}>
           <NumberInput value={value.height} onChange={(e) => set({ height: e.target.value })} />
         </Field>
       </Section>
@@ -139,13 +140,27 @@ function Section({ title, children }) {
   )
 }
 
-function Field({ label, hint, error, children }) {
+/**
+ * A violation is pinned under the field that caused it, the way a form
+ * validation error is. PRODUCT.md F2 requires the directive to appear in
+ * context with the field, not only in a summary elsewhere.
+ */
+function Field({ label, hint, error, violation, children }) {
   return (
     <label className="flex flex-col gap-1">
       <span className="text-label text-[#4a545e]">{label}</span>
-      {children}
+      <span className={violation ? 'block rounded-veto ring-2 ring-[#c0392b]/35' : 'block'}>
+        {children}
+      </span>
       {error ? (
         <span className="text-label text-[#a02a1f]">{error}</span>
+      ) : violation ? (
+        <span className="text-label text-[#a02a1f]">
+          {violation.directive}
+          <span className="mt-0.5 block font-mono text-mono-xs text-[#8b949d]">
+            {violation.legal_citation}
+          </span>
+        </span>
       ) : hint ? (
         <span className="text-label text-[#8b949d]">{hint}</span>
       ) : null}
