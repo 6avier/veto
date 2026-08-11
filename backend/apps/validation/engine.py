@@ -29,21 +29,28 @@ def _find_stricter_rule(central_rule, client_rule, operator):
         return central_rule, client_rule
     return central_rule, client_rule
 
-def _evaluate_dimension(dimension: str, actual_value: int, rules: List[Any], unit: str, axle_index: int = None) -> dict | None:
+def _get_applicable_rule(rules, origin, axle_index):
+    origin_rules = [r for r in rules if r.rule_pack.origin == origin]
+    # Try exact match first
+    exact_rule = next((r for r in origin_rules if r.axle_index == axle_index), None)
+    if exact_rule:
+        return exact_rule
+    # Fallback to general rule
+    return next((r for r in origin_rules if r.axle_index is None), None)
+
+def _evaluate_dimension(dimension: str, actual_value: int, rules: List[Any], unit: str, axle_index: int = None, total_axles: int = 1) -> dict | None:
     if actual_value is None:
         return None
         
-    # Filter rules for this dimension and axle_index
-    applicable_rules = [
-        r for r in rules 
-        if r.dimension == dimension and (r.axle_index == axle_index or r.axle_index is None)
-    ]
-    
-    if not applicable_rules:
+    dim_rules = [r for r in rules if r.dimension == dimension]
+    if not dim_rules:
         return None
 
-    central_rule = next((r for r in applicable_rules if r.rule_pack.origin == "CENTRAL"), None)
-    client_rule = next((r for r in applicable_rules if r.rule_pack.origin == "CLIENT"), None)
+    central_rule = _get_applicable_rule(dim_rules, "CENTRAL", axle_index)
+    client_rule = _get_applicable_rule(dim_rules, "CLIENT", axle_index)
+    
+    if not central_rule and not client_rule:
+        return None
     
     # Assume LTE for all MVP ODOL rules right now
     strictest_rule, other_rule = _find_stricter_rule(central_rule, client_rule, "LTE")
@@ -56,9 +63,13 @@ def _evaluate_dimension(dimension: str, actual_value: int, rules: List[Any], uni
         if dimension == "GROSS_WEIGHT":
             subject = "total load"
         elif dimension == "AXLE_LOAD":
-            subject = "rear axle load" if axle_index is not None and axle_index > 0 else "axle 1 load"
             if axle_index is not None:
-                subject = f"axle {axle_index + 1} load"
+                if axle_index > 0 and axle_index == total_axles - 1:
+                    subject = "rear axle load"
+                else:
+                    subject = f"axle {axle_index + 1} load"
+            else:
+                subject = "axle load"
         elif dimension in DIMENSION_NAMES:
             subject = f"load {DIMENSION_NAMES[dimension]}"
             
@@ -66,7 +77,7 @@ def _evaluate_dimension(dimension: str, actual_value: int, rules: List[Any], uni
         
         # Contract: If client is stricter, contrast with legal limit
         if strictest_rule.rule_pack.origin == "CLIENT" and other_rule and other_rule.rule_pack.origin == "CENTRAL":
-            directive += f" — client policy is stricter than the legal limit of {_format_number(other_rule.threshold)} {unit}"
+            directive += f" \u2014 client policy is stricter than the legal limit of {_format_number(other_rule.threshold)} {unit}"
 
         # Build violation dict
         violation = {
@@ -103,12 +114,10 @@ def evaluate_payload(payload: Dict[str, Any], active_rules: List[Any]) -> tuple[
         
     # 2. Axle Loads
     axle_loads = load.get("axle_loads_kg", [])
+    total_axles = len(axle_loads)
     for idx, load_val in enumerate(axle_loads):
-        v = _evaluate_dimension("AXLE_LOAD", load_val, active_rules, "kg", axle_index=idx)
+        v = _evaluate_dimension("AXLE_LOAD", load_val, active_rules, "kg", axle_index=idx, total_axles=total_axles)
         if v: 
-            # Contract: formatting the directive for the rear axle
-            if v["directive"].startswith(f"Reduce axle {idx + 1} load") and idx == len(axle_loads) - 1 and idx > 0:
-                v["directive"] = v["directive"].replace(f"axle {idx + 1} load", "rear axle load")
             violations.append(v)
             
     # 3. Dimensions

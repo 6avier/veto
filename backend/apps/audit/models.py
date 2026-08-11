@@ -18,6 +18,7 @@ class DispatchDecision(models.Model):
     evaluated_at = models.DateTimeField(auto_now_add=True)
 
     # Override fields (API contract §2)
+    override_id = models.UUIDField(null=True, blank=True)
     override_reason = models.TextField(null=True, blank=True)
     overridden_by = models.CharField(max_length=255, null=True, blank=True)
     override_created_at = models.DateTimeField(null=True, blank=True)

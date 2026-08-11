@@ -1,3 +1,7 @@
-"""Vehicle profile CRUD — api-contract.md §6. P2, build last."""
+from django.urls import path
+from .views import VehicleProfileListCreateView, VehicleProfileDetailView
 
-urlpatterns = []
+urlpatterns = [
+    path('vehicle-profiles', VehicleProfileListCreateView.as_view(), name='profile_list_create'),
+    path('vehicle-profiles/<uuid:profile_id>', VehicleProfileDetailView.as_view(), name='profile_detail'),
+]

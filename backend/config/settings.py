@@ -5,11 +5,11 @@ Local dev runs on SQLite so the backend lane is never blocked on Supabase.
 """
 
 from pathlib import Path
+import os
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
-import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = BASE_DIR.parent

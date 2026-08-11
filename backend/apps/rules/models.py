@@ -55,3 +55,47 @@ class Rule(models.Model):
 
     def __str__(self):
         return f"{self.dimension} {self.operator} {self.threshold} {self.unit}"
+
+class DocumentClassification(models.TextChoices):
+    INTERNAL_POLICY = "INTERNAL_POLICY", "Internal Policy"
+    PUBLIC_REGULATION = "PUBLIC_REGULATION", "Public Regulation"
+    OPERATIONAL_DOC = "OPERATIONAL_DOC", "Operational Doc"
+    UNREADABLE = "UNREADABLE", "Unreadable"
+    UNRELATED = "UNRELATED", "Unrelated"
+
+class Document(models.Model):
+    document_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    filename = models.CharField(max_length=255)
+    file_path = models.CharField(max_length=500, blank=True, null=True)
+    page_count = models.IntegerField()
+    classification = models.CharField(max_length=50, choices=DocumentClassification.choices)
+    classification_confidence = models.FloatField()
+    accepted = models.BooleanField(default=False)
+    rejection_reason_code = models.CharField(max_length=50, null=True, blank=True)
+    needs_human_review = models.BooleanField(default=False)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+class CandidateStatus(models.TextChoices):
+    PENDING = "PENDING", "Pending"
+    APPROVED = "APPROVED", "Approved"
+    REJECTED = "REJECTED", "Rejected"
+
+class RuleCandidate(models.Model):
+    candidate_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name="candidates")
+    dimension = models.CharField(max_length=50, choices=RuleDimension.choices)
+    operator = models.CharField(max_length=10, choices=RuleOperator.choices)
+    threshold = models.IntegerField()
+    unit = models.CharField(max_length=10)
+    
+    applies_to = models.JSONField(null=True, blank=True)
+    source_reference = models.CharField(max_length=255)
+    source_text_excerpt = models.TextField()
+    source_page = models.IntegerField()
+    tags = models.JSONField(default=list, blank=True)
+    
+    status = models.CharField(max_length=20, choices=CandidateStatus.choices, default=CandidateStatus.PENDING)
+    rule_id = models.UUIDField(null=True, blank=True)
+    
+    reviewed_by = models.CharField(max_length=255, null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
