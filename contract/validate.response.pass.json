@@ -1,0 +1,11 @@
+{
+  "decision_id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+  "outcome": "PASS",
+  "dispatch_ref": "DO-2026-08-11-0041",
+  "violations": [],
+  "rule_packs_applied": [
+    { "id": "c0a80101-0000-4000-8000-000000000001", "domain": "ODOL", "version": 3, "origin": "CENTRAL" }
+  ],
+  "latency_ms": 41,
+  "evaluated_at": "2026-08-11T14:32:10+07:00"
+}

@@ -1,0 +1,13 @@
+{
+  "results": [
+    {
+      "profile_id": "8f1c2e4a-3b7d-4c1e-9a2f-5d6e7f8a9b0c",
+      "name": "Tronton 6x2 — Fleet A",
+      "axle_config": "1.22",
+      "axle_count": 3,
+      "tare_weight_kg": 8500,
+      "max_dimensions_mm": { "length": 12000, "width": 2500, "height": 4200 }
+    }
+  ],
+  "total": 1
+}
