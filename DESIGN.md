@@ -47,10 +47,10 @@ The old green-sidebar / navy-sidebar coding from the proposal is retired. The tw
 
 ## 2. Typography
 
-**Archivo** for language and quantity. **IBM Plex Mono** for machine references.
+**Archivo** for language and quantity. **JetBrains Mono** for machine references.
 
 ```bash
-npm --prefix frontend install @fontsource-variable/archivo @fontsource/ibm-plex-mono
+npm --prefix frontend install @fontsource-variable/archivo @fontsource-variable/jetbrains-mono
 ```
 
 Self-host both. Never `<link>` to Google Fonts.
@@ -79,18 +79,35 @@ Rejected, with reasons on the record:
 
 Changing this is one CSS variable. If Archivo reads wrong at real sizes, Public Sans is the next pick.
 
+### Why JetBrains Mono
+
+The mono only has to survive identifiers and citations at 11–13px, so x-height decides it. Both candidates mark the zero, so `0` and `O` are safe either way.
+
+| Mono | x-height/em | x/cap | advance |
+|---|---|---|---|
+| **JetBrains Mono** | **0.550** | **0.753** | 0.600 |
+| IBM Plex Mono | 0.516 | 0.739 | 0.600 |
+
+Same advance width, so no density cost, and 7% more x-height where it matters most. IBM Plex Mono was the earlier pick only because the Plex superfamily would have covered both roles at once. Plex Sans ships no tabular figures, that plan collapsed, and the mono lost the one argument that was holding it up.
+
+### Verified on screen, not only in the metrics
+
+The tables above come from the font binaries. The choice was then confirmed by rendering all three sans candidates at real sizes, on `--ink-900`, with real content: `TAHAN` at 32px, an Indonesian directive at 15px, a three-row tabular column at 14px, and a citation at 11px.
+
+What the render added that the numbers did not: **Lato is visibly the most delicate of the three on a dark ground.** Light text on dark optically thins, so Lato would need a weight step up everywhere just to hold parity — a permanent tax. Archivo held its stems at every size and stayed the most compact at display weight.
+
 ### The two roles
 
 **Archivo with `tabular-nums`** carries language *and* quantity: headings, labels, body, buttons, form values, table columns of weights and dimensions.
 
-**IBM Plex Mono** carries only what is machine-generated and needs character-level alignment: decision IDs, dispatch refs, legal citations, timestamps, rule pack versions, latency.
+**JetBrains Mono** carries only what is machine-generated and needs character-level alignment: decision IDs, dispatch refs, legal citations, timestamps, rule pack versions, latency.
 
 ```
-Archivo    Berat Kotor · 24.500 kg · Kurangi muatan sumbu belakang · Cetak Surat Jalan
-Plex Mono  PM 60/2019 Pasal 3 · DO-2026-08-11-0042 · v3 · 41 ms · 14:32:10
+Archivo   Berat Kotor · 24.500 kg · Kurangi muatan sumbu belakang · Cetak Surat Jalan
+JBMono    PM 60/2019 Pasal 3 · DO-2026-08-11-0042 · v3 · 41 ms · 14:32:10
 ```
 
-Impeccable's `typeset.md` warns against a second family without a role it alone can perform. Plex Mono earns it: `DO-2026-08-11-0042` and a column of pasal references only stay scannable when every character occupies the same width. Numbers alone do not need it, because Archivo's `tnum` already holds the column.
+Impeccable's `typeset.md` warns against a second family without a role it alone can perform. JetBrains Mono earns it: `DO-2026-08-11-0042` and a column of pasal references only stay scannable when every character occupies the same width. Numbers alone do not need it, because Archivo's `tnum` already holds the column.
 
 Always set `font-variant-numeric: tabular-nums` on any numeric. A weight that shifts column position as it changes reads as unstable, and this product's whole claim is that it is not.
 
@@ -105,8 +122,8 @@ Always set `font-variant-numeric: tabular-nums` on any numeric. A weight that sh
 | `label` | Archivo 500 | 13 / 16 | 0.01em | Field labels |
 | `data-lg` | Archivo 500 | 22 / 26 | -0.01em | Primary readouts, `tnum` |
 | `data` | Archivo 400 | 14 / 20 | 0 | Table quantities, `tnum` |
-| `mono` | Plex Mono 400 | 13 / 18 | 0 | Identifiers, citations |
-| `mono-xs` | Plex Mono 400 | 11 / 16 | 0.03em | Meta, timestamps |
+| `mono` | JBMono 400 | 13 / 18 | 0 | Identifiers, citations |
+| `mono-xs` | JBMono 400 | 11 / 16 | 0.03em | Meta, timestamps |
 
 Body copy caps at `65ch`. Directives are prose and obey it.
 
@@ -237,7 +254,7 @@ Only `transform` and `opacity`. No `window.addEventListener('scroll')`.
 
 **No fabricated citations.** Every article reference on screen comes from a verified seeded rule.
 
-**Zero em-dashes.** Use a period, a comma, or a regular hyphen.
+**Zero em-dashes in anything a user sees.** Labels, headings, body, buttons, directives, error text, alt text. Use a period, a comma, or a regular hyphen. The rule covers the shipped interface, not the repo's own prose, so this file and the plans are exempt.
 
 ---
 
