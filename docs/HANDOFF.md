@@ -445,8 +445,25 @@ Next action: decide whether it is seeded or created through Rule Studio. See §1
 
 ### P1 — important
 
-**P1-1 · Directive strings are English inside an all-Indonesian interface**, and one contains an em-dash that `DESIGN.md` §8 bans in user-visible copy.
-Files: `api-contract.md` §1, `contract/validate.response.hold.json`, `backend/apps/validation/engine.py`.
+**P1-1 · BACKEND LANE, FOR IQBAL: an em-dash ships in a user-visible directive.**
+`DESIGN.md` §8 bans em-dashes in anything a user sees. This one renders three times at once on `/dispatch`: in the HOLD dialog, in the side panel, and inline under Berat Kotor.
+
+Exact location, `backend/apps/validation/engine.py` line 69:
+
+```python
+directive += f" \u2014 client policy is stricter than the legal limit of ..."
+```
+
+Replace the em-dash with a regular hyphen (` - `) or restructure into a second sentence. Then update the two copies of the string that are asserted against it, or `test_directives_match_the_fixture_wording` will fail:
+
+- `contract/validate.response.hold.json`, the `GROSS_WEIGHT` directive
+- `api-contract.md` §1, the same worked example
+
+Verify with `uv run --directory backend python manage.py test apps`.
+
+Separately, `contract/vehicle-profiles.list.json` has an em-dash in `"Tronton 6x2 — Fleet A"`. That is a display name, so it is user-visible too. `P2`, unused today.
+
+**Still undecided and larger:** the directives are English inside an all-Indonesian interface. See §16 Decision 1. Fixing the em-dash does not resolve that.
 
 **P1-2 · `contract/rules.list.json` is stale** — old 16100 / `PM 111/2015` values. Shared fixture; belongs to the backend lane.
 
