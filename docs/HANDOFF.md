@@ -1,24 +1,21 @@
 # VETO — Engineering Handoff
 
 ## 1. Header
-
 | | |
 |---|---|
 | **Project** | VETO |
-| **Date** | 2026-08-11, 17:29 WIB |
+| **Date** | 2026-08-11, 19:40 WIB (refreshed) |
 | **Branch** | `main` |
-| **Commit** | HEAD is the commit that added this file. `5247f90` is the last commit that changed code. |
-| **Working tree** | Clean. No uncommitted changes, no untracked files. |
-| **Unpushed** | 2 commits ahead of `origin/main` (`5247f90`, plus this handoff). **Push them.** |
+| **Commit** | HEAD is `4f7cbb5` *fix(mocks): derive thresholds from the contract fixture*. Last backend change: `97240c4`. |
+| **Working tree** | Clean. |
+| **Unpushed** | 1 commit. |
 | **Remote** | `https://github.com/6avier/veto.git` |
-| **Tracked files** | 101 |
-| **Primary objective** | Make `dispatch data → PASS/HOLD + actionable directive` work end to end, on real seeded rules, for a live demo on 2026-08-14. Working product due **2026-08-13 23:55 WIB**. |
-| **Handoff status** | **NEEDS_REVIEW** — the code builds, runs, and is fully tested at its current scope, but the validation engine is an explicitly-marked stub and every legal threshold in the repo is unverified. See §10 and §16. |
+| **Primary objective** | Make `dispatch data -> PASS/HOLD + actionable directive` work end to end on seeded rules, for a live demo on 2026-08-14. Due **2026-08-13 23:55 WIB**. |
+| **Handoff status** | **NEEDS_REVIEW.** The core loop now works against a real database-backed engine. What blocks a clean demo is regulatory: two of the six seeded thresholds are self-declared assumptions, and no CLIENT rule pack exists so the demo's closing beat has nothing behind it. |
 
-There is **no `AGENTS.md`**. `CLAUDE.md` at the repo root is the authoritative agent instruction file and applies to any agent working here.
+**Two people are working in this repository.** Iqbal owns `backend/`. The other lane owns `frontend/`. Do not cross without saying so: `api-contract.md`, `contract/*.json`, and `frontend/src/api/` are the shared seam.
 
----
-
+There is **no `AGENTS.md`**. `CLAUDE.md` at the repo root is the authoritative agent instruction file.
 ## 2. What VETO is
 
 Compliance middleware for Indonesian freight logistics. A deterministic rule engine that converts ODOL (Over Dimension Over Load) vehicle regulations into a gate at the loading dock.
@@ -140,48 +137,41 @@ frontend/src/
 ---
 
 ## 5. Current implementation
-
 ### Working
 
-- **`POST /api/v1/validate`** — `backend/apps/validation/views.py`. Accepts the contract payload, validates input types, evaluates gross weight / per-axle load / three dimensions, returns contract-exact `PASS` (200) or `HOLD` (403) with all violations. Thresholds are hardcoded (see Placeholder).
-- **`GET /health/`** — `backend/config/urls.py`. Returns `{"status":"ok","service":"veto-api"}`.
-- **Contract error envelope** — `backend/config/exceptions.py`. A HOLD is exempted so it is never wrapped as an error.
-- **10 backend tests, all passing** — `backend/apps/validation/tests/test_contract.py`. They assert live responses against `contract/*.json`, including that a HOLD is not an error envelope, that `axle_index` appears only on `AXLE_LOAD`, and that correcting the load flips HOLD to PASS.
-- **`/dispatch` surface** — `frontend/src/routes/Dispatch.jsx` + `frontend/src/components/dispatch/DispatchForm.jsx`. Full loop verified in a browser: submit → `LOLOS`, the *Cetak Surat Jalan* button unlocks; change a figure → verdict clears and the button re-locks; submit an overloaded payload → `TAHAN` in amber with both violations, each showing actual/limit and its citation, `CLIENT`-origin rules prefixed `[ SOP KLIEN ]`.
-- **The gate.** Editing any form field invalidates the decision and re-locks the print button. This is the core product behaviour and it works.
-- **ERP/VETO shell** — `frontend/src/App.jsx`. Segmented control always visible, routes switch between the two systems.
-- **Mock layer** — `frontend/src/mocks/index.js`. Every contract endpoint returns its fixture behind `VITE_USE_MOCKS=true`. The frontend runs with no backend at all.
-- **axios 403 handling** — `frontend/src/api/validation.js`. `validateDispatch()` returns the decision for both PASS and HOLD and only throws on genuine failures.
+- **`POST /api/v1/validate`, database-backed.** `backend/apps/validation/views.py` validates the payload, loads active `Rule` rows, calls `evaluate_payload()` in `backend/apps/validation/engine.py`, persists a `DispatchDecision` plus its `Violation` rows, and returns contract-exact PASS (200) / HOLD (403).
+- **Rule engine** — `backend/apps/validation/engine.py`. `evaluate_payload(payload, active_rules) -> (outcome, violations)`. Resolves CENTRAL vs CLIENT conflicts by keeping the stricter rule.
+- **Seeded CENTRAL rule pack** — `backend/apps/rules/migrations/0002_seed_odol_central_rules.py`, six rules. See §10.
+- **Decision persistence** — `apps/audit/models.py`: `DispatchDecision` and `Violation`. Every call writes a record.
+- **10 backend tests pass**, asserting live responses against `contract/*.json`.
+- **`GET /health/`** — `backend/config/urls.py`.
+- **`/dispatch` surface** — verified in a browser. Submit -> `LOLOS` and *Cetak Surat Jalan* unlocks; edit any field -> verdict clears and the button re-locks; overloaded payload -> `TAHAN` with each violation's directive, actual/limit, and citation.
+- **Mock layer** — `frontend/src/mocks/index.js`. Every contract endpoint returns its fixture behind `VITE_USE_MOCKS=true`. Threshold checks are derived from the HOLD fixture so they cannot drift from the contract.
+- **axios 403 handling** — `frontend/src/api/validation.js`.
 
 ### Partial
 
-- **`frontend/src/api/`** — all eleven contract endpoints have working client functions and mock branches, but only `validateDispatch` has a live backend to talk to. `audit.js` and `ruleStudio.js` will 404 with `VITE_USE_MOCKS=false`.
-- **`frontend/src/lib/format.js`** — `formatNumber`, `formatKg`, `formatMm`, `formatTonnes`, `parseInteger`, `formatTimestamp`, `axleCountFor` all exist. `parseInteger`, `formatMm`, and `formatTimestamp` are currently unused by any component.
+- **Override fields exist but no endpoint does.** `DispatchDecision` carries `override_reason`, `overridden_by`, `override_created_at`. Nothing writes them.
+- **`frontend/src/api/`** — all eleven contract endpoints have client functions and mocks; only `validateDispatch` has a live backend.
+- **`frontend/src/lib/format.js`** — `parseInteger`, `formatMm`, `formatTimestamp` are exported but unused.
 
 ### Placeholder
 
-- **`STUB_LIMITS`** in `backend/apps/validation/views.py` — hardcoded thresholds standing in for a seeded rule pack. The module docstring marks it `STUB` and lists the four steps to replace it.
-- **`RULE_PACKS`** in the same file — two hardcoded pack descriptors with fixed UUIDs and versions. No database rows exist.
-- **`frontend/src/routes/RuleStudio.jsx`** and **`AuditLog.jsx`** — headed, styled, correctly grounded, but no functionality. Each names the plan file that specifies it.
-- **Persona labels** in `App.jsx` (`Budi · Gudang Cikarang`, `Sari · Compliance`) are hardcoded strings, not a user model.
-- **`loading_point_id: 'LP-CIKARANG-01'`** is hardcoded in `Dispatch.jsx`.
+- **`frontend/src/routes/RuleStudio.jsx`** and **`AuditLog.jsx`** — styled headings, no functionality.
+- **Persona labels** in `frontend/src/App.jsx` are hardcoded strings, not a user model.
+- **`loading_point_id: 'LP-CIKARANG-01'`** hardcoded in `frontend/src/routes/Dispatch.jsx`.
+- **`contract/rules.list.json` is stale** — still the old 16100 / `PM 111/2015` values. Nothing consumes it yet.
 
 ### Not implemented
 
-- **Every Django model.** All four `models.py` files contain only Django's generated `# Create your models here.` comment. There are no app migrations, no `Rule`, no `RulePack`, no `DecisionRecord`, no `SourceDocument`.
-- **No decision is persisted.** `PRODUCT.md` F1 requires an audit record before the response returns. Nothing is written.
-- **Endpoints in `api-contract.md` with no implementation:** `POST /decisions/{id}/override`, `GET /decisions`, `GET /decisions/{id}`, `POST /documents`, `POST /documents/{id}/extract`, `GET /rule-candidates`, approve/reject, `GET /rules`, all of `/vehicle-profiles`. Their `urls.py` files exist with empty `urlpatterns`.
-- **No rule-pack precedence engine.** The stub hardcodes which rule wins.
+- **No CLIENT rule pack is seeded.** It exists only inside `test_contract.py`'s `setUp`. On a running server the gross-weight limit is the CENTRAL 25000 kg.
+- **Endpoints with no implementation:** override, `GET /decisions`, `GET /decisions/{id}`, all of Rule Studio, `GET /rules`, vehicle profiles. Their `urls.py` files exist with empty `urlpatterns`.
 - **No LLM integration.** `pymupdf` is installed but imported nowhere.
+- **`apps/profiles`** is still an empty scaffold.
 
 ### Broken
 
-Nothing is broken. Build passes, lint is clean, all 10 tests pass, `manage.py check` reports no issues.
-
-Two **correctness** problems that are not crashes but must not ship — see §10 and §14.
-
----
-
+Nothing is broken. Tests pass, lint is clean, build succeeds, `manage.py check` is clean.
 ## 6. Current user flow
 
 ### Implemented
@@ -292,135 +282,81 @@ No charts exist and none are specified.
 ---
 
 ## 9. Data model
-
 ### ACTUAL IMPLEMENTED MODEL
 
-**There are no database models.** All four `models.py` files are Django's empty generated stubs. The only data structures that exist are:
+Real Django models now exist. Migrations: `rules/0001_initial`, `rules/0002_seed_odol_central_rules`, `audit/0001_initial`.
 
-**1. The wire contract** — defined in `api-contract.md`, exemplified in `contract/*.json`, and hand-built in `backend/apps/validation/views.py`. Units are integer kilograms and integer millimetres; keys are `snake_case`; enums are UPPERCASE.
+**`apps/rules/models.py`**
 
-Validate request:
-```
-dispatch_ref: string
-vehicle: { profile_id?: uuid, axle_config: string, tare_weight_kg: int }
-load: { gross_weight_kg: int, axle_loads_kg: int[], dimensions_mm: {length,width,height} }
-loading_point_id: string
-```
+- `RulePack` — `id` UUID pk, `domain` (default `ODOL`), `version` int, `origin` (`CENTRAL`|`CLIENT`), `effective_from`
+- `Rule` — `id` UUID pk, `rule_pack` FK, `dimension`, `operator` (`LTE`|`GTE`|`EQ`), `threshold` int, `unit`, `axle_config` JSON, `axle_index` int, `legal_citation`, `status` (`ACTIVE`|...)
 
-Validate response:
-```
-decision_id: uuid, outcome: "PASS"|"HOLD", dispatch_ref: string,
-violations: Violation[], rule_packs_applied: RulePackRef[],
-latency_ms: int, evaluated_at: ISO8601+07:00
-```
+Note `Rule` has **`axle_config` and `axle_index` as separate columns**, not the `applies_to` JSON blob the plan documents. The plan is out of date here; the code wins.
 
-`Violation`:
-```
-dimension: GROSS_WEIGHT | AXLE_LOAD | DIMENSION_LENGTH | DIMENSION_WIDTH
-         | DIMENSION_HEIGHT | AXLE_CONFIG
-axle_index?: int          // present ONLY when dimension === AXLE_LOAD
-actual_value: int, limit_value: int, excess_value: int, unit: "kg"|"mm"
-severity: "BLOCKING" | "WARNING"      // MVP emits BLOCKING only
-rule_origin: "CENTRAL" | "CLIENT"
-legal_citation: string
-directive: string          // complete sentence, rendered verbatim by the UI
-```
+**`apps/audit/models.py`**
 
-`RulePackRef`: `{ id: uuid, domain: "ODOL", version: int, origin: "CENTRAL"|"CLIENT" }`
+- `DispatchDecision` — `decision_id` UUID pk, `outcome`, `dispatch_ref` indexed, `payload` JSON, `rule_packs_applied` JSON, `latency_ms`, `evaluated_at`, plus `override_reason` / `overridden_by` / `override_created_at`
+- `Violation` — FK to decision, `dimension`, `axle_index`, `actual_value`, `limit_value`, `excess_value`, `unit`, `severity`, `rule_origin`, `legal_citation`, `directive`
 
-**2. Frontend form state** — `DEFAULTS` in `frontend/src/routes/Dispatch.jsx`. camelCase, all values held as **strings** while editing, converted to integers by `toPayload()`.
+Override is modelled as **nullable columns on the decision**, not a separate `Override` table. This departs from `PRODUCT.md` §6 and from the plan. It still satisfies append-only in practice as long as nothing rewrites the original outcome.
 
-**3. Constants** — `STUB_LIMITS` and `RULE_PACKS` in `backend/apps/validation/views.py`.
+**Wire contract** — unchanged and authoritative in `api-contract.md`. Integer kg and mm, `snake_case`, UPPERCASE enums. `axle_index` appears only on `AXLE_LOAD` violations.
 
-There are **no TypeScript types or interfaces anywhere**; the project is plain JavaScript.
+**Frontend form state** — `DEFAULTS` in `frontend/src/routes/Dispatch.jsx`, camelCase, values held as strings while editing and converted by `toPayload()`.
 
-### PLANNED MODEL — specified, no code exists
+There are **no TypeScript types**; the frontend is plain JavaScript.
 
-Fully specified in `docs/plans/2026-08-11-rule-studio.md` Task B1 (Django model code is written out there, ready to paste) and `PRODUCT.md` §6:
+### PLANNED MODEL — no code exists
 
-`SourceDocument`, `RulePack`, `Rule`, `RuleCandidate`, `DecisionRecord`, `Override`, `VehicleProfile`.
+`SourceDocument`, `RuleCandidate`, `VehicleProfile`. Specified in `docs/plans/2026-08-11-rule-studio.md` Task B1 and `PRODUCT.md` §6.
 
-Note the naming decision recorded in the P0 plan: the persisted model is **`DecisionRecord`**, not `Decision`, to avoid colliding with the engine's `Decision` dataclass.
-
-Concepts named in the product but **absent from both code and the planned model**: `Route` and `Road Class`. Road-class-aware validation is explicitly out of scope (`PRODUCT.md` §3) and is a documented known gap — do not add it, and do not let UI copy imply it exists.
-
----
-
+`Route` and `Road Class` appear in neither. Road-class-aware validation is explicitly out of scope (`PRODUCT.md` §3). Do not add it and do not let UI copy imply it exists.
 ## 10. Compliance logic
+Evaluation lives in `backend/apps/validation/engine.py` and is now **data-driven**: it reads `Rule` rows and keeps the stricter of a CENTRAL/CLIENT pair per dimension.
 
-**All compliance logic lives in one file:** `backend/apps/validation/views.py`. It is **hardcoded, not data-driven**, and the module docstring marks it `STUB`.
+### Seeded CENTRAL rules — the six rules actually enforced
 
-### Rule 1 — Gross weight
+From `backend/apps/rules/migrations/0002_seed_odol_central_rules.py`:
 
-- **Input:** `load.gross_weight_kg`
-- **Condition:** `gross_weight_kg <= 24000`
-- **Threshold:** client limit `24000` kg. A central limit of `25000` kg is stored but only ever quoted inside the directive text for contrast; it is never independently enforced.
-- **Output:** `GROSS_WEIGHT` violation, `rule_origin: CLIENT`
-- **Citation in code:** `SOP Internal Gudang Cikarang v2 §3.1`
-- **Source:** `backend/apps/validation/views.py` → `STUB_LIMITS["gross_weight_kg"]`, `_check_gross_weight()`
-- **Status:** hardcoded
+| Dimension | Op | Threshold | Citation as stored |
+|---|---|---|---|
+| `AXLE_LOAD` | LTE | 10000 kg | `PM 18/2021 Pasal 4 ayat (1) huruf a` |
+| `AXLE_LOAD` | LTE | 16000 kg | `PP 55/2012 Lampiran (Asumsi Sumbu Ganda/Tandem)` |
+| `GROSS_WEIGHT` | LTE | 25000 kg | `PP 55/2012 Lampiran JBI (Asumsi Kelas I)` |
+| `DIMENSION_LENGTH` | LTE | 18000 mm | `PP 55/2012 Pasal 9` |
+| `DIMENSION_WIDTH` | LTE | 2500 mm | `PP 55/2012 Pasal 7 ayat (1)` |
+| `DIMENSION_HEIGHT` | LTE | 4200 mm | `PP 55/2012 Pasal 7 ayat (3)` |
 
-### Rule 2 — Per-axle load
+### CRITICAL — two citations declare themselves assumptions
 
-- **Input:** `load.axle_loads_kg[]`, ordered front to rear
-- **Condition:** `axle_loads_kg[i] <= [10000, 16100][i]`; indexes beyond the list reuse the last value
-- **Output:** one `AXLE_LOAD` violation per exceeded axle, with zero-based `axle_index`, `rule_origin: CENTRAL`
-- **Citation in code:** `PM 111/2015 Pasal 4 ayat (2)`
-- **Source:** `STUB_LIMITS["axle_load_kg"]`, `_check_axle_loads()`
-- **Status:** hardcoded
+`PP 55/2012 Lampiran (Asumsi Sumbu Ganda/Tandem)` and `PP 55/2012 Lampiran JBI (Asumsi Kelas I)` contain the word **Asumsi** (assumption). They are the basis for the axle and gross-weight decisions, which are the two the demo actually exercises, and they render on screen as the legal basis for a HOLD.
 
-### Rule 3 — Load dimensions
+`data/regulations/` contains a **scraped** corpus plus `MISSING_REGULATIONS.md` and `conflicts.json`. The repository owner has confirmed it is unverified reference material for humans, not a validated source. `CLAUDE.md` §5 forbids fabricating a regulation citation in code, seed data, or UI copy.
 
-- **Input:** `load.dimensions_mm.{length,width,height}`
-- **Condition:** `length <= 18000`, `width <= 2500`, `height <= 4200`
-- **Output:** `DIMENSION_LENGTH` / `DIMENSION_WIDTH` / `DIMENSION_HEIGHT`, `rule_origin: CENTRAL`
-- **Citation in code:** `PM 111/2015 Pasal 5`
-- **Source:** `STUB_LIMITS["dimensions_mm"]`, `_check_dimensions()`
-- **Status:** hardcoded, and already carries an inline `TODO: verify` comment
+**Do not** treat these as verified, propagate them into new seed data, or invent replacements. Either a human verifies them against source text, or the UI must state plainly that they are provisional.
 
-### Precedence
+### No CLIENT rules are seeded
 
-Not implemented as logic. The stub simply decides in code that the client gross-weight limit is the one enforced. Real precedence (strictest wins, origin-agnostic) is specified in `docs/plans/2026-08-11-validation-engine-and-dispatch.md` Task B2.
-
-### CRITICAL — every legal citation in this repository is UNVERIFIED
-
-The three citation strings above (`PM 111/2015 Pasal 4 ayat (2)`, `PM 111/2015 Pasal 5`, `SOP Internal Gudang Cikarang v2 §3.1`) and all associated numbers originated in the `api-contract.md` draft as illustrative examples. **They have not been checked against any regulation text.** They also appear in `contract/validate.response.hold.json` and `contract/rules.list.json`.
-
-`CLAUDE.md` §5 forbids fabricating a statistic or a regulation citation in code, seed data, or UI copy.
-
-**Codex must not** treat these as authoritative, propagate them into new seed data, or invent replacements. Verification is a human research task, specified as Task B1 of the P0 plan, which includes a seed loader that mechanically refuses any rule lacking `verification.status = VERIFIED`, a source URL, and an article-level citation.
-
-Note also that the official PM 60/2019 PDF published by BPK is a ~24 MB **scan with no text layer**, so it cannot be parsed programmatically.
-
----
-
+Precedence is implemented but currently has nothing to resolve. `PRODUCT.md` §7 step 7 depends on approving a client rule and watching a nationally-legal load turn into a HOLD. That cannot be demonstrated today.
 ## 11. API / backend
+Base URL `/api/v1`. No authentication anywhere. `X-Client-Id` may be sent and is ignored.
 
-Base URL `/api/v1`. No authentication on any endpoint. `X-Client-Id` may be sent and is ignored.
+| Method | Path | Output | Source | Status |
+|---|---|---|---|---|
+| GET | `/health/` | `{status, service}` | `backend/config/urls.py` | **Working** |
+| POST | `/api/v1/validate` | 200 PASS / 403 HOLD / 400 envelope | `backend/apps/validation/views.py` + `engine.py` | **Working, DB-backed, persists a decision** |
+| POST | `/api/v1/decisions/{id}/override` | 201 | *(spec only)* | Not implemented; model columns exist |
+| GET | `/api/v1/decisions` | list | *(spec only)* | Not implemented |
+| GET | `/api/v1/decisions/{id}` | detail, always 200 | *(spec only)* | Not implemented |
+| POST | `/api/v1/documents` | triage | *(spec only)* | Not implemented |
+| POST | `/api/v1/documents/{id}/extract` | candidates | *(spec only)* | Not implemented |
+| GET | `/api/v1/rule-candidates` + approve/reject | | *(spec only)* | Not implemented |
+| GET | `/api/v1/rules` | list | *(spec only)* | Not implemented |
+| * | `/api/v1/vehicle-profiles*` | CRUD | *(spec only)* | Not implemented, `P2` |
 
-| Method | Path | Input | Output | Source | Status |
-|---|---|---|---|---|---|
-| GET | `/health/` | — | `{status, service}` | `backend/config/urls.py` | **Working** |
-| POST | `/api/v1/validate` | validate request | 200 PASS / 403 HOLD / 400 envelope | `backend/apps/validation/views.py` | **Working (stub thresholds, no persistence)** |
-| POST | `/api/v1/decisions/{id}/override` | `{reason, overridden_by}` | 201 override | *(spec only)* | Not implemented |
-| GET | `/api/v1/decisions` | query filters | `{results,total,limit,offset}` | *(spec only)* | Not implemented |
-| GET | `/api/v1/decisions/{id}` | — | decision + override + payload, always 200 | *(spec only)* | Not implemented |
-| POST | `/api/v1/documents` | multipart `file` | 201 triage result | *(spec only)* | Not implemented |
-| POST | `/api/v1/documents/{id}/extract` | `{force}` | candidates + `used_fallback` | *(spec only)* | Not implemented |
-| GET | `/api/v1/rule-candidates` | `?status=` | `{results,total}` | *(spec only)* | Not implemented |
-| POST | `/api/v1/rule-candidates/{id}/approve` | `{reviewed_by}` | approval result | *(spec only)* | Not implemented |
-| POST | `/api/v1/rule-candidates/{id}/reject` | `{reviewed_by,note}` | rejection result | *(spec only)* | Not implemented |
-| GET | `/api/v1/rules` | `?origin=&dimension=` | `{results,total}` | *(spec only)* | Not implemented |
-| * | `/api/v1/vehicle-profiles*` | CRUD | — | *(spec only)* | Not implemented — `P2` |
+Django admin is mounted at `/admin/`; no models are registered.
 
-Django admin is mounted at `/admin/` with default auth; no models are registered.
-
-**Error handling.** `backend/config/exceptions.py` rewrites DRF exceptions into `{"error":{"code","message","field?"}}` with codes `VALIDATION_ERROR` (400), `NOT_FOUND` (404), `CONFLICT` (409), `UPSTREAM_TIMEOUT` (504), `INTERNAL_ERROR`. A HOLD sets `request._veto_is_hold` so it is never wrapped.
-
-**Database queries:** none. **External APIs:** none called.
-
----
-
+**Error handling** — `backend/config/exceptions.py` produces `{"error":{"code","message","field?"}}`. A HOLD sets `request._veto_is_hold` so it is never wrapped.
 ## 12. Environment
 
 Names only. Never commit values. `backend/.env` and `frontend/.env.local` exist locally and are gitignored.
@@ -473,123 +409,107 @@ npm --prefix frontend run build
 uv run --directory backend python manage.py check
 ```
 
-**There is no typecheck command.** The project is JavaScript with no TypeScript configuration. Do not add one to a task's verification list.
+**There is no runnable typecheck.** The frontend is JavaScript with no TypeScript configuration. The backend has a `[tool.pyright]` block in `backend/pyproject.toml`, but pyright is not a declared dependency, so there is nothing to run. Do not put a typecheck step in a task's verification list until one actually exists.
 
 ---
 
 ## 13. Git / working tree
-
-- **Branch:** `main`. It is the only branch, local or remote.
-- **HEAD:** the commit adding this handoff. Last code change: `5247f90`.
-- **Working tree:** clean — `git status --short` is empty, `git diff HEAD` is empty.
-- **Unpushed:** 2 commits ahead of `origin/main`. **Push them.**
-- **Work in progress:** none. There are no stashes, no partial edits, no intentionally-uncommitted files.
+- **Branch:** `main`, the only branch.
+- **HEAD:** `4f7cbb5`. Working tree clean. 1 commit unpushed.
+- **Two contributors.** `6avier` and `iqbalvirdiansyah-commits`. A merge has already happened once.
+- **`.agents/`** is a directory of vendored agent skill packs. It is gitignored on purpose. Do not commit it.
 
 ```
-<HEAD>   docs: add engineering handoff  (this file)
-5247f90  feat(dispatch): build the ERP shell, design tokens, and dispatch form
-f0b42f0  docs(design): pick Archivo and JetBrains Mono on measured evidence
-5ab0c51  docs: establish the VETO visual system
-927484f  docs: add implementation plans for P0 and Rule Studio
-4e51849  feat: scaffold split frontend and backend lanes
-7f61c58  feat(contract): freeze the frontend/backend API contract
-22f115c  chore: initial commit — project docs and hackathon materials
+4f7cbb5  fix(mocks): derive thresholds from the contract fixture, ignore .agents
+97240c4  feat(validation): implement dynamic evaluation engine with persistence
+5730bb5  docs: add engineering handoff
+1f478c5  feat(dispatch): build the ERP shell, design tokens, and dispatch form
+408d1f1  feat(backend): add audit and rules models, migrations, pyright config
+a4530c2  Merge branch 'main'
+999082e  Add files via upload            (iqbalvirdiansyah-commits)
+84b5a5f  add: data folder and VETO Regulatory Corpus
 ```
 
-Commits are authored `6avier <xavierkemas@gmail.com>`. **Do not add a `Co-Authored-By` trailer or any AI attribution** — this is an explicit standing instruction from the repository owner.
-
----
-
+Commits are authored `6avier`. **Do not add a `Co-Authored-By` trailer or any AI attribution.**
 ## 14. Known issues
+### P0 — blocks a credible demo
 
-### P0 — blocks development
+**P0-1 · Two enforced thresholds cite themselves as assumptions.**
+`Asumsi Sumbu Ganda/Tandem` (16000 kg) and `Asumsi Kelas I` (25000 kg) are the two rules the demo actually triggers, and the citation string is displayed as the legal basis.
+Files: `backend/apps/rules/migrations/0002_seed_odol_central_rules.py`.
+Next action: human verification, or explicit provisional labelling in the UI. **Not an agent task.**
 
-**P0-1 · The validation engine is a stub with no rule packs and no persistence.**
-Impact: `PRODUCT.md` F1 requires an audit record before the response returns and a recorded rule-pack version per decision. Neither exists, so the audit log, override, and Rule Studio precedence features have nothing to build on.
-Files: `backend/apps/validation/views.py`, all four empty `models.py`.
-Cause: established — the scaffold deliberately shipped contract-exact shapes first.
-Next action: `docs/plans/2026-08-11-validation-engine-and-dispatch.md`, Tasks B2 → B4.
-
-**P0-2 · Every legal threshold and citation in the repo is unverified.**
-Impact: presenting invented citations at a judged demo, against an explicit rule in `CLAUDE.md` §5.
-Files: `backend/apps/validation/views.py` (`STUB_LIMITS`), `contract/validate.response.hold.json`, `contract/rules.list.json`, `api-contract.md` §1 and §5.
-Cause: established — example values from the contract draft were carried into code.
-Next action: human research, Task B1 of the P0 plan. **Not an agent task.**
+**P0-2 · No CLIENT rule pack is seeded**, so `PRODUCT.md` §7 step 7 cannot be demonstrated.
+Files: `backend/apps/rules/migrations/`, `backend/apps/validation/tests/test_contract.py` (which creates one only in `setUp`).
+Next action: decide whether it is seeded or created through Rule Studio. See §16 Decision 4.
 
 ### P1 — important
 
-**P1-1 · Directive strings are English inside an all-Indonesian interface.**
-`"Reduce rear axle load by 1,200 kg"` renders beside `Berat Kotor` and `Cetak Surat Jalan`. `api-contract.md` §1 mandates English; `DESIGN.md` §7 mandates Indonesian UI and says directives render verbatim from the server. The two documents genuinely conflict. This is the most-read string in the demo.
-Files: `api-contract.md` §1, `contract/validate.response.hold.json`, `backend/apps/validation/views.py`.
-Next action: needs a decision — see §16.
+**P1-1 · Directive strings are English inside an all-Indonesian interface**, and one contains an em-dash that `DESIGN.md` §8 bans in user-visible copy.
+Files: `api-contract.md` §1, `contract/validate.response.hold.json`, `backend/apps/validation/engine.py`.
 
-**P1-2 · A directive contains an em-dash**, which `DESIGN.md` §8 bans in user-visible copy: `"Reduce total load by 500 kg — client policy is stricter…"`. Same files as P1-1; fix together.
+**P1-2 · `contract/rules.list.json` is stale** — old 16100 / `PM 111/2015` values. Shared fixture; belongs to the backend lane.
 
-**P1-3 · No deployment configuration exists** although a public URL is the stated plan for the booth. `gunicorn` and `whitenoise` are installed but unused.
-Next action: decide the target (see §16), then add config early, not on demo day.
+**P1-3 · No deployment configuration exists.** `gunicorn` and `whitenoise` are installed and unused.
 
-**P1-4 · `index.html` still says `<title>frontend</title>`** and ships the Vite default favicon.
-File: `frontend/index.html`.
+**P1-4 · `index.html` still says `<title>frontend</title>`** with the default Vite favicon.
 
-**P1-5 · Specified motion is not implemented.** `DESIGN.md` §6 defines three animated moments; the verdict currently appears instantly.
-File: `frontend/src/routes/Dispatch.jsx`.
+**P1-5 · Specified motion is not implemented.** `DESIGN.md` §6 defines three animated moments; nothing animates.
+
+**P1-6 · `rule_packs_applied` lists every active pack**, not only the ones consulted for this vehicle. See the comment block in `views.py`.
 
 ### P2 — polish
 
-**P2-1 · Dead template assets**, tracked but referenced nowhere: `frontend/src/assets/hero.png`, `frontend/src/assets/vite.svg`, `frontend/public/icons.svg`. Only `favicon.svg` is used.
-
-**P2-2 · `@types/react` and `@types/react-dom` are installed** but the project has no TypeScript.
-
-**P2-3 · Mobile layout unverified.** Nothing has been checked below `lg`.
-
-**P2-4 · `VerdictPanel` is defined inside `Dispatch.jsx`** rather than in `frontend/src/components/dispatch/`. Extract it before growing it.
-
-**P2-5 · Unused exports** in `frontend/src/lib/format.js`: `parseInteger`, `formatMm`, `formatTimestamp`.
-
----
-
+- **P2-1** Dead template assets: `frontend/src/assets/hero.png`, `frontend/src/assets/vite.svg`, `frontend/public/icons.svg`.
+- **P2-2** `@types/react` and `@types/react-dom` installed with no TypeScript in the project.
+- **P2-3** Mobile layout unverified below `lg`.
+- **P2-4** `VerdictPanel` lives inside `Dispatch.jsx`; extract before growing it.
+- **P2-5** Unused exports in `frontend/src/lib/format.js`.
+- **P2-6** `[tool.pyright]` is configured in `backend/pyproject.toml` but pyright is **not a dependency**, so there is still no runnable typecheck.
 ## 15. Next task
-
 ### Goal
 
-Replace the stub evaluation in `backend/apps/validation/views.py` with a pure, unit-tested engine in `backend/apps/validation/engine.py`, keeping the existing hardcoded thresholds exactly as they are and preserving every response shape.
+Rework the `/dispatch` HOLD presentation, as directed by the repository owner:
+
+1. Move the persona label (`Budi · Gudang Cikarang`) **out of the top system switcher** and into the NUSANTARA WMS chrome below it. The top bar is only for switching ERP <-> VETO.
+2. On HOLD, show a **popup** naming the violations, which can then be dismissed and slides away.
+3. After dismissal the violations **persist as inline red messages under the offending field** (e.g. under Berat Kotor), in the manner of a form validation error.
+4. Replace the graphite verdict panel: the dark ground reads as foreign to the ERP page. Make it cleaner and integrated.
 
 ### Why
 
-It is the single change that unblocks the most: decision persistence, the audit endpoints, the override endpoint, and Rule Studio's client-rule precedence all need an engine that evaluates a *list of rules* rather than a hardcoded ladder. It is also safely agentic — it is pure refactoring plus tests, and it requires **no legal research and no new threshold values**, which keeps it clear of P0-2.
+`PRODUCT.md` F2 requires the violation and directive to appear **in context with the field that caused it**, which the current build does not do. The popup gives a booth visitor something legible from 1.5 m; the inline errors give the operator field-level context.
+
+### Constraint that must survive
+
+`DESIGN.md` §8 bans modals that dismiss a compliance result. A popup is acceptable **only** because dismissing it does not clear the HOLD: the inline field errors stay, and *Cetak Surat Jalan* stays locked until a re-validation returns PASS. Update `DESIGN.md` §8 to record that distinction rather than silently contradicting it.
 
 ### Files likely involved
 
-- Create `backend/apps/validation/types.py` — `RuleSpec`, `Violation`, `Decision` dataclasses, no Django imports
-- Create `backend/apps/validation/directives.py` — the three directive templates
-- Create `backend/apps/validation/engine.py` — `evaluate(payload: dict, rules: list[RuleSpec]) -> Decision`
-- Create `backend/apps/validation/tests/test_engine.py`
-- Modify `backend/apps/validation/views.py` — call the engine; keep request validation and the response body as they are
-
-Task B2 of `docs/plans/2026-08-11-validation-engine-and-dispatch.md` contains the full test suite and the engine's three-stage structure already written out. Follow it.
+- `frontend/src/App.jsx` — remove the persona label
+- `frontend/src/layouts/ErpLayout.jsx` — add it here
+- `frontend/src/routes/Dispatch.jsx` — map violations to fields; replace `VerdictPanel`
+- `frontend/src/components/dispatch/DispatchForm.jsx` — render per-field violation messages
+- New: `frontend/src/components/dispatch/ViolationDialog.jsx`
+- `DESIGN.md` §4 and §8
 
 ### Acceptance criteria
 
-1. `evaluate()` is pure: no ORM, no I/O, no Django import in `engine.py`, `types.py`, or `directives.py`.
-2. Precedence is origin-agnostic — strictest threshold wins per `(dimension, axle_index)`, regardless of `CENTRAL` or `CLIENT`. A looser client rule must never weaken a central limit.
-3. When a client rule wins where a central rule also exists, the directive names the central limit for contrast, as `api-contract.md` §1 shows.
-4. Engine tests use invented threshold values defined locally in the test file. They must **not** read the stub constants or `contract/*.json` thresholds, so that correcting a regulation later cannot look like an engine regression.
-5. All 10 existing tests in `test_contract.py` still pass **unmodified**. If one fails, the response shape moved: fix the code, not the test.
-6. `grep -rn "genai\|llm\|gemini" backend/apps/validation/ --include=*.py` returns nothing.
-7. The stub thresholds keep their current values and their `TODO: verify` marking. Do not "improve" any number.
+1. The top bar contains only the ERP/VETO switch. The persona reads as part of NUSANTARA WMS.
+2. A HOLD raises a popup listing every violation with its directive.
+3. Dismissing the popup leaves inline red messages under each offending field, and *Cetak Surat Jalan* still locked.
+4. Editing a field clears the verdict and re-locks the button, as today.
+5. PASS still has no colour; the unlocking button remains the signal.
+6. Verified in a browser at desktop width, both outcomes.
 
-### Verification commands
+### Verification
 
 ```bash
-uv run --directory backend python manage.py test apps
-uv run --directory backend python manage.py check
-grep -rn "genai\|llm\|gemini" backend/apps/validation/ --include=*.py
+npm --prefix frontend run lint
+npm --prefix frontend run build
 ```
 
-Then confirm the UI still works end to end: start both servers, set `VITE_USE_MOCKS=false` in `frontend/.env.local`, open `/dispatch`, submit the default load (expect `LOLOS` and the print button unlocking), then set gross weight `24500` and rear axle `17300` (expect `TAHAN`, two violations, print button locked).
-
----
-
+Then exercise `/dispatch` in a browser with `VITE_USE_MOCKS=true`: default load -> LOLOS and the print button unlocks; gross 24500 / rear 17300 -> popup, dismiss, inline errors remain, button locked.
 ## 16. Open decisions
 
 **DECISION 1 — Directive language**
@@ -661,7 +581,7 @@ Extracted from the existing code.
 - Private helpers are prefixed `_`.
 - Input validation is explicit and returns the contract error envelope through a local `_error()` helper.
 - Module docstrings state what the file is for and, where relevant, what still has to replace it.
-- Constants that are placeholders are named loudly (`STUB_LIMITS`) and carry a `TODO: verify`.
+- Placeholder constants are named loudly and carry a `TODO: verify`. The former `STUB_LIMITS` is gone; thresholds now live in the seed migration, where unverified figures are flagged in the citation string itself.
 - Tests are `django.test.TestCase`. Test method names are full sentences describing the behaviour (`test_correcting_the_load_flips_hold_to_pass`).
 
 **Commits**
