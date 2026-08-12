@@ -1,5 +1,5 @@
 import { formatMm } from '@/lib/format'
-import { motion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 
 /**
  * A booth gimmick on /dispatch (CLAUDE.md §4, P2 polish): a translucent
@@ -53,6 +53,7 @@ function axisGeometry(actualMm, legalMm) {
 }
 
 function PlanView({ length, width, limits }) {
+  const reduceMotion = useReducedMotion()
   const lengthGeo = axisGeometry(Number(length), limits.length?.threshold)
   const widthGeo = axisGeometry(Number(width), limits.width?.threshold)
 
@@ -62,7 +63,10 @@ function PlanView({ length, width, limits }) {
 
   return (
     <EnvelopeFrame label="Tampak Atas">
-      <svg viewBox={`0 0 ${lengthGeo.canvas} ${widthGeo.canvas}`} className="h-full w-full">
+      <svg
+        viewBox={`0 0 ${lengthGeo.canvas} ${widthGeo.canvas}`}
+        className="min-h-0 w-full flex-1"
+      >
         <rect
           x={lengthGeo.outerOffset}
           y={widthGeo.outerOffset}
@@ -81,7 +85,7 @@ function PlanView({ length, width, limits }) {
             width: lengthGeo.innerSize,
             height: widthGeo.innerSize,
           }}
-          transition={SPRING}
+          transition={reduceMotion ? { duration: 0 } : SPRING}
           fill="none"
           stroke={over ? OVER_COLOUR : NEUTRAL_COLOUR}
           strokeWidth={3}
@@ -98,6 +102,7 @@ function PlanView({ length, width, limits }) {
 }
 
 function SideView({ height, limits }) {
+  const reduceMotion = useReducedMotion()
   const heightGeo = axisGeometry(Number(height), limits.height?.threshold)
 
   if (!heightGeo) return <EnvelopePlaceholder label="Tampak Samping" />
@@ -106,7 +111,7 @@ function SideView({ height, limits }) {
     <EnvelopeFrame label="Tampak Samping">
       <svg
         viewBox={`0 0 ${SIDE_VIEW_NOMINAL_WIDTH_MM} ${heightGeo.canvas}`}
-        className="h-full w-full"
+        className="min-h-0 w-full flex-1"
       >
         <rect
           x={0}
@@ -123,7 +128,7 @@ function SideView({ height, limits }) {
           x={0}
           width={SIDE_VIEW_NOMINAL_WIDTH_MM}
           animate={{ y: heightGeo.innerOffset, height: heightGeo.innerSize }}
-          transition={SPRING}
+          transition={reduceMotion ? { duration: 0 } : SPRING}
           fill="none"
           stroke={heightGeo.over ? OVER_COLOUR : NEUTRAL_COLOUR}
           strokeWidth={3}
@@ -143,7 +148,7 @@ function EnvelopeFrame({ label, children }) {
   return (
     <div className="flex flex-col gap-2">
       <p className="text-label text-[#5a646e]">{label}</p>
-      <div className="h-56 w-full border border-[#c9ced4] p-3">{children}</div>
+      <div className="flex h-56 w-full flex-col border border-[#c9ced4] p-3">{children}</div>
     </div>
   )
 }
