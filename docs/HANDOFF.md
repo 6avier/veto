@@ -4,17 +4,17 @@
 | | |
 |---|---|
 | **Project** | VETO |
-| **Date** | 2026-08-12, refreshed at end of evening session |
-| **Branch** | `main` · HEAD `5c867c7` · clean · pushed, 0 ahead 0 behind |
+| **Date** | 2026-08-13, updated ahead of a fresh-session handoff |
+| **Branch** | `main` · HEAD `6fad2c8` · clean · pushed, 0 ahead 0 behind |
 | **Remote** | `https://github.com/6avier/veto.git` |
 | **Deadline** | Working product **2026-08-13 23:55 WIB**. Demo + booth **2026-08-14**. |
-| **Handoff status** | **NEEDS_REVIEW.** Frontend is feature-complete and **all three surfaces now run live**. Nothing blocking is frontend work. Four things block a credible demo, all backend or ops, listed in §14 — the sharpest new one is a **20-call-per-day Gemini quota**. |
+| **Handoff status** | **IN PROGRESS.** `TruckEnvelope` (the plain-rectangle dispatch gimmick) shipped and Iqbal's CLIENT rule pack seed landed — demo step 7 is now provable. Immediate next task is below: the illustrated redesign of `TruckEnvelope` has a committed, approved plan but **zero implementation** — nothing has been coded yet. |
 
 **Lanes.** Iqbal owns `backend/`. The other lane owns `frontend/`. Shared seam: `api-contract.md`, `contract/*.json`, `frontend/src/api/`.
 
-**This session crossed into `backend/` again**, this time for feature work, not just repair: `3912607` fixes the missing `json` import that had silently disabled live extraction since it was written, makes the fallback stop posing as a document quotation, and adds `GET /documents/{id}/pages/{n}` so the frontend can render the source page. **Tell Iqbal**, because it touches `apps/rules/views.py` and the contract. See §14 P0-3.
+**Since the last refresh:** the truck-envelope dispatch widget (design → plan → subagent-driven build → real-browser Playwright verification, which caught bugs no source read did) shipped and merged (`66124b7`). Separately, Iqbal seeded the CLIENT rule pack (`65bc380`) — **P0-2 from §14 below is done**, demo step 7 (approve a client rule, watch a nationally-legal load HOLD) should now be provable; verify it before assuming so. A follow-up redesign of the same widget — illustrated truck instead of plain rectangles — went through a full visual brainstorm (screenshot-verified mockups, not just hand-eyeballed SVG) and has a committed design spec and task-by-task implementation plan, **not yet built**. See §15.
 
-**Both lanes pushed to `main` within the same hour on 2026-08-12.** Fetch and rebase before starting. See §13.
+**Both lanes pushed to `main` the same day on 2026-08-12/13.** Fetch and rebase before starting. See §13.
 
 `AGENTS.md` is a pointer, not context. For a cold start read
 [HANDOFF-BRIEF.md](HANDOFF-BRIEF.md) first; this file is the full version.
@@ -401,21 +401,21 @@ uv run --directory backend python manage.py check
 ---
 
 ## 13. Git / working tree
-- **Branch:** `main`, the only branch on the remote. Everything ships straight to it.
-- **HEAD:** `5c867c7` as of 2026-08-12 evening. Working tree clean, pushed, in sync.
+- **Branch:** `main`, the only branch on the remote. Everything ships straight to it. (The plain-rectangle `TruckEnvelope` shipped via a short-lived `feature/truck-envelope` branch + PR-style merge, per its own plan's process — that branch is deleted, both locally and on the remote, work is fully on `main`.)
+- **HEAD:** `6fad2c8` as of 2026-08-13. Working tree clean, pushed, in sync.
 - **Two contributors.** `6avier` and `iqbalvirdiansyah-commits`. Iqbal's commits land as `6avier <6avier@users.noreply.github.com>`.
-- **Both lanes are pushing to `main` the same afternoon.** Two pushes landed mid-session on 2026-08-12 and both needed a rebase. **Fetch before you start and rebase, do not merge.** Iqbal is touching `engine.py`, the seed migrations and `contract/*.json` — the same files the frontend lane reads.
+- **`.superpowers/`** is now gitignored (added alongside the truck-envelope illustrated-redesign brainstorm) — scratch workspace for SDD ledgers and the visual-companion brainstorming server, never meant to be committed.
 - **A stale worktree exists** at `/private/tmp/veto-dispatch-finish` on `codex/dispatch-finish`, 2 commits, superseded by `main`. Not cleaned up.
 - **`.agents/`** is a directory of vendored agent skill packs. It is gitignored on purpose. Do not commit it.
 
 ```
+6fad2c8  docs(dispatch): add the illustrated truck envelope implementation plan
+b381d44  docs(dispatch): resolve the two open questions in the illustrated redesign spec
+7e45491  docs(dispatch): design the illustrated truck envelope redesign
+66124b7  Merge branch 'feature/truck-envelope'
+65bc380  feat(rules): seed Client SOP rules and finalize closing beat   (Iqbal)
+19a29ea  docs: refresh both handoffs for the evening session
 5c867c7  feat(rule-studio): show the source page with the clause marked
-3912607  fix(rules): unbreak live extraction, add the source page endpoint
-3decc55  fix(validation): patch array bypass and logic vulnerabilities   (Iqbal)
-2fc63ba  feat(validation): speak the directive in Indonesian
-80b2b39  fix(dev): let the dev server take an assigned port
-3ac08a6  docs: standardize axle_config format to 1.2.2 in api contract   (Iqbal)
-043d578  fix(dispatch): realign axle configs with the seeded rule base
 ```
 
 Commits are authored `6avier`. **Do not add a `Co-Authored-By` trailer or any AI attribution.**
@@ -474,36 +474,32 @@ Dead template assets (`hero.png`, `vite.svg`, `public/icons.svg`); `@types/react
 ## 15. Next task
 ### Goal
 
-Seed a CLIENT rule pack and prove demo step 7.
+Execute `docs/plans/2026-08-13-truck-envelope-illustrated-implementation.md` — replace `TruckEnvelope.jsx`'s plain-rectangle rendering with an illustrated truck (cab, wheels, panel lines), task by task. **Nothing in this plan is built yet** — the design spec and implementation plan are both committed and approved, but the code is still the plain-rectangle version that shipped in `66124b7`.
 
 ### Why
 
-`/rule-studio` now runs live end to end, so the machinery is there. What is still missing is the payoff: approve a client rule, then watch a load that is legal nationally get held on `/dispatch`. That is the closing beat of the demo and there is still nothing behind it.
+Pure P2 demo polish (`CLAUDE.md` §4) on top of an already-working, already-merged widget — this is not blocking the demo the way P0-1/P0-3/P0-4 below are. It exists because the product owner asked for it after seeing the shipped plain-rectangle version and wanted more visual "wow" for the booth. If time runs short before 2026-08-14, **this is the thing to drop**, not the P0 items.
+
+### Read first
+
+`docs/plans/2026-08-12-truck-envelope-illustrated-design.md` (the design — read this for the *why* behind each decision) then `docs/plans/2026-08-13-truck-envelope-illustrated-implementation.md` (the 7-task plan — this is what you actually execute). The design doc's §7 is worth internalizing before starting: hand-computed SVG coordinates produced several real, invisible-from-source bugs during the brainstorm (floating disconnected mirrors, misaligned centering, inconsistent per-state wheel offsets) that were only caught by an actual Playwright screenshot. **Every visual task in the plan has a mandatory self-verification screenshot step — do not skip it and do not trust the coordinates as written without looking at the render.**
 
 ### Order of work
 
-1. **Seed or create a CLIENT rule pack** (P0-2). Without one, nothing below matters.
-2. Approve a client rule through `/rule-studio`, or seed one directly if the Gemini quota is spent.
-3. On `/dispatch`, enter a load under 25000 kg but over the approved client limit. It must HOLD, and the violation must read `[ SOP KLIEN ]`.
-4. Flip back to `VITE_USE_MOCKS=true`. Mocks are the booth fallback if the backend dies.
-
-A one-page client SOP PDF built for exactly this exists outside the repo: `SOP-Cikarang-v2.pdf`, 22.000 kg gross and 4.000 mm height, both stricter than national. 22.000 is under the national 25.000, which is what makes the beat land. Ask the owner for it, or regenerate an equivalent — it is seed data, which `CLAUDE.md` §6 endorses.
-
-**Mind the quota before starting: 20 extraction calls per day.** Seed directly rather than burning calls on retries.
+The plan's 7 tasks are already ordered and each ends in a commit: (1) green colour + `DESIGN.md` exception, (2) bottom-anchor the side view's height (a real prerequisite once wheels/cab sit on a fixed ground line, not just polish), (3) side cab, (4) top cab, (5) panel lines, (6) side wheels (fixed), (7) top-down wheels (animated, anchored to the live input box on both axes — flagged in the plan as the task most likely to need iteration).
 
 ### Acceptance
 
-Rejected document makes **no extraction call**. Approve creates a real `Rule` with `origin = CLIENT` and returns a real pack version. Demo step 7 works end to end. Both mocked and live paths green.
+All 7 tasks committed, `npm --prefix frontend run lint`/`build` clean throughout, every visual task's self-verification screenshot checklist actually confirmed (not assumed), no regression to the widget's existing behaviour (geometry math, reduced-motion handling, placement on `/dispatch` all unchanged per the design doc §1).
 
 ### Verification
 
 ```bash
 npm --prefix frontend run lint
 npm --prefix frontend run build
-uv run --directory backend python manage.py test apps
 ```
 
-Then exercise the flow in a browser with both servers up.
+No backend changes in this plan, so no `manage.py test` run is required for it specifically — but if this session also touches anything under `backend/` for an unrelated reason, run the full suite per §19.
 ## 16. Open decisions
 Codex must not silently decide these.
 

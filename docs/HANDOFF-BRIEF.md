@@ -46,7 +46,7 @@ same origin and the backend's CORS pin on 5173 never applies in dev.
 | `/dispatch` | Built, **verified live** |
 | `/audit` | Built, **verified live** |
 | `/rule-studio` | Built, **verified live** — upload, triage, extract, source plate |
-| Backend | All endpoints respond. 27 pass in validation/audit/profiles; 2 fail in rules (see below). |
+| Backend | All endpoints respond. 38/38 tests passing as of 2026-08-13 (Iqbal's `65bc380` also fixed the Gemini-quota-flaky rules tests noted below — the flake description is kept for context, but re-verify the count if it's been a while). |
 
 Frontend is feature-complete. Nothing blocking is frontend work.
 
@@ -79,9 +79,11 @@ placeholder. **Do not make it invent a figure again** (`CLAUDE.md` §5).
 
 ## What blocks the demo
 
-1. **No CLIENT rule pack is seeded**, so the closing beat — approve a rule, watch
-   a nationally-legal load HOLD — still has not been demonstrated. This is the
-   one that matters most.
+1. ~~No CLIENT rule pack is seeded~~ **Done 2026-08-13** (Iqbal, `65bc380`,
+   "feat(rules): seed Client SOP rules and finalize closing beat"). The closing
+   beat — approve a rule, watch a nationally-legal load HOLD — should now be
+   demonstrable. Verify it before assuming so; it hasn't been re-checked from
+   the frontend side since it landed.
 2. **Two enforced thresholds cite themselves as `Asumsi`** (assumption), and they
    are the two the demo triggers. The word is **ours, not the regulation's** — it
    appears zero times in `data/` and zero times in the corpus. The Lampiran of
@@ -94,17 +96,15 @@ placeholder. **Do not make it invent a figure again** (`CLAUDE.md` §5).
 
 ## Next task
 
-Seed or create a CLIENT rule pack and prove the closing beat:
-
-1. Seed a CLIENT rule pack. Nothing else matters without one.
-2. On `/dispatch`, enter a load under 25000 kg but over the approved client
-   limit. It must HOLD and read `[ SOP KLIEN ]`.
-3. Set `VITE_USE_MOCKS=true` again and confirm the mocked path still works.
-
-A one-page client SOP PDF for this exists (22.000 kg gross, 4.000 mm height —
-both stricter than national), currently outside the repo. Ask the owner for
-`SOP-Cikarang-v2.pdf` or regenerate one; 22.000 is under the national 25.000,
-which is exactly what the closing beat needs.
+Execute `docs/plans/2026-08-13-truck-envelope-illustrated-implementation.md` —
+replaces `/dispatch`'s `TruckEnvelope` widget (currently plain rectangles,
+shipped in `66124b7`) with an illustrated truck: cab, wheels, panel lines.
+**Nothing in this plan is built yet**, design + plan are committed only.
+Read `docs/plans/2026-08-12-truck-envelope-illustrated-design.md` first for
+the why, then execute the 7-task plan in order — each task ends in a commit
+and has a mandatory Playwright self-verification screenshot step. Pure P2
+polish on an already-working widget; drop it first if time runs short before
+2026-08-14, ahead of any P0 item below.
 
 ## Watch the seam
 
