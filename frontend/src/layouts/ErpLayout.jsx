@@ -8,6 +8,8 @@ import {
 } from '@phosphor-icons/react'
 import { Outlet } from 'react-router-dom'
 
+import nusantaraLogo from '@/assets/brand/nusantara-wms.png'
+
 /**
  * Chrome for the client's warehouse system.
  *
@@ -121,16 +123,30 @@ function RailItem({ label, Icon, active = false }) {
 }
 
 /**
- * Brand mark. The rail is too narrow for "NUSANTARA WMS", so the wordmark
- * reduces to its initial and the full name rides the same flyout the nav items
- * use. Version string goes with it: it is the kind of detail real enterprise
- * software always shows and no mockup ever remembers.
+ * Brand mark. The rail is too narrow for "NUSANTARA WMS", so the full name
+ * rides the same flyout the nav items use. Version string goes with it: it is
+ * the kind of detail real enterprise software always shows and no mockup ever
+ * remembers.
+ *
+ * The host's own logo, placed whole at the owner's instruction rather than
+ * cropped to its monogram. The artwork is a square lockup with its wordmark
+ * underneath, so at 40px the wordmark is present but not readable; the flyout
+ * and the screen-reader label carry the name. The plate stays white because
+ * the artwork carries a white ground of its own.
  */
 function RailBrand() {
   return (
     <span className="group relative flex cursor-default items-center">
-      <span className="flex h-10 w-10 items-center justify-center rounded-veto bg-white text-[17px] font-bold leading-none tracking-[-0.02em] text-[#2d613b]">
-        N
+      <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-veto bg-white">
+        <img
+          src={nusantaraLogo}
+          width={256}
+          height={256}
+          alt=""
+          aria-hidden
+          className="h-full w-full object-contain"
+          draggable={false}
+        />
       </span>
       <span
         aria-hidden
