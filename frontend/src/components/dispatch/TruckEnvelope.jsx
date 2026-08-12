@@ -25,7 +25,7 @@ export default function TruckEnvelope({ length, width, height, limits }) {
 const CANVAS_PADDING = 1.2
 const SIDE_VIEW_NOMINAL_WIDTH_MM = 3000
 const OVER_COLOUR = '#a02a1f'
-const NEUTRAL_COLOUR = '#1f2933'
+const NEUTRAL_COLOUR = '#2f8f4e'
 const OUTER_STROKE = '#98a0a9'
 const OUTER_FILL = '#f4f6f7'
 const SPRING = { type: 'spring', stiffness: 90, damping: 12 }
