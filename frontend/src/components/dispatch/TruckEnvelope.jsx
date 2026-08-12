@@ -150,15 +150,8 @@ const REAR_DOOR_INSET_MM = 350
 
 const REAR_WHEEL_LENGTH_MM = 900
 const REAR_WHEEL_POKE_MM = 300
-/** Offsets from the live box's back edge; negative pokes past it. Rearmost first. */
+/** Offsets forward from the legal envelope's rear. Negative pokes past it. */
 const REAR_WHEEL_RIGHT_OFFSETS_MM = [-100, 1300]
-/** Front-to-back extent of the whole wheel set — how far forward of the box's
- *  back edge the foremost rect reaches. The wheels are never pushed in front
- *  of the cab by less body than this. */
-const REAR_WHEEL_SET_LENGTH_MM = Math.max(...REAR_WHEEL_RIGHT_OFFSETS_MM) + REAR_WHEEL_LENGTH_MM
-/** Minimum axle track. A truck's wheels do not narrow because its load is
- *  narrow; without this the two rows collapse onto each other at width 0. */
-const REAR_WHEEL_MIN_TRACK_MM = 1600
 
 /** Evenly spaced positions strictly inside [start, start+size], excluding the edges. */
 function panelLines(start, size, count = PANEL_LINE_COUNT) {
@@ -252,27 +245,28 @@ function PlanView({ length, width, limits }) {
           />
         )}
         {REAR_WHEEL_RIGHT_OFFSETS_MM.map((offset) => {
-          // Anchored to the live input box's own back edge on both axes, never
-          // the fixed legal-max line. Length is left-anchored, so the back edge
-          // is outerOffset + innerSize (design doc §5, plan amendment Task 4).
+          // Parked at the rear of the LEGAL envelope, and static on both axes.
           //
-          // Both axes are floored at the vehicle's own minimum, because the
-          // wheels belong to the truck rather than the cargo. Unbounded, a
-          // short load reversed them into the cab, and a zero width collapsed
-          // the two rows onto the centreline as detached floating tabs.
-          const boxRight = lengthGeo.outerOffset + lengthGeo.innerSize
-          const wheelRight = Math.max(boxRight, lengthGeo.outerOffset + REAR_WHEEL_SET_LENGTH_MM)
-          const track = Math.max(widthGeo.innerSize, REAR_WHEEL_MIN_TRACK_MM)
-          const trackTop = (widthGeo.canvas - track) / 2
-          const rectX = wheelRight - offset - REAR_WHEEL_LENGTH_MM
+          // These used to track the live box's back edge and spring with it,
+          // which made the axles slide fore and aft as the operator typed a
+          // length. The axles are part of the truck; only the load changes. So
+          // they sit at the fixed rear and the track is the vehicle's own,
+          // matching the side view, whose wheels were always fixed for exactly
+          // this reason. A short load now shows bare chassis between the cargo
+          // and the wheels, which is what a half-loaded truck looks like.
+          //
+          // Being fixed also retires the two floors these needed while they
+          // moved: nothing can reverse them into the cab or collapse the rows.
+          const wheelRear = lengthGeo.outerOffset + lengthGeo.legalSize
+          const trackTop = (widthGeo.canvas - CAB_WIDTH_MM) / 2
+          const rectX = wheelRear - offset - REAR_WHEEL_LENGTH_MM
           const topY = trackTop - REAR_WHEEL_POKE_MM + 60
-          const bottomY = trackTop + track - 60
+          const bottomY = trackTop + CAB_WIDTH_MM - 60
           return (
             <g key={offset}>
-              <motion.rect
-                initial={{ x: rectX, y: topY }}
-                animate={{ x: rectX, y: topY }}
-                transition={reduceMotion ? { duration: 0 } : SPRING}
+              <rect
+                x={rectX}
+                y={topY}
                 width={REAR_WHEEL_LENGTH_MM}
                 height={REAR_WHEEL_POKE_MM}
                 fill="#fff"
@@ -280,10 +274,9 @@ function PlanView({ length, width, limits }) {
                 strokeWidth="1.5"
                 vectorEffect="non-scaling-stroke"
               />
-              <motion.rect
-                initial={{ x: rectX, y: bottomY }}
-                animate={{ x: rectX, y: bottomY }}
-                transition={reduceMotion ? { duration: 0 } : SPRING}
+              <rect
+                x={rectX}
+                y={bottomY}
                 width={REAR_WHEEL_LENGTH_MM}
                 height={REAR_WHEEL_POKE_MM}
                 fill="#fff"

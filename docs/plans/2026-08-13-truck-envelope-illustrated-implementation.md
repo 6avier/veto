@@ -649,6 +649,18 @@ touches the ground line, or a wheel radius clips outside the SVG."
 
 ---
 
+> **AMENDED after execution, at 6avier's request — this task was reversed.**
+> The top-view rear wheels are **static**, parked at the rear of the legal
+> envelope, on both axes. They no longer track the live box or animate at all.
+> Design doc §5 argued the wheels are "physically part of this truck, and this
+> truck's real size is the input"; seeing it run, the opposite reads true — the
+> axles are part of the truck and only the *load* changes, so sliding them fore
+> and aft as an operator types a length looks wrong. The side view's wheels were
+> always fixed for exactly this reason, and the two views now agree. A short
+> load shows bare chassis between the cargo and the wheels, which is what a
+> half-loaded truck looks like. This also retires the two floors added earlier
+> to stop moving wheels reversing into the cab or collapsing at zero width.
+
 ### Task 7: Top-view wheels — front fixed, rear animated to the input box
 
 **This is the task most likely to need iteration** — it's the one place two independently-animated `motion.rect` elements (the box outline and the rear wheel pair) need to visibly move in lockstep, and the one place a coordinate mistake in an earlier round produced a real, screenshot-only-visible bug (inconsistent offsets between states). Budget real self-verification time here, across multiple input values, not just one.
