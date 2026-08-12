@@ -4,12 +4,14 @@ import {
   ApiError,
   approveCandidate,
   extractRules,
+  getDocumentPage,
   rejectCandidate,
   uploadDocument,
 } from '@/api'
 import CandidateReview from '@/components/rulestudio/CandidateReview'
 import DropZone from '@/components/rulestudio/DropZone'
 import ExtractionStages from '@/components/rulestudio/ExtractionStages'
+import SourcePlate from '@/components/rulestudio/SourcePlate'
 import TriageResult from '@/components/rulestudio/TriageResult'
 
 /**
@@ -32,6 +34,9 @@ export default function RuleStudio() {
   const [usedFallback, setUsedFallback] = useState(false)
   const [reviewResult, setReviewResult] = useState(null)
   const [error, setError] = useState(null)
+  const [page, setPage] = useState(null)
+  const [pageLoading, setPageLoading] = useState(false)
+  const [pageError, setPageError] = useState(false)
 
   const reducedMotion =
     typeof window !== 'undefined' &&
@@ -44,6 +49,9 @@ export default function RuleStudio() {
     setReviewResult(null)
     setUsedFallback(false)
     setError(null)
+    setPage(null)
+    setPageLoading(false)
+    setPageError(false)
   }
 
   const fail = (caught) => setError(caught instanceof ApiError ? caught : ApiError.from(caught))
@@ -67,11 +75,32 @@ export default function RuleStudio() {
     try {
       const result = await extractRules(document.document_id, { force })
       setUsedFallback(Boolean(result.used_fallback))
-      setCandidate(result.candidates?.[0] ?? null)
+      const first = result.candidates?.[0] ?? null
+      setCandidate(first)
       setStage('reviewing')
+      // The page is fetched after the verdict is on screen, not before. It is
+      // the evidence for a rule that already exists, and a slow render must
+      // never hold up the review itself.
+      if (first?.source_page && !result.used_fallback) {
+        loadPage(document.document_id, first.source_page)
+      }
     } catch (caught) {
       fail(caught)
       setStage('triaged')
+    }
+  }
+
+  async function loadPage(documentId, pageNumber) {
+    setPageLoading(true)
+    setPageError(false)
+    try {
+      setPage(await getDocumentPage(documentId, pageNumber))
+    } catch {
+      // A missing page plate is a degraded view, not a failed review. The
+      // extracted rule and its citation stand on their own.
+      setPageError(true)
+    } finally {
+      setPageLoading(false)
     }
   }
 
@@ -98,6 +127,10 @@ export default function RuleStudio() {
   }
 
   const busy = stage === 'uploading' || stage === 'extracting' || stage === 'submitting'
+  // Mocks have no PDF to render and the fallback candidate quotes no document,
+  // so in both cases the review stays single-column rather than reserving a
+  // gap for a plate that is never coming.
+  const showPlate = Boolean(page || pageLoading || pageError)
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 py-6">
@@ -163,13 +196,28 @@ export default function RuleStudio() {
         )}
 
         {candidate && (stage === 'reviewing' || stage === 'submitting' || stage === 'reviewed') && (
-          <CandidateReview
-            candidate={candidate}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            busy={stage === 'submitting'}
-            result={reviewResult}
-          />
+          <div
+            className={[
+              'grid gap-4 lg:items-start',
+              showPlate ? 'lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]' : '',
+            ].join(' ')}
+          >
+            {showPlate && (
+              <SourcePlate
+                page={page}
+                loading={pageLoading}
+                error={pageError}
+                activeCandidateId={candidate.candidate_id}
+              />
+            )}
+            <CandidateReview
+              candidate={candidate}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              busy={stage === 'submitting'}
+              result={reviewResult}
+            />
+          </div>
         )}
 
         {stage === 'reviewing' && !candidate && (

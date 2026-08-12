@@ -4,6 +4,7 @@ export { listDecisions, getDecision } from './audit'
 export {
   uploadDocument,
   extractRules,
+  getDocumentPage,
   listRuleCandidates,
   approveCandidate,
   rejectCandidate,

@@ -33,6 +33,29 @@ export async function extractRules(documentId, { force = false } = {}) {
   }
 }
 
+/**
+ * GET /documents/{id}/pages/{n} — the source half of the split screen.
+ *
+ * Returns the page as an inline PNG plus the rectangles each candidate clause
+ * occupies, given as percentages of the page box so the overlay stays aligned
+ * at any rendered width. Mocks have no PDF to render, so they return null and
+ * the plate simply does not appear.
+ */
+export async function getDocumentPage(documentId, pageNumber) {
+  if (USE_MOCKS) {
+    await delay(400)
+    return mocks.documentPage?.(pageNumber) ?? null
+  }
+  try {
+    const { data } = await http.get(`/documents/${documentId}/pages/${pageNumber}`, {
+      timeout: 30000,
+    })
+    return data
+  } catch (error) {
+    throw ApiError.from(error)
+  }
+}
+
 /** GET /rule-candidates — the human-in-the-loop staging queue. */
 export async function listRuleCandidates(status = 'PENDING') {
   if (USE_MOCKS) {
