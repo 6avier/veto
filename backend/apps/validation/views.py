@@ -42,11 +42,21 @@ def validate(request):
     if not isinstance(gross, int) or isinstance(gross, bool) or gross <= 0:
         return _error("gross_weight_kg must be a positive integer in kilograms", field="gross_weight_kg")
 
+    vehicle = payload.get("vehicle", {})
+    axle_config = vehicle.get("axle_config")
+
     axle_loads = load.get("axle_loads_kg")
     if not isinstance(axle_loads, list) or not axle_loads:
         return _error("axle_loads_kg must contain at least one entry", field="axle_loads_kg")
     if not all(isinstance(a, int) and not isinstance(a, bool) and a >= 0 for a in axle_loads):
         return _error("axle_loads_kg must contain integers in kilograms", field="axle_loads_kg")
+
+    if axle_config:
+        # Calculate expected number of axles by counting digits in axle_config
+        # e.g., '1.2.2' -> 3 axles, '1.2-2.2' -> 4 axles
+        expected_axles = sum(1 for char in axle_config if char.isdigit())
+        if expected_axles > 0 and len(axle_loads) != expected_axles:
+            return _error(f"axle_loads_kg length ({len(axle_loads)}) does not match expected axles ({expected_axles}) for config {axle_config}", field="axle_loads_kg")
 
     dimensions = load.get("dimensions_mm") or {}
     if not isinstance(dimensions, dict):

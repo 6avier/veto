@@ -5,14 +5,14 @@
   "violations": [
     {
       "dimension": "AXLE_LOAD",
-      "axle_index": 1,
-      "actual_value": 17300,
-      "limit_value": 16000,
+      "axle_index": 2,
+      "actual_value": 11300,
+      "limit_value": 10000,
       "excess_value": 1300,
       "unit": "kg",
       "severity": "BLOCKING",
       "rule_origin": "CENTRAL",
-      "legal_citation": "PP 55/2012 Lampiran (Asumsi Sumbu Ganda/Tandem)",
+      "legal_citation": "PP 55/2012 (Batas Sumbu Tunggal Universal)",
       "directive": "Kurangi beban sumbu belakang 1.300 kg"
     },
     {

@@ -94,11 +94,23 @@ def _evaluate_dimension(
     if not central_rule and not client_rule:
         return None
     
-    # Assume LTE for all MVP ODOL rules right now
-    strictest_rule, other_rule = _find_stricter_rule(central_rule, client_rule, "LTE")
+    # Fetch operator dynamically
+    operator = client_rule.operator if client_rule else central_rule.operator
+    strictest_rule, other_rule = _find_stricter_rule(central_rule, client_rule, operator)
     
-    if strictest_rule and actual_value > strictest_rule.threshold:
-        excess = actual_value - strictest_rule.threshold
+    is_violation = False
+    if strictest_rule:
+        if operator == "LTE" and actual_value > strictest_rule.threshold:
+            is_violation = True
+            excess = actual_value - strictest_rule.threshold
+        elif operator == "GTE" and actual_value < strictest_rule.threshold:
+            is_violation = True
+            excess = strictest_rule.threshold - actual_value
+        elif operator == "EQ" and actual_value != strictest_rule.threshold:
+            is_violation = True
+            excess = abs(actual_value - strictest_rule.threshold)
+            
+    if is_violation:
         
         # Build directive
         subject = ""

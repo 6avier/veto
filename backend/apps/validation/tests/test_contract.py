@@ -138,3 +138,13 @@ class ValidateContractTests(TestCase):
         self.assertEqual(keys_of(response.json()), {"error"})
         self.assertEqual(response.json()["error"]["code"], "VALIDATION_ERROR")
         self.assertEqual(response.json()["error"]["field"], "axle_loads_kg")
+
+    def test_invalid_axle_loads_length_uses_the_error_envelope(self):
+        payload = fixture("validate.request.hold.json")
+        # 1.2.2 expects 3 axles. Provide only 2.
+        payload["load"]["axle_loads_kg"] = [7000, 16000]
+        response = self.post(payload)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(keys_of(response.json()), {"error"})
+        self.assertEqual(response.json()["error"]["code"], "VALIDATION_ERROR")
+        self.assertIn("does not match expected axles", response.json()["error"]["message"])
