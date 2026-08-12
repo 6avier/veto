@@ -47,6 +47,22 @@ The shell carries **nothing else**. Who is signed in belongs to the system they 
 
 The old green-sidebar / navy-sidebar coding from the proposal is retired. The two systems are distinguished by **density and material**, not by hue.
 
+**The ERP's chrome is a left rail, not a top bar.** It was a green product strip
+with a white text tab row beneath it; both are now one 64px green rail carrying
+the brand mark, five nav icons, and the operator. That is the shape warehouse
+and logistics consoles actually take, and it buys back two horizontal bars of
+vertical space on the surface where the dispatch form and the load envelope both
+live. This is not a return to the retired coding above: that rule is about never
+distinguishing *VETO from the host* by hue, and this is the host's own green
+relocated within its own surface. VETO's side of the app gains no rail and no
+green.
+
+The rail's items are **inert**. There is no Beranda or Laporan to route to, so
+they are `span`s with the default cursor, never links to dead ends. They lift on
+hover and reveal a label flyout anyway, because the host has to feel like live
+software rather than a screenshot, and because an icon-only rail has no other
+way to tell a booth visitor what its icons mean.
+
 ---
 
 ## 2. Typography
