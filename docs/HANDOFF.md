@@ -478,18 +478,19 @@ changed. **One-line fix if wanted:** uncomment the env read. Do not ship it
 without then proving the mocks path end-to-end with the backend stopped; it
 has been dead long enough that the fixtures may have drifted.
 
-**P0-6 · `main` is red. `test_directives_match_the_fixture_wording` fails.**
+**P0-6 · ~~`main` is red~~ RESOLVED same day, `2098dd2`.**
 
 Bisected 2026-08-13: `2626fc8` green → **`3d4be46` red** (`feat(dispatch): add
-smart payload directives and balance warnings`) → `14bf445` red. The engine now
-emits a `GROSS_WEIGHT` directive where `contract/validate.response.hold.json`
-still expects `AXLE_LOAD`.
+smart payload directives and balance warnings`) → `14bf445` red.
+`test_directives_match_the_fixture_wording` failed because the engine emitted a
+`GROSS_WEIGHT` directive where `contract/validate.response.hold.json` still
+expected `AXLE_LOAD`.
 
-This is the contract drift alarm in §17 firing as designed. **Not an agent
-decision:** someone has to choose whether the engine or the fixture is correct,
-then move `api-contract.md` with it. The truck-envelope merge (`7d7d30a`) did
-not cause it and does not make it worse — the failure predates that merge on
-`origin/main`.
+Fixed by `2098dd2` (`fix(contract): sync wording with smart directives`), which
+moved the fixture and `api-contract.md` to match the engine. **38/38 green,
+re-verified 2026-08-13.** Kept as a record because this is the §17 drift alarm
+doing its job: the fixture and the engine moved apart, and the test caught it
+within the hour.
 
 **P0-4 · Nothing is deployed.** No `Dockerfile`, `vercel.json`, `railway.*`, `Procfile` or CI. `gunicorn` and `whitenoise` are installed and unused. Roughly a day and a half remains.
 

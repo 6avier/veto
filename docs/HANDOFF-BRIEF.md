@@ -79,15 +79,12 @@ placeholder. **Do not make it invent a figure again** (`CLAUDE.md` §5).
 
 ## What blocks the demo
 
-0. **`main` is red, and the mocks fallback does not exist.** Both from
-   `3d4be46` (`feat(dispatch): add smart payload directives and balance
-   warnings`), bisected 2026-08-13 — `2626fc8` was green.
+0. **The mocks fallback does not exist.** From `3d4be46` (`feat(dispatch): add
+   smart payload directives and balance warnings`), bisected 2026-08-13.
 
-   - `test_directives_match_the_fixture_wording` fails: the engine emits a
-     `GROSS_WEIGHT` directive where `contract/validate.response.hold.json`
-     still expects `AXLE_LOAD`. The §17 drift alarm working as designed.
-     Someone must decide whether engine or fixture is right, then move
-     `api-contract.md` with it.
+   - ~~`test_directives_match_the_fixture_wording` fails~~ **Fixed same day by
+     `2098dd2`**, which synced the fixture and `api-contract.md` to the engine.
+     38/38 green. The §17 drift alarm worked exactly as intended.
    - `frontend/src/api/client.js:16` hardcodes
      `export const USE_MOCKS = false`, with the original
      `import.meta.env.VITE_USE_MOCKS === 'true'` left in a trailing comment.
