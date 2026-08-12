@@ -265,6 +265,24 @@ It does not license green anywhere else — `PASS has no colour` and `VETO never
 uses green` still govern every other surface, including `VerdictPanel` a few
 lines away in the same page.
 
+### The logo mark is ink, not brand blue
+
+VETO's mark (`frontend/src/components/VetoMark.jsx`) is drawn in `currentColor`
+and takes the ink of whatever surface it sits on. Its brand blue appears in
+exactly one place: `frontend/public/favicon.svg`, which is the browser tab and
+therefore outside the interface.
+
+This is not timidity about the brand. The mark's most important placement is the
+head of the verdict panel, which is inches from the amber HOLD marker, and the
+one-accent lock is the whole reason amber reads as a warning rather than as
+decoration. A blue logo there would spend the lock for recall the shape already
+provides. Unlike the `TruckEnvelope` green, this needs no exception, because
+nothing about it breaks the rule.
+
+Placed at the head of the verdict panel (VETO speaking inside the host's ERP)
+and at the head of `VetoLayout`'s sub-nav, so Rule Studio and Jejak Audit both
+carry it without either page drawing its own.
+
 ### Rule origin
 
 `CENTRAL` and `CLIENT` must be distinguishable, and the one-accent lock means not with a second hue. Distinguish by form:
