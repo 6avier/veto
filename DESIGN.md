@@ -114,6 +114,15 @@ It drops in cleanly because it is metrically almost identical to Archivo:
 | SAP 72 Semibold | 0.528 | 0.767 | 0.588 | yes |
 | Archivo | 0.526 | 0.767 | 0.584 | yes |
 
+**Weight, and the register trap.** The SAP reference people reach for is
+sap.com's marketing hero: 72 at Bold or Black on a 56px headline. SAP Fiori's
+actual product screens look nothing like it, and copying the marketing register
+into a product bar makes the host read as a landing page rather than as
+software. The ERP brand and the page heading sit at **Bold 700** with tightened
+tracking, which is as far as product UI should go. 72 Black exists in the SAP
+repository and is deliberately not vendored, because nothing here should be
+set at display weight.
+
 **Scope is strict.** 72 covers the NUSANTARA WMS chrome and the dispatch form.
 VETO never uses it: the verdict panel and the HOLD dialog pin themselves back to
 Archivo even though they render inside the ERP's tree. One face per system is

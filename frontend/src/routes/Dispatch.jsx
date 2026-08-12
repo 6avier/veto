@@ -151,7 +151,7 @@ export default function Dispatch() {
     <div className="mx-auto max-w-[1400px] px-4 py-5">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-h1 text-[#1f2933]">Buat Surat Jalan</h1>
+          <h1 className="text-h1 font-bold tracking-[-0.02em] text-[#1f2933]">Buat Surat Jalan</h1>
           <p className="mt-0.5 text-label text-[#5a646e]">
             Gudang Cikarang 01 · Pengiriman keluar
           </p>

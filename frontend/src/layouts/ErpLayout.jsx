@@ -24,7 +24,7 @@ export default function ErpLayout() {
     <div className="min-h-[calc(100dvh-2.75rem)] bg-[#eef0f2] font-erp text-[#1f2933]">
       <div className="bg-[#2d613b] text-white">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2">
-          <span className="text-label font-semibold tracking-[-0.01em]">NUSANTARA WMS</span>
+          <span className="text-label font-bold tracking-[-0.015em]">NUSANTARA WMS</span>
           <span className="text-mono-xs text-white/70">v4.2.1</span>
           <span className="ml-auto text-label text-white/75">Gudang Cikarang 01</span>
           <span aria-hidden className="h-3.5 w-px bg-white/25" />
