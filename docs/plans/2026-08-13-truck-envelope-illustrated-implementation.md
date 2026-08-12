@@ -4,6 +4,21 @@
 
 **Goal:** Replace `TruckEnvelope.jsx`'s plain-rectangle rendering with an illustrated truck (cab, wheels, panel lines) in both the top-down and side views, keeping the existing geometry engine, data flow, and placement untouched.
 
+> **AMENDED during execution — this architecture was reversed.** Both cabs now
+> live **inside** their view's box SVG, drawn in the same millimetre space,
+> occupying negative x in front of the box. The two-SVG split is sound only
+> while the cab is pure decoration with no geometric relationship to the box.
+> It gained three — the ground line, the deck line, and wheel size — and two
+> viewBoxes that resolve to different pixel scales cannot be relied on to
+> agree about any of them. Symptoms, each caught only by screenshot: the cab's
+> ground line sat ~28px above the box's (patched with `preserveAspectRatio`,
+> Task 3); the cab's floor ran to the ground while the body's floor sat on the
+> deck, which no constant in the cab's local units could fix; and the plan
+> view's cab kept a fixed pixel width while the body tracked the width input,
+> so a narrow load detached from it. Sharing one coordinate system makes all
+> of this structural instead of a coincidence to re-tune. The original
+> reasoning below is kept for the record.
+
 **Architecture:** Each view (`PlanView`, `SideView`) becomes a **two-SVG layout**: a small, fixed-viewBox SVG for the cab (decorative, never animates, own local coordinate system — no scaling math against the mm-based canvas needed) sitting beside the existing box SVG (unchanged coordinate system: still `lengthGeo.canvas` / `widthGeo.canvas` / `heightGeo.canvas` in real millimetres). This sidesteps compositing two different coordinate systems into one `viewBox` — a plain CSS flex row keeps them visually adjacent, and because both share the same row height, their vertically-centered (or bottom-anchored) content lines up without a transform.
 
 **Tech Stack:** React 19, Tailwind v4, Motion (`motion/react`, already a dependency).
@@ -14,8 +29,30 @@ Design reference: [`docs/plans/2026-08-12-truck-envelope-illustrated-design.md`]
 
 - **Frontend-only.** No `backend/` file changes.
 - **`axisGeometry()`'s contract for `PlanView`'s two axes (length, width) does not change** — it stays centered (a load sitting centered left-right on the bed is correct). Only `SideView`'s height axis changes from centered to bottom-anchored (Task 2) — that change is computed locally in `SideView`, `axisGeometry` itself is untouched so `PlanView` is unaffected.
+
+  > **AMENDED during execution (Task 4), with 6avier's agreement.** Length is
+  > **left-anchored**, not centered. Once `PlanCab` is drawn at the front, a
+  > centered box renders the cargo body floating behind the cab whenever the
+  > load is under the legal max, with the gap opening and closing as the
+  > operator types — the same failure Task 2 fixes for height. `PlanView` now
+  > draws the inner box at `x = lengthGeo.outerOffset` and its `viewBox`
+  > starts at `outerOffset` rather than 0 (the canvas's leading padding only
+  > needs to exist at the back, where overflow renders). **Width is still
+  > centered** — a body does sit centred on its chassis. `axisGeometry` is
+  > still untouched; this is computed locally in `PlanView`.
+  >
+  > **Task 7 depends on this:** its `boxRight` must be
+  > `lengthGeo.outerOffset + lengthGeo.innerSize`, not
+  > `lengthGeo.innerOffset + lengthGeo.innerSize`.
 - **No new npm dependency.** Motion is already installed.
-- **Colour:** `#2f8f4e` (green) when every dimension fits, `#a02a1f` (existing convention, unchanged) the moment any dimension is over. This is a confirmed, deliberate override of `DESIGN.md` §4's "VETO never uses green" — Task 1 patches `DESIGN.md` §4 with a short recorded exception, scoped to this file only.
+- **Colour:** `#2f8f4e` (green) when every dimension fits, `#a02a1f` (existing convention, unchanged) the moment any dimension is over.
+
+  > **AMENDED during execution, at 6avier's request.** The state colour applies
+  > to the **whole vehicle** — cab, mirrors and wheels included — not just the
+  > cargo box outline. Design doc §3 had the cab as fixed decoration that never
+  > reads data; shown the render, 6avier asked why the cab stayed neutral while
+  > the body went red. Both cabs now take a `colour` prop. The ground/chassis
+  > line stays neutral `#1f2933`: it is the road, not the vehicle. This is a confirmed, deliberate override of `DESIGN.md` §4's "VETO never uses green" — Task 1 patches `DESIGN.md` §4 with a short recorded exception, scoped to this file only.
 - **Only the box outline and the rear wheel-hint pair (top-down) get Motion spring animation** (`SPRING = { type: 'spring', stiffness: 90, damping: 12 }`, already defined, unchanged). Panel lines and every other detail recompute from plain (non-animated) geometry each render and snap — this is a deliberate scope cut recorded in the design doc §6, not a shortcut to relitigate.
 - **`vectorEffect="non-scaling-stroke"` on every stroked shape** inside the mm-scale box SVGs (unchanged existing convention — without it, strokes render sub-pixel/invisible at real render scale). The cab SVGs use small, human-scale local viewBoxes (roughly 0–100 units), so this is optional there but keep it for consistency — cheap and harmless either way.
 - **No frontend test runner** (`CLAUDE.md` §4, deliberate). Verification is browser-only, and **every visual task in this plan includes a mandatory self-verification screenshot pass** (Playwright + headless Chromium, installed to a scratch dir — no project dependency added) — not deferred to a human pass at the end. The design doc §7 is explicit about why: hand-computed SVG coordinates produced several real bugs during brainstorming (floating disconnected elements, misaligned centering, inconsistent per-state offsets) that were invisible reading the source and only caught by actually looking at a rendered screenshot.
@@ -538,6 +575,16 @@ snaps to its new position instead."
 
 **Interfaces:**
 - Produces: new constants `WHEEL_RADIUS_MM = 450`, `WHEEL_HUB_RADIUS_MM = 180`, `REAR_WHEEL_OFFSETS_MM = [400, 120]` (distances from the box's right edge, i.e. `SIDE_VIEW_NOMINAL_WIDTH_MM`, to each wheel's centre).
+
+  > **AMENDED during execution (Task 6).** `SIDE_VIEW_NOMINAL_WIDTH_MM` is now
+  > **9000**, was 3000. At 3000 the viewBox is taller than wide, so `meet`
+  > scaling fit it by height and rendered the entire truck ~100px into ~320px
+  > of frame, leaving half the panel empty — obvious once a cab and wheels
+  > made it read as an object rather than a rectangle. 9000 is a realistic
+  > cargo-body length and fills the row. The constant is decorative by design
+  > (§5: length is not re-shown in the side view), so nothing data-driven
+  > moves. `REAR_WHEEL_OFFSETS_MM` rescales to **`[1350, 500]`** to stay in
+  > the back ~15% as this task's checklist intends.
 
 - [ ] **Step 1: Add the wheel constants**
 

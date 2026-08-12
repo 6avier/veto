@@ -239,6 +239,16 @@ Amber means HOLD and nothing else. PASS is not celebrated — it resolves. No gr
 
 **PASS is signalled by the gate opening.** `Cetak Surat Jalan` is disabled until the engine says yes. When it does, the button becomes live and prominent. The state change is functional, not decorative — and that is more legible at 1.5 m than any colour, because the thing the operator wants is suddenly available.
 
+### Exception: TruckEnvelope
+
+`frontend/src/components/dispatch/TruckEnvelope.jsx`'s truck-outline widget uses
+`#2f8f4e` (green) for "fits within the legal envelope," alongside the existing
+`#a02a1f` for "exceeds it." This is a deliberate, scoped override of the two rules
+above, confirmed by the product owner after the conflict was raised explicitly.
+It does not license green anywhere else — `PASS has no colour` and `VETO never
+uses green` still govern every other surface, including `VerdictPanel` a few
+lines away in the same page.
+
 ### Rule origin
 
 `CENTRAL` and `CLIENT` must be distinguishable, and the one-accent lock means not with a second hue. Distinguish by form:
