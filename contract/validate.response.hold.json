@@ -18,13 +18,24 @@
     {
       "dimension": "GROSS_WEIGHT",
       "actual_value": 24500,
-      "limit_value": 23000,
-      "excess_value": 1500,
+      "limit_value": 22000,
+      "excess_value": 2500,
       "unit": "kg",
       "severity": "BLOCKING",
       "rule_origin": "CLIENT",
       "legal_citation": "SOP Internal Gudang Cikarang v2 \u00a73.1",
-      "directive": "Kurangi muatan total 1.500 kg. SOP klien lebih ketat dari batas hukum 24.000 kg"
+      "directive": "Kurangi muatan total 2.500 kg. SOP klien lebih ketat dari batas hukum 24.000 kg"
+    },
+    {
+      "dimension": "DIMENSION_HEIGHT",
+      "actual_value": 4100,
+      "limit_value": 4000,
+      "excess_value": 100,
+      "unit": "mm",
+      "severity": "BLOCKING",
+      "rule_origin": "CLIENT",
+      "legal_citation": "SOP Internal Gudang Cikarang v2 \u00a73.1",
+      "directive": "Kurangi tinggi muatan 100 mm. SOP klien lebih ketat dari batas hukum 4.200 mm"
     }
   ],
   "rule_packs_applied": [

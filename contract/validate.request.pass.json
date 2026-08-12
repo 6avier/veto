@@ -6,9 +6,9 @@
     "tare_weight_kg": 8500
   },
   "load": {
-    "gross_weight_kg": 22400,
-    "axle_loads_kg": [6800, 7800, 7800],
-    "dimensions_mm": { "length": 12000, "width": 2500, "height": 4100 }
+    "gross_weight_kg": 21500,
+    "axle_loads_kg": [6500, 7500, 7500],
+    "dimensions_mm": { "length": 12000, "width": 2500, "height": 3900 }
   },
   "loading_point_id": "LP-CIKARANG-01"
 }

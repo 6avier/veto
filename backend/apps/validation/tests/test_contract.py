@@ -24,22 +24,6 @@ def keys_of(obj):
 class ValidateContractTests(TestCase):
     def setUp(self):
         self.client = Client()
-        # The test database already has the CENTRAL rule pack seeded.
-        # We need to add the CLIENT rule pack for testing the exact fixture output.
-        client_pack = RulePack.objects.create(
-            id="c0a80101-0000-4000-8000-000000000002",
-            domain="ODOL",
-            version=1,
-            origin="CLIENT"
-        )
-        Rule.objects.create(
-            rule_pack=client_pack,
-            dimension="GROSS_WEIGHT",
-            operator="LTE",
-            threshold=23000,
-            unit="kg",
-            legal_citation="SOP Internal Gudang Cikarang v2 §3.1"
-        )
 
     def post(self, payload):
         return self.client.post("/api/v1/validate", data=payload, content_type="application/json")
