@@ -31,9 +31,10 @@ Verify with `manage.py test apps`, `npm --prefix frontend run lint`, and
 `npm --prefix frontend run build`. **There is no typecheck** — the frontend is
 plain JavaScript.
 
-`VITE_USE_MOCKS=true` runs the whole frontend with no backend. Mocks are the
-booth fallback; keep them working. **It is currently `false`** — flip it back
-before the booth.
+`VITE_USE_MOCKS` **currently does nothing** — `frontend/src/api/client.js:16`
+hardcodes `USE_MOCKS = false`. Flipping the env var before the booth, as older
+notes told you to, has no effect. There is no no-backend fallback until that
+line is restored. See "What blocks the demo" below.
 
 The dev server takes an assigned port when 5173 is busy. Safe because the
 frontend calls `/api/v1` relative through the Vite proxy, so the browser sees
@@ -111,15 +112,24 @@ placeholder. **Do not make it invent a figure again** (`CLAUDE.md` §5).
 
 ## Next task
 
-Execute `docs/plans/2026-08-13-truck-envelope-illustrated-implementation.md` —
-replaces `/dispatch`'s `TruckEnvelope` widget (currently plain rectangles,
-shipped in `66124b7`) with an illustrated truck: cab, wheels, panel lines.
-**Nothing in this plan is built yet**, design + plan are committed only.
-Read `docs/plans/2026-08-12-truck-envelope-illustrated-design.md` first for
-the why, then execute the 7-task plan in order — each task ends in a commit
-and has a mandatory Playwright self-verification screenshot step. Pure P2
-polish on an already-working widget; drop it first if time runs short before
-2026-08-14, ahead of any P0 item below.
+**No frontend work is outstanding.** In priority order, all backend/ops/human:
+
+1. **Deploy something.** Still no `Dockerfile`, `Procfile`, `railway.*`, `vercel.json` or CI. `gunicorn`, `whitenoise` and `psycopg2-binary` are installed and unused. Biggest risk left.
+2. **Restore the mocks fallback** — one line, see above. Then walk `/dispatch` with Django stopped before trusting it.
+3. **Verify or relabel the two `Asumsi` thresholds.** Human only; an agent must not pick values.
+4. **Gemini quota** — today's 20 calls were spent verifying Rule Studio. Resets daily; `gemini-flash-lite-latest` has a separate allowance.
+
+### Shipped 2026-08-13 (`3955310`..`56a9f3f`)
+
+- **Illustrated truck envelope** on `/dispatch`: cab, wheels, panel lines, door seam, a cargo deck, whole-vehicle green/red. Both cabs live in the box's own millimetre space; the top-view wheels are static at the legal envelope's rear.
+- **ERP chrome is a left icon rail** — the green strip and the white tab row are gone. Inert icons that lift on hover with a label flyout.
+- **Rule Studio reviews every extracted candidate**, not just the first, with the source plate following the active candidate's page.
+- **Logo mark** in the verdict panel, the VETO sub-nav, and the favicon.
+
+Every visual change was verified in a real browser, and it mattered: two SVGs
+letterboxing apart, a spring driving `height` negative (~150 console errors per
+keystroke), and wheels reversing into the cab were all invisible from source and
+all shipped-green on `npm run build`.
 
 ## Watch the seam
 

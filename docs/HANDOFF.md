@@ -4,17 +4,24 @@
 | | |
 |---|---|
 | **Project** | VETO |
-| **Date** | 2026-08-13, updated ahead of a fresh-session handoff |
-| **Branch** | `main` · HEAD `6fad2c8` · clean · pushed, 0 ahead 0 behind |
+| **Date** | 2026-08-13, updated at the end of the illustrated-envelope / ERP-rail session |
+| **Branch** | `main` · HEAD `56a9f3f` · clean · pushed, 0 ahead 0 behind |
 | **Remote** | `https://github.com/6avier/veto.git` |
 | **Deadline** | Working product **2026-08-13 23:55 WIB**. Demo + booth **2026-08-14**. |
-| **Handoff status** | **IN PROGRESS.** `TruckEnvelope` (the plain-rectangle dispatch gimmick) shipped and Iqbal's CLIENT rule pack seed landed — demo step 7 is now provable. Immediate next task is below: the illustrated redesign of `TruckEnvelope` has a committed, approved plan but **zero implementation** — nothing has been coded yet. |
+| **Handoff status** | **Frontend is feature-complete and green.** The illustrated truck envelope, the ERP icon rail, Rule Studio multi-candidate review, and the logo all shipped this session. **Nothing outstanding is frontend work.** What remains is P0-1 (unverified thresholds), P0-4 (no deployment), and P0-5 (the dead mocks fallback) — see §14 and §15. |
 
 **Lanes.** Iqbal owns `backend/`. The other lane owns `frontend/`. Shared seam: `api-contract.md`, `contract/*.json`, `frontend/src/api/`.
 
-**Since the last refresh:** the truck-envelope dispatch widget (design → plan → subagent-driven build → real-browser Playwright verification, which caught bugs no source read did) shipped and merged (`66124b7`). Separately, Iqbal seeded the CLIENT rule pack (`65bc380`) — **P0-2 from §14 below is done**, demo step 7 (approve a client rule, watch a nationally-legal load HOLD) should now be provable; verify it before assuming so. A follow-up redesign of the same widget — illustrated truck instead of plain rectangles — went through a full visual brainstorm (screenshot-verified mockups, not just hand-eyeballed SVG) and has a committed design spec and task-by-task implementation plan, **not yet built**. See §15.
+### Done this session (2026-08-13, `3955310`..`56a9f3f`)
 
-**Both lanes pushed to `main` the same day on 2026-08-12/13.** Fetch and rebase before starting. See §13.
+1. **Illustrated truck envelope on `/dispatch`** — the 7-task plan executed, then five rounds of owner-driven correction. Cab, wheels, panel lines, rear door seam, a cargo deck, and the whole vehicle flipping green/red. Four plan amendments are recorded in `docs/plans/2026-08-13-truck-envelope-illustrated-implementation.md`, the largest being that **both cabs moved into the box's own millimetre space** — the planned two-SVG split could not keep a cab aligned to the ground line, the deck line, or the wheel size.
+2. **ERP chrome is a left icon rail** (`558558f`). The green product strip and the white tab row are gone; one 64px rail carries the brand mark, five Phosphor nav icons, and the operator. Items are inert `span`s with a hover lift and a label flyout. `DESIGN.md` §1 records why this is not the retired "green sidebar".
+3. **Rule Studio reviews every candidate** (`f371d62`). It kept only `candidates[0]`, so a live 26-page SOP left 14 rules and a whole page of Iqbal's visual parsing unreachable. There is now a candidate navigator and the source plate follows whichever candidate is under review.
+4. **Logo mark shipped** (`56a9f3f`) — verdict panel head, VETO sub-nav head, and the favicon (which replaced a leftover purple template mark). Ink in-product, brand blue only in the browser tab.
+
+**Verification posture that actually caught things:** every visual change was checked with a real Playwright render, and several bugs were invisible from source — `preserveAspectRatio` letterboxing two SVGs apart, a spring overshooting `height` negative and throwing ~150 console errors per keystroke, and wheels reversing into the cab at small inputs. Geometry invariants were **measured**, not eyeballed: deck pinning holds 0.0px across 14 mid-animation frames, and the top-view wheels are byte-identical across five input states.
+
+**Both lanes pushed to `main` repeatedly on 2026-08-12/13.** Fetch and rebase before starting. See §13.
 
 `AGENTS.md` is a pointer, not context. For a cold start read
 [HANDOFF-BRIEF.md](HANDOFF-BRIEF.md) first; this file is the full version.
@@ -60,7 +67,7 @@ Compliance middleware for Indonesian freight logistics. A deterministic rule eng
 | State | React `useState` only. **No state library.** | `frontend/src/routes/Dispatch.jsx` |
 | Lint | oxlint 1.75 | `frontend/.oxlintrc.json` |
 | Component library | **None.** All components are hand-written. | — |
-| Icons | **None installed.** No icon library, no inline icon SVGs in use. | — |
+| Icons | `@phosphor-icons/react` 2.1. One family, no hand-rolled SVG, no emoji. | `layouts/ErpLayout.jsx`, `components/dispatch/ViolationDialog.jsx` |
 | Frontend tests | **None.** No test runner installed. Deliberate, per `CLAUDE.md` §4. | — |
 
 ### Backend — `backend/`
@@ -78,11 +85,11 @@ Compliance middleware for Indonesian freight logistics. A deterministic rule eng
 | Error format | Custom DRF exception handler producing the contract's error envelope | `backend/config/exceptions.py` |
 | Auth | **None.** No login, no API key check, no permission classes. | — |
 | Validation | Hand-rolled type/range checks inside the view | `backend/apps/validation/views.py` |
-| Tests | Django `TestCase`, 10 passing | `backend/apps/validation/tests/test_contract.py` |
+| Tests | Django `TestCase`, **38 passing** | `backend/apps/*/tests/` |
 
 ### Not configured
 
-**Deployment.** No `Dockerfile`, `vercel.json`, `railway.*`, `Procfile`, `render.yaml`, or `.github/workflows`. `gunicorn` and `whitenoise` are installed in anticipation but nothing consumes them. `.claude/launch.json` describes local dev servers only.
+**Deployment.** No `Dockerfile`, `vercel.json`, `railway.*`, `Procfile`, `render.yaml`, or `.github/workflows`. `gunicorn`, `whitenoise`, `psycopg2-binary` and `dj-database-url` are all installed and unused. `.claude/launch.json` describes local dev servers only. **This is the largest remaining risk — see §15.1.**
 
 ---
 
@@ -152,8 +159,14 @@ frontend/src/
 
 Nothing. Every surface has been exercised against the live backend.
 
-### Built this session, frontend
+### Built 2026-08-13 (this session), frontend
 
+- **Illustrated truck envelope.** `/dispatch`'s `TruckEnvelope` is a drawn truck in both views: cab, wheels, panel lines, rear door seam, a 900mm cargo deck the body sits on, and the whole vehicle flipping `#2f8f4e` green / `#d92d20` red. Both cabs are drawn **inside** their view's box SVG in millimetre space; the plan's two-SVG split could not hold alignment. Top-view wheels are **static at the legal envelope's rear** — they are the truck's axles, not the cargo's.
+- **ERP is a left icon rail.** `ErpLayout` no longer has a green top strip or a white tab row. One 64px rail: brand mark, five Phosphor icons, operator tile. Items are inert `span`s (there are no destination routes) that lift on hover and reveal a label flyout.
+- **Rule Studio reviews every candidate.** A candidate navigator plus a source plate that follows the active candidate's page, with pages cached by number. Previously only `candidates[0]` was reachable.
+- **Logo mark** at the verdict-panel head and the VETO sub-nav head, plus a real favicon.
+
+### Built 2026-08-12, frontend
 - **HOLD is a dialog then a settle.** Announces over a blurred backdrop, dismisses to the side panel, violations stay pinned under the offending fields. Warning icon is Phosphor `WarningIcon`, amber.
 - **Fields report excess only.** `+1.340 kg melebihi batas` when over, silence otherwise. Ceilings come from `GET /rules` at runtime and are never displayed.
 - **Digit caps.** Six digits for weights, five for dimensions, clamped on change. `9000000000000` is refused; `12000` is not.
@@ -507,34 +520,39 @@ within the hour.
 
 Dead template assets (`hero.png`, `vite.svg`, `public/icons.svg`); `@types/react` with no TypeScript; mobile unverified; `RowSkeleton` and table primitives still local to `AuditLog.jsx`; pyright configured but not installed so there is still no typecheck; `rule_packs_applied` lists every active pack rather than those consulted.
 ## 15. Next task
-### Goal
 
-Execute `docs/plans/2026-08-13-truck-envelope-illustrated-implementation.md` — replace `TruckEnvelope.jsx`'s plain-rectangle rendering with an illustrated truck (cab, wheels, panel lines), task by task. **Nothing in this plan is built yet** — the design spec and implementation plan are both committed and approved, but the code is still the plain-rectangle version that shipped in `66124b7`.
+**No frontend work is outstanding.** Everything below is backend, ops, or a human decision. Ordered by what actually threatens 2026-08-14.
 
-### Why
+### 1 · Deploy something (P0-4)
 
-Pure P2 demo polish (`CLAUDE.md` §4) on top of an already-working, already-merged widget — this is not blocking the demo the way P0-1/P0-3/P0-4 below are. It exists because the product owner asked for it after seeing the shipped plain-rectangle version and wanted more visual "wow" for the booth. If time runs short before 2026-08-14, **this is the thing to drop**, not the P0 items.
+Still nothing: no `Dockerfile`, `vercel.json`, `railway.*`, `Procfile`, or CI. `gunicorn`, `whitenoise`, `psycopg2-binary` and `dj-database-url` are all installed and unused. Iqbal added the Postgres deps in `14bf445`, so the intent exists; the target is still an open decision (§16.6). This is the single biggest risk left.
 
-### Read first
+### 2 · Restore the mocks fallback (P0-5)
 
-`docs/plans/2026-08-12-truck-envelope-illustrated-design.md` (the design — read this for the *why* behind each decision) then `docs/plans/2026-08-13-truck-envelope-illustrated-implementation.md` (the 7-task plan — this is what you actually execute). The design doc's §7 is worth internalizing before starting: hand-computed SVG coordinates produced several real, invisible-from-source bugs during the brainstorm (floating disconnected mirrors, misaligned centering, inconsistent per-state wheel offsets) that were only caught by an actual Playwright screenshot. **Every visual task in the plan has a mandatory self-verification screenshot step — do not skip it and do not trust the coordinates as written without looking at the render.**
+`frontend/src/api/client.js:16` hardcodes `USE_MOCKS = false`, so `VITE_USE_MOCKS` does nothing and there is **no way to run the booth without a live Django server**. One-line fix, but do not ship it without then walking `/dispatch` end to end with the backend stopped — it has been dead long enough that the fixtures may have drifted. Full detail in §14 P0-5.
 
-### Order of work
+### 3 · Verify or relabel the two `Asumsi` thresholds (P0-1)
 
-The plan's 7 tasks are already ordered and each ends in a commit: (1) green colour + `DESIGN.md` exception, (2) bottom-anchor the side view's height (a real prerequisite once wheels/cab sit on a fixed ground line, not just polish), (3) side cab, (4) top cab, (5) panel lines, (6) side wheels (fixed), (7) top-down wheels (animated, anchored to the live input box on both axes — flagged in the plan as the task most likely to need iteration).
+Unchanged and still human-only. The two rules the demo actually triggers cite themselves as assumptions, and the word is ours rather than the regulation's. **An agent must not choose values.** Full trace in §14 P0-1.
 
-### Acceptance
+### 4 · Gemini quota before the booth
 
-All 7 tasks committed, `npm --prefix frontend run lint`/`build` clean throughout, every visual task's self-verification screenshot checklist actually confirmed (not assumed), no regression to the widget's existing behaviour (geometry math, reduced-motion handling, placement on `/dispatch` all unchanged per the design doc §1).
+The free tier is 20 extraction calls per day per model and **today's allowance was spent** during Rule Studio verification. It resets, but `GEMINI_MODEL=gemini-flash-lite-latest` carries a separate daily quota and is the cheap insurance. Rule Studio degrades honestly when it runs out — one fallback candidate, tagged `cadangan`, and the candidate navigator hides itself — so this costs a demo beat, not the demo.
 
-### Verification
+### Optional, only if the above are all done
+
+Mobile below `lg` is verified for the ERP rail and the dispatch surface but not for Rule Studio or the audit table. `apps/profiles` still has endpoints and no UI (`P2`). Neither blocks anything.
+
+### Verification for any of it
 
 ```bash
+uv run --directory backend python manage.py test apps      # 38 tests, must stay green
 npm --prefix frontend run lint
 npm --prefix frontend run build
 ```
 
-No backend changes in this plan, so no `manage.py test` run is required for it specifically — but if this session also touches anything under `backend/` for an unrelated reason, run the full suite per §19.
+`CLAUDE.md` §6 requires verifying the rendered application, not a passing build. This session's record is the argument for it: the build was green for every bug listed in the header note above.
+
 ## 16. Open decisions
 Codex must not silently decide these.
 
