@@ -315,7 +315,7 @@ Runs full extraction. Only valid when `accepted` is `true`, or when the human ov
       "operator": "LTE",
       "threshold": 24000,
       "unit": "kg",
-      "applies_to": { "axle_config": ["1.2", "1.22"] },
+      "applies_to": { "axle_config": ["1.2", "1.2.2"] },
       "source_reference": "SOP Internal Gudang Cikarang v2 §3.1",
       "source_text_excerpt": "Muatan total tidak boleh melebihi 24 ton untuk kendaraan sumbu ganda…",
       "source_page": 3,
@@ -416,7 +416,7 @@ Standard CRUD. `P2` priority — build last.
     {
       "profile_id": "…",
       "name": "Tronton 6x2 — Fleet A",
-      "axle_config": "1.22",
+      "axle_config": "1.2.2",
       "axle_count": 3,
       "tare_weight_kg": 8500,
       "max_dimensions_mm": { "length": 12000, "width": 2500, "height": 4200 }
