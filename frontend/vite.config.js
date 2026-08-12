@@ -15,7 +15,9 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    // 5173 by default so the documented dev URL stays true; PORT lets a harness
+    // or a busy machine place the server elsewhere without editing this file.
+    port: Number(process.env.PORT) || 5173,
     // Allows the dev server to read /contract, which sits outside the Vite root.
     fs: { allow: ['..'] },
     // Same-origin in dev, so no CORS preflight while developing.
