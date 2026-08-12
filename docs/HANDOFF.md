@@ -14,7 +14,8 @@
 
 **This session crossed into `backend/` three times, only to unbreak `main`.** Those are `f49e619` and `7e1c94b`. No feature work was done in the backend lane. See §14 P0-3 for what is still Iqbal's.
 
-`AGENTS.md` is a pointer, not context. Read this file first.
+`AGENTS.md` is a pointer, not context. For a cold start read
+[HANDOFF-BRIEF.md](HANDOFF-BRIEF.md) first; this file is the full version.
 ## 2. What VETO is
 
 Compliance middleware for Indonesian freight logistics. A deterministic rule engine that converts ODOL (Over Dimension Over Load) vehicle regulations into a gate at the loading dock.
