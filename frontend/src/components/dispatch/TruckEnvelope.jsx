@@ -121,11 +121,12 @@ function PlanView({ length, width, limits }) {
   if (!lengthGeo || !widthGeo) return <EnvelopePlaceholder label="Tampak Atas" />
 
   const over = lengthGeo.over || widthGeo.over
+  const colour = over ? OVER_COLOUR : NEUTRAL_COLOUR
 
   return (
     <EnvelopeFrame label="Tampak Atas">
       <div className="flex min-h-0 w-full flex-1 items-stretch gap-0">
-        <PlanCab />
+        <PlanCab colour={colour} />
         <svg
           viewBox={`${lengthGeo.outerOffset} 0 ${lengthGeo.canvas - lengthGeo.outerOffset} ${widthGeo.canvas}`}
           preserveAspectRatio="xMinYMid meet"
@@ -157,7 +158,7 @@ function PlanView({ length, width, limits }) {
           }}
           transition={reduceMotion ? { duration: 0 } : SPRING}
           fill="none"
-          stroke={over ? OVER_COLOUR : NEUTRAL_COLOUR}
+          stroke={colour}
           strokeWidth={3}
           vectorEffect="non-scaling-stroke"
         />
@@ -179,7 +180,7 @@ function PlanView({ length, width, limits }) {
             y1={widthGeo.innerOffset}
             x2={lengthGeo.outerOffset + lengthGeo.innerSize - REAR_DOOR_INSET_MM}
             y2={widthGeo.innerOffset + widthGeo.innerSize}
-            stroke={over ? OVER_COLOUR : NEUTRAL_COLOUR}
+            stroke={colour}
             strokeWidth="1.5"
             vectorEffect="non-scaling-stroke"
           />
@@ -201,7 +202,7 @@ function PlanView({ length, width, limits }) {
                 width={REAR_WHEEL_LENGTH_MM}
                 height={REAR_WHEEL_POKE_MM}
                 fill="#fff"
-                stroke="#1f2933"
+                stroke={colour}
                 strokeWidth="1.5"
                 vectorEffect="non-scaling-stroke"
               />
@@ -212,7 +213,7 @@ function PlanView({ length, width, limits }) {
                 width={REAR_WHEEL_LENGTH_MM}
                 height={REAR_WHEEL_POKE_MM}
                 fill="#fff"
-                stroke="#1f2933"
+                stroke={colour}
                 strokeWidth="1.5"
                 vectorEffect="non-scaling-stroke"
               />
@@ -243,11 +244,12 @@ function SideView({ height, limits }) {
   const bodyTop = heightGeo.canvas - heightGeo.innerSize
   const bodyHeight = Math.max(0, heightGeo.innerSize - DECK_HEIGHT_MM)
   const legalTop = heightGeo.canvas - heightGeo.legalSize
+  const colour = heightGeo.over ? OVER_COLOUR : NEUTRAL_COLOUR
 
   return (
     <EnvelopeFrame label="Tampak Samping">
       <div className="flex min-h-0 w-full flex-1 items-stretch gap-0">
-        <SideCab />
+        <SideCab colour={colour} />
         <svg
           viewBox={`0 0 ${SIDE_VIEW_NOMINAL_WIDTH_MM} ${heightGeo.canvas}`}
           preserveAspectRatio="xMinYMax meet"
@@ -271,7 +273,7 @@ function SideView({ height, limits }) {
           animate={{ y: bodyTop, height: bodyHeight }}
           transition={reduceMotion ? { duration: 0 } : SPRING}
           fill="none"
-          stroke={heightGeo.over ? OVER_COLOUR : NEUTRAL_COLOUR}
+          stroke={colour}
           strokeWidth={3}
           vectorEffect="non-scaling-stroke"
         />
@@ -292,7 +294,7 @@ function SideView({ height, limits }) {
           y1={bodyTop}
           x2={SIDE_VIEW_NOMINAL_WIDTH_MM - REAR_DOOR_INSET_MM}
           y2={deckY}
-          stroke={heightGeo.over ? OVER_COLOUR : NEUTRAL_COLOUR}
+          stroke={colour}
           strokeWidth="1.5"
           vectorEffect="non-scaling-stroke"
         />
@@ -312,8 +314,8 @@ function SideView({ height, limits }) {
           const cy = heightGeo.canvas - WHEEL_RADIUS_MM
           return (
             <g key={offset}>
-              <circle cx={cx} cy={cy} r={WHEEL_RADIUS_MM} fill="#fff" stroke="#1f2933" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
-              <circle cx={cx} cy={cy} r={WHEEL_HUB_RADIUS_MM} fill="none" stroke="#1f2933" strokeWidth="1.25" vectorEffect="non-scaling-stroke" />
+              <circle cx={cx} cy={cy} r={WHEEL_RADIUS_MM} fill="#fff" stroke={colour} strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
+              <circle cx={cx} cy={cy} r={WHEEL_HUB_RADIUS_MM} fill="none" stroke={colour} strokeWidth="1.25" vectorEffect="non-scaling-stroke" />
             </g>
           )
         })}
@@ -336,22 +338,22 @@ function SideView({ height, limits }) {
  * because axisGeometry always centres PlanView's outer envelope at
  * canvas/2 regardless of state.
  */
-function PlanCab() {
+function PlanCab({ colour }) {
   return (
     <svg viewBox="28 19 65 62" preserveAspectRatio="xMaxYMid meet" className="h-full w-32 shrink-0">
       <path
         d="M92,28 L52,28 L34,40 Q30,50 34,60 L52,72 L92,72 Z"
         fill="#fff"
-        stroke="#1f2933"
+        stroke={colour}
         strokeWidth="2.5"
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
       />
-      <rect x="54" y="37" width="26" height="26" rx="2" fill="#c4cad0" stroke="#1f2933" strokeWidth="1" />
-      <rect x="44" y="23" width="10" height="7" rx="1.5" fill="#fff" stroke="#1f2933" strokeWidth="1.5" />
-      <rect x="44" y="70" width="10" height="7" rx="1.5" fill="#fff" stroke="#1f2933" strokeWidth="1.5" />
-      <rect x="68" y="26" width="14" height="6" fill="#fff" stroke="#1f2933" strokeWidth="1.5" />
-      <rect x="68" y="68" width="14" height="6" fill="#fff" stroke="#1f2933" strokeWidth="1.5" />
+      <rect x="54" y="37" width="26" height="26" rx="2" fill="#c4cad0" stroke={colour} strokeWidth="1" />
+      <rect x="44" y="23" width="10" height="7" rx="1.5" fill="#fff" stroke={colour} strokeWidth="1.5" />
+      <rect x="44" y="70" width="10" height="7" rx="1.5" fill="#fff" stroke={colour} strokeWidth="1.5" />
+      <rect x="68" y="26" width="14" height="6" fill="#fff" stroke={colour} strokeWidth="1.5" />
+      <rect x="68" y="68" width="14" height="6" fill="#fff" stroke={colour} strokeWidth="1.5" />
     </svg>
   )
 }
@@ -372,14 +374,14 @@ function PlanCab() {
  * pins both to the seam they share. Verified by screenshot; it is not
  * visible from reading the coordinates.
  */
-function SideCab() {
+function SideCab({ colour }) {
   return (
     <svg viewBox="0 0 100 112" preserveAspectRatio="xMaxYMax meet" className="h-full w-24 shrink-0">
       <line x1="0" y1="112" x2="100" y2="112" stroke="#1f2933" strokeWidth="2" vectorEffect="non-scaling-stroke" />
       <path
         d="M39,112 L39,92 L46,70 L58,46 L92,46 L92,112 Z"
         fill="#fff"
-        stroke="#1f2933"
+        stroke={colour}
         strokeWidth="2.5"
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
@@ -387,17 +389,17 @@ function SideCab() {
       <path
         d="M52,63 L61,50 L88,50 L88,58 Z"
         fill="#c4cad0"
-        stroke="#1f2933"
+        stroke={colour}
         strokeWidth="1"
       />
       <line x1="76" y1="60" x2="76" y2="108" stroke="#98a0a9" strokeWidth="1.25" />
       <rect x="79" y="82" width="5" height="2.5" rx="1" fill="#1f2933" />
-      <line x1="40" y1="88" x2="26" y2="78" stroke="#1f2933" strokeWidth="1.75" strokeLinecap="round" />
-      <rect x="20" y="72" width="8" height="11" rx="2" fill="#fff" stroke="#1f2933" strokeWidth="1.5" />
+      <line x1="40" y1="88" x2="26" y2="78" stroke={colour} strokeWidth="1.75" strokeLinecap="round" />
+      <rect x="20" y="72" width="8" height="11" rx="2" fill="#fff" stroke={colour} strokeWidth="1.5" />
       {/* cy is 112 - r, not 112: the wheel's bottom edge touches the chassis
           line. Centring it on the line clips half the wheel out of the viewBox. */}
-      <circle cx="55" cy="99" r="13" fill="#fff" stroke="#1f2933" strokeWidth="2.5" />
-      <circle cx="55" cy="99" r="5" fill="none" stroke="#1f2933" strokeWidth="1.25" />
+      <circle cx="55" cy="99" r="13" fill="#fff" stroke={colour} strokeWidth="2.5" />
+      <circle cx="55" cy="99" r="5" fill="none" stroke={colour} strokeWidth="1.25" />
     </svg>
   )
 }
