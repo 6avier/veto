@@ -40,6 +40,7 @@ pnpm-debug.log*
 
 # --- Claude Code (personal, per-machine) ---
 .claude/settings.local.json
+.superpowers/
 
 # --- macOS ---
 .DS_Store
