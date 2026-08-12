@@ -124,8 +124,8 @@ Notes:
       "unit": "kg",
       "severity": "BLOCKING",
       "rule_origin": "CLIENT",
-      "legal_citation": "SOP Internal Gudang Cikarang v2 §3.1",
-      "directive": "Kurangi muatan total 500 kg. SOP klien lebih ketat dari batas hukum 25.000 kg"
+      "legal_citation": "SOP Internal Gudang Cikarang v2 A 3.1",
+      "directive": "Kurangi muatan total 500 kg. Batas maksimal SOP Klien adalah 24.000 kg Saran proporsional: Turunkan 138 kg dari sumbu depan, dan 222 kg dari sumbu tengah, dan 138 kg dari sumbu belakang agar keseimbangan terjaga."
     }
   ],
   "rule_packs_applied": [
