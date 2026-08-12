@@ -68,11 +68,27 @@ const CAB_VIEW_LEFT_MM = -3000
 /** Cab track width, drawn in the plan view. The legal maximum, so a
  *  full-width load reads as exactly as wide as its own truck. */
 const CAB_WIDTH_MM = 2500
-const OVER_COLOUR = '#a02a1f'
+/**
+ * Brighter than the #a02a1f used for excess text in DispatchForm. This is the
+ * lightest red that still clears WCAG AA for normal text (4.83:1 on white),
+ * which it has to, because EnvelopeReadout renders the measurement in it.
+ */
+const OVER_COLOUR = '#d92d20'
 const NEUTRAL_COLOUR = '#2f8f4e'
 const OUTER_STROKE = '#98a0a9'
 const OUTER_FILL = '#f4f6f7'
 const SPRING = { type: 'spring', stiffness: 90, damping: 12 }
+
+/**
+ * Critically damped (damping >= 2*sqrt(stiffness) = 18.97), so it approaches
+ * its target without overshooting. Used for `width`/`height` only.
+ *
+ * SPRING is deliberately underdamped and overshoots, which is right for
+ * position but invalid for a size: clearing an input animates the size to 0,
+ * the overshoot carries it negative, and SVG rejects a negative width/height
+ * on every frame of the bounce. Position keeps the bounce.
+ */
+const SIZE_SPRING = { type: 'spring', stiffness: 90, damping: 19 }
 
 /**
  * Geometry for one axis, in a fixed viewBox padded 20% past the legal limit
@@ -177,24 +193,29 @@ function PlanView({ length, width, limits }) {
             width: lengthGeo.innerSize,
             height: widthGeo.innerSize,
           }}
-          transition={reduceMotion ? { duration: 0 } : SPRING}
+          transition={
+            reduceMotion ? { duration: 0 } : { ...SPRING, width: SIZE_SPRING, height: SIZE_SPRING }
+          }
           fill="none"
           stroke={colour}
           strokeWidth={3}
           vectorEffect="non-scaling-stroke"
         />
-        {panelLines(lengthGeo.outerOffset, lengthGeo.innerSize).map((x) => (
-          <line
-            key={x}
-            x1={x}
-            y1={widthGeo.innerOffset}
-            x2={x}
-            y2={widthGeo.innerOffset + widthGeo.innerSize}
-            stroke="#c4cad0"
-            strokeWidth="1"
-            vectorEffect="non-scaling-stroke"
-          />
-        ))}
+        {/* Same guard as SideView: a zero length would collapse all eight
+            lines onto one x, and a zero width would draw them as dots. */}
+        {lengthGeo.innerSize > 0 && widthGeo.innerSize > 0 &&
+          panelLines(lengthGeo.outerOffset, lengthGeo.innerSize).map((x) => (
+            <line
+              key={x}
+              x1={x}
+              y1={widthGeo.innerOffset}
+              x2={x}
+              y2={widthGeo.innerOffset + widthGeo.innerSize}
+              stroke="#c4cad0"
+              strokeWidth="1"
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
         {lengthGeo.innerSize > REAR_DOOR_INSET_MM * 2 && (
           <line
             x1={lengthGeo.outerOffset + lengthGeo.innerSize - REAR_DOOR_INSET_MM}
@@ -292,33 +313,42 @@ function SideView({ height, limits }) {
           width={SIDE_VIEW_NOMINAL_WIDTH_MM}
           initial={{ y: bodyTop, height: bodyHeight }}
           animate={{ y: bodyTop, height: bodyHeight }}
-          transition={reduceMotion ? { duration: 0 } : SPRING}
+          transition={
+            reduceMotion ? { duration: 0 } : { ...SPRING, width: SIZE_SPRING, height: SIZE_SPRING }
+          }
           fill="none"
           stroke={colour}
           strokeWidth={3}
           vectorEffect="non-scaling-stroke"
         />
-        {panelLines(0, SIDE_VIEW_NOMINAL_WIDTH_MM).map((x) => (
-          <line
-            key={x}
-            x1={x}
-            y1={bodyTop}
-            x2={x}
-            y2={deckY}
-            stroke="#c4cad0"
-            strokeWidth="1"
-            vectorEffect="non-scaling-stroke"
-          />
-        ))}
-        <line
-          x1={SIDE_VIEW_NOMINAL_WIDTH_MM - REAR_DOOR_INSET_MM}
-          y1={bodyTop}
-          x2={SIDE_VIEW_NOMINAL_WIDTH_MM - REAR_DOOR_INSET_MM}
-          y2={deckY}
-          stroke={colour}
-          strokeWidth="1.5"
-          vectorEffect="non-scaling-stroke"
-        />
+        {/* Only when there is a body to draw them on. An empty or below-deck
+            input leaves bodyHeight at 0, and these would otherwise streak
+            across the bare deck gap between the chassis and the ground. */}
+        {bodyHeight > 0 && (
+          <>
+            {panelLines(0, SIDE_VIEW_NOMINAL_WIDTH_MM).map((x) => (
+              <line
+                key={x}
+                x1={x}
+                y1={bodyTop}
+                x2={x}
+                y2={deckY}
+                stroke="#c4cad0"
+                strokeWidth="1"
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+            <line
+              x1={SIDE_VIEW_NOMINAL_WIDTH_MM - REAR_DOOR_INSET_MM}
+              y1={bodyTop}
+              x2={SIDE_VIEW_NOMINAL_WIDTH_MM - REAR_DOOR_INSET_MM}
+              y2={deckY}
+              stroke={colour}
+              strokeWidth="1.5"
+              vectorEffect="non-scaling-stroke"
+            />
+          </>
+        )}
         {/* One ground line under the whole vehicle, cab included. */}
         <line
           x1={CAB_VIEW_LEFT_MM}
@@ -457,7 +487,7 @@ function EnvelopePlaceholder({ label }) {
 function EnvelopeReadout({ primary, secondary, over }) {
   return (
     <p className="mt-2 text-label">
-      <span className={`tnum font-medium ${over ? 'text-[#a02a1f]' : 'text-[#1f2933]'}`}>
+      <span className={`tnum font-medium ${over ? 'text-[#d92d20]' : 'text-[#1f2933]'}`}>
         {primary}
       </span>
       <span className="text-[#98a0a9]"> · {secondary}</span>
