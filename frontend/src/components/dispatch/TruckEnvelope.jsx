@@ -31,10 +31,22 @@ const CANVAS_PADDING = 1.2
  * panel empty. 9000 is a realistic cargo-body length and fills the row.
  */
 const SIDE_VIEW_NOMINAL_WIDTH_MM = 9000
-const WHEEL_RADIUS_MM = 450
-const WHEEL_HUB_RADIUS_MM = 180
+const WHEEL_RADIUS_MM = 500
+const WHEEL_HUB_RADIUS_MM = 200
 /** Distance from the box's back edge to each wheel centre — the back ~15%. */
 const REAR_WHEEL_OFFSETS_MM = [1350, 500]
+
+/**
+ * Height of the cargo deck above the ground. The body rides on it; the wheels
+ * hang below it. Without this the box bottom IS the ground line, which leaves
+ * the wheels nowhere to sit but inside the cargo body.
+ *
+ * This is also the physically correct reading of the measurement: the 4200mm
+ * limit (PP 55/2012 Pasal 7 ayat (3)) is total vehicle height measured from
+ * the ground, so the body occupies deck-height up to the declared figure —
+ * not the full span from the ground.
+ */
+const DECK_HEIGHT_MM = 900
 const OVER_COLOUR = '#a02a1f'
 const NEUTRAL_COLOUR = '#2f8f4e'
 const OUTER_STROKE = '#98a0a9'
@@ -224,6 +236,14 @@ function SideView({ height, limits }) {
 
   if (!heightGeo) return <EnvelopePlaceholder label="Tampak Samping" />
 
+  // Declared height is measured from the ground, so the body's top sits at
+  // canvas - height while its floor rests on the deck. The gap underneath is
+  // where the wheels live.
+  const deckY = heightGeo.canvas - DECK_HEIGHT_MM
+  const bodyTop = heightGeo.canvas - heightGeo.innerSize
+  const bodyHeight = Math.max(0, heightGeo.innerSize - DECK_HEIGHT_MM)
+  const legalTop = heightGeo.canvas - heightGeo.legalSize
+
   return (
     <EnvelopeFrame label="Tampak Samping">
       <div className="flex min-h-0 w-full flex-1 items-stretch gap-0">
@@ -235,9 +255,9 @@ function SideView({ height, limits }) {
         >
         <rect
           x={0}
-          y={heightGeo.canvas - heightGeo.legalSize}
+          y={legalTop}
           width={SIDE_VIEW_NOMINAL_WIDTH_MM}
-          height={heightGeo.legalSize}
+          height={heightGeo.legalSize - DECK_HEIGHT_MM}
           fill={OUTER_FILL}
           stroke={OUTER_STROKE}
           strokeWidth={2}
@@ -247,8 +267,8 @@ function SideView({ height, limits }) {
         <motion.rect
           x={0}
           width={SIDE_VIEW_NOMINAL_WIDTH_MM}
-          initial={{ y: heightGeo.canvas - heightGeo.innerSize, height: heightGeo.innerSize }}
-          animate={{ y: heightGeo.canvas - heightGeo.innerSize, height: heightGeo.innerSize }}
+          initial={{ y: bodyTop, height: bodyHeight }}
+          animate={{ y: bodyTop, height: bodyHeight }}
           transition={reduceMotion ? { duration: 0 } : SPRING}
           fill="none"
           stroke={heightGeo.over ? OVER_COLOUR : NEUTRAL_COLOUR}
@@ -259,9 +279,9 @@ function SideView({ height, limits }) {
           <line
             key={x}
             x1={x}
-            y1={heightGeo.canvas - heightGeo.innerSize}
+            y1={bodyTop}
             x2={x}
-            y2={heightGeo.canvas}
+            y2={deckY}
             stroke="#c4cad0"
             strokeWidth="1"
             vectorEffect="non-scaling-stroke"
@@ -269,11 +289,22 @@ function SideView({ height, limits }) {
         ))}
         <line
           x1={SIDE_VIEW_NOMINAL_WIDTH_MM - REAR_DOOR_INSET_MM}
-          y1={heightGeo.canvas - heightGeo.innerSize}
+          y1={bodyTop}
           x2={SIDE_VIEW_NOMINAL_WIDTH_MM - REAR_DOOR_INSET_MM}
-          y2={heightGeo.canvas}
+          y2={deckY}
           stroke={heightGeo.over ? OVER_COLOUR : NEUTRAL_COLOUR}
           strokeWidth="1.5"
+          vectorEffect="non-scaling-stroke"
+        />
+        {/* Continues the cab SVG's chassis line across the box, so the wheels
+            of both read as standing on one ground. */}
+        <line
+          x1={0}
+          y1={heightGeo.canvas}
+          x2={SIDE_VIEW_NOMINAL_WIDTH_MM}
+          y2={heightGeo.canvas}
+          stroke="#1f2933"
+          strokeWidth="2"
           vectorEffect="non-scaling-stroke"
         />
         {REAR_WHEEL_OFFSETS_MM.map((offset) => {
