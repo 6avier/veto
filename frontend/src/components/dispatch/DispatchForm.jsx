@@ -23,11 +23,13 @@ const AXLE_CONFIGS = [
 const AXLE_NAMES = ['Sumbu depan', 'Sumbu tengah', 'Sumbu belakang']
 
 /**
- * Physical-plausibility ceilings for the inputs. Deliberately far above any
- * legal limit: capping at the legal value would make it impossible to enter an
- * overloaded dispatch, which is the entire thing this screen exists to catch.
+ * How many digits a field will accept. This is a limit on magnitude, not on
+ * value: six digits reaches 999.999 kg and five reaches 99.999 mm, both far
+ * past anything on a road, so no plausible entry is ever refused. A value
+ * ceiling would be wrong here, because the whole point of the screen is to let
+ * an overloaded dispatch be entered and then caught.
  */
-const SANITY_MAX = { weight: 100000, dimension: 30000 }
+const MAX_DIGITS = { weight: 6, dimension: 5 }
 
 function axleLabel(index, count) {
   if (index === 0) return AXLE_NAMES[0]
@@ -101,7 +103,7 @@ export default function DispatchForm({
           <NumberInput
             value={value.tareWeight}
             onChange={(e) => set({ tareWeight: e.target.value })}
-            max={SANITY_MAX.weight}
+            maxDigits={MAX_DIGITS.weight}
           />
         </Field>
       </Section>
@@ -118,7 +120,7 @@ export default function DispatchForm({
           <NumberInput
             value={value.grossWeight}
             onChange={(e) => set({ grossWeight: e.target.value })}
-            max={SANITY_MAX.weight}
+            maxDigits={MAX_DIGITS.weight}
           />
         </Field>
         {value.axleLoads.map((load, index) => (
@@ -134,7 +136,7 @@ export default function DispatchForm({
             <NumberInput
               value={load}
               onChange={(e) => setAxle(index, e.target.value)}
-              max={SANITY_MAX.weight}
+              maxDigits={MAX_DIGITS.weight}
             />
           </Field>
         ))}
@@ -158,7 +160,7 @@ export default function DispatchForm({
             <NumberInput
               value={value[key]}
               onChange={(e) => set({ [key]: e.target.value })}
-              max={SANITY_MAX.dimension}
+              maxDigits={MAX_DIGITS.dimension}
             />
           </Field>
         ))}
@@ -178,7 +180,7 @@ export default function DispatchForm({
         <button
           type="submit"
           disabled={pending}
-          className="ml-auto rounded-veto bg-[#2c5d8f] px-4 py-2 text-label text-white transition-colors hover:bg-[#24507c] focus-visible:outline-offset-2 disabled:opacity-50"
+          className="ml-auto rounded-veto bg-[#2d613b] px-4 py-2 text-label text-white transition-colors hover:bg-[#244f30] focus-visible:outline-offset-2 disabled:opacity-50"
         >
           {pending ? 'Memvalidasi…' : 'Validasi ke VETO'}
         </button>
@@ -235,18 +237,18 @@ function Field({ label, unit, error, violation, limit, current, children }) {
 }
 
 const inputClass =
-  'w-full rounded-veto border border-[#a9b1b9] bg-white px-2.5 py-1.5 text-data text-[#1f2933] transition-colors hover:border-[#8b949d] focus:border-[#2c5d8f]'
+  'w-full rounded-veto border border-[#a9b1b9] bg-white px-2.5 py-1.5 text-data text-[#1f2933] transition-colors hover:border-[#8b949d] focus:border-[#2d613b]'
 
 function TextInput({ className = '', ...props }) {
   return <input type="text" {...props} className={`${inputClass} ${className}`} />
 }
 
-function NumberInput({ onChange, max, ...props }) {
-  const clamp = (event) => {
+function NumberInput({ onChange, maxDigits, ...props }) {
+  const limitDigits = (event) => {
     const raw = event.target.value
-    // Allow an empty field while editing; reject anything longer than the
-    // ceiling can express so the input cannot hold an implausible number.
-    if (raw !== '' && max !== undefined && Number(raw) > Number(max)) return
+    // type=number ignores maxLength, so the digit cap is enforced here. An
+    // empty field is allowed through so the input can be cleared while editing.
+    if (raw !== '' && maxDigits && raw.replace(/\D/g, '').length > maxDigits) return
     onChange(event)
   }
   return (
@@ -255,8 +257,7 @@ function NumberInput({ onChange, max, ...props }) {
       inputMode="numeric"
       min="1"
       step="1"
-      max={max}
-      onChange={clamp}
+      onChange={limitDigits}
       {...props}
       className={`${inputClass} tnum`}
     />
