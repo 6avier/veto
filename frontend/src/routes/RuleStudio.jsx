@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import {
   ApiError,
@@ -30,13 +30,27 @@ const REVIEWER = 'Sari Wulandari'
 export default function RuleStudio() {
   const [stage, setStage] = useState('idle')
   const [document, setDocument] = useState(null)
-  const [candidate, setCandidate] = useState(null)
+  // Extraction returns every clause it found, not one. A live 26-page SOP
+  // yielded 32 candidates across three pages, so the reviewer steps through
+  // them and the source plate follows whichever one is under review.
+  const [candidates, setCandidates] = useState([])
+  const [activeIndex, setActiveIndex] = useState(0)
+  // candidate_id -> approve/reject response. Per candidate, because each is
+  // decided separately and a decided one must keep showing its outcome when
+  // the reviewer navigates back to it.
+  const [outcomes, setOutcomes] = useState({})
   const [usedFallback, setUsedFallback] = useState(false)
-  const [reviewResult, setReviewResult] = useState(null)
   const [error, setError] = useState(null)
   const [page, setPage] = useState(null)
   const [pageLoading, setPageLoading] = useState(false)
   const [pageError, setPageError] = useState(false)
+  // Pages are expensive to render and heavily shared: 17 of those 32 candidates
+  // cited page 1. Re-fetching a full-page PNG on every step would make the
+  // plate flicker through a skeleton it does not need.
+  const pageCache = useRef(new Map())
+
+  const candidate = candidates[activeIndex] ?? null
+  const reviewResult = candidate ? (outcomes[candidate.candidate_id] ?? null) : null
 
   const reducedMotion =
     typeof window !== 'undefined' &&
@@ -45,13 +59,15 @@ export default function RuleStudio() {
   const reset = () => {
     setStage('idle')
     setDocument(null)
-    setCandidate(null)
-    setReviewResult(null)
+    setCandidates([])
+    setActiveIndex(0)
+    setOutcomes({})
     setUsedFallback(false)
     setError(null)
     setPage(null)
     setPageLoading(false)
     setPageError(false)
+    pageCache.current.clear()
   }
 
   const fail = (caught) => setError(caught instanceof ApiError ? caught : ApiError.from(caught))
@@ -75,14 +91,16 @@ export default function RuleStudio() {
     try {
       const result = await extractRules(document.document_id, { force })
       setUsedFallback(Boolean(result.used_fallback))
-      const first = result.candidates?.[0] ?? null
-      setCandidate(first)
+      const found = result.candidates ?? []
+      setCandidates(found)
+      setActiveIndex(0)
+      setOutcomes({})
       setStage('reviewing')
       // The page is fetched after the verdict is on screen, not before. It is
       // the evidence for a rule that already exists, and a slow render must
       // never hold up the review itself.
-      if (first?.source_page && !result.used_fallback) {
-        loadPage(document.document_id, first.source_page)
+      if (found[0]?.source_page && !result.used_fallback) {
+        loadPage(document.document_id, found[0].source_page)
       }
     } catch (caught) {
       fail(caught)
@@ -91,10 +109,19 @@ export default function RuleStudio() {
   }
 
   async function loadPage(documentId, pageNumber) {
+    const cached = pageCache.current.get(pageNumber)
+    if (cached) {
+      setPage(cached)
+      setPageError(false)
+      setPageLoading(false)
+      return
+    }
     setPageLoading(true)
     setPageError(false)
     try {
-      setPage(await getDocumentPage(documentId, pageNumber))
+      const fetched = await getDocumentPage(documentId, pageNumber)
+      pageCache.current.set(pageNumber, fetched)
+      setPage(fetched)
     } catch {
       // A missing page plate is a degraded view, not a failed review. The
       // extracted rule and its citation stand on their own.
@@ -104,11 +131,33 @@ export default function RuleStudio() {
     }
   }
 
+  /**
+   * Move to another candidate. The plate follows it, so the reviewer is always
+   * looking at the page the rule in front of them was read from, and the stage
+   * follows whether that candidate has already been decided so its approve and
+   * reject controls come back only when they are still available.
+   */
+  function goToCandidate(index) {
+    if (index < 0 || index >= candidates.length) return
+    setActiveIndex(index)
+    setError(null)
+    const next = candidates[index]
+    setStage(outcomes[next.candidate_id] ? 'reviewed' : 'reviewing')
+    if (next?.source_page && !usedFallback) {
+      loadPage(document.document_id, next.source_page)
+    }
+  }
+
+  function recordOutcome(id, outcome) {
+    setOutcomes((prev) => ({ ...prev, [id]: outcome }))
+    setStage('reviewed')
+  }
+
   async function handleApprove() {
+    const id = candidate.candidate_id
     setStage('submitting')
     try {
-      setReviewResult(await approveCandidate(candidate.candidate_id, REVIEWER))
-      setStage('reviewed')
+      recordOutcome(id, await approveCandidate(id, REVIEWER))
     } catch (caught) {
       fail(caught)
       setStage('reviewing')
@@ -116,10 +165,10 @@ export default function RuleStudio() {
   }
 
   async function handleReject(note) {
+    const id = candidate.candidate_id
     setStage('submitting')
     try {
-      setReviewResult(await rejectCandidate(candidate.candidate_id, REVIEWER, note))
-      setStage('reviewed')
+      recordOutcome(id, await rejectCandidate(id, REVIEWER, note))
     } catch (caught) {
       fail(caught)
       setStage('reviewing')
@@ -196,31 +245,45 @@ export default function RuleStudio() {
         )}
 
         {candidate && (stage === 'reviewing' || stage === 'submitting' || stage === 'reviewed') && (
-          <div
-            className={[
-              'grid gap-4 lg:items-start',
-              showPlate ? 'lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]' : '',
-            ].join(' ')}
-          >
-            {showPlate && (
-              <SourcePlate
-                page={page}
-                loading={pageLoading}
-                error={pageError}
-                activeCandidateId={candidate.candidate_id}
+          <>
+            {candidates.length > 1 && (
+              <CandidateNav
+                index={activeIndex}
+                total={candidates.length}
+                decided={Object.keys(outcomes).length}
+                page={candidate.source_page}
+                busy={stage === 'submitting'}
+                onGo={goToCandidate}
               />
             )}
-            <CandidateReview
-              candidate={candidate}
-              onApprove={handleApprove}
-              onReject={handleReject}
-              busy={stage === 'submitting'}
-              result={reviewResult}
-            />
-          </div>
+            <div
+              className={[
+                'grid gap-4 lg:items-start',
+                showPlate ? 'lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]' : '',
+              ].join(' ')}
+            >
+              {showPlate && (
+                <SourcePlate
+                  page={page}
+                  loading={pageLoading}
+                  error={pageError}
+                  activeCandidateId={candidate.candidate_id}
+                />
+              )}
+              <CandidateReview
+                candidate={candidate}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                busy={stage === 'submitting'}
+                result={reviewResult}
+                position={activeIndex + 1}
+                total={candidates.length}
+              />
+            </div>
+          </>
         )}
 
-        {stage === 'reviewing' && !candidate && (
+        {stage === 'reviewing' && candidates.length === 0 && (
           <section className="border border-dashed border-ink-300 px-5 py-8 text-center">
             <p className="text-body text-ink-500">
               Tidak ada ketentuan muatan yang dapat diekstraksi dari dokumen ini.
@@ -236,5 +299,67 @@ export default function RuleStudio() {
         )}
       </div>
     </div>
+  )
+}
+
+/**
+ * Steps through the extracted candidates. Extraction is one call that returns
+ * every clause it found, so this is the only way to reach any rule past the
+ * first, and the only way to reach the pages those rules came from.
+ *
+ * DESIGN.md §3 and §8: a ruled strip, not a card and not a pill. The counter is
+ * mono because it is a position in a machine-generated list, and it carries the
+ * source page so the reviewer can tell that moving the selection also moved the
+ * plate beside it.
+ */
+function CandidateNav({ index, total, decided, page, busy, onGo }) {
+  return (
+    <nav
+      aria-label="Navigasi usulan aturan"
+      className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-ink-200 pb-3"
+    >
+      <span className="font-mono text-mono-xs tracking-[0.12em] text-ink-400">USULAN</span>
+      <span className="tnum font-mono text-mono-xs text-ink-700">
+        {index + 1} / {total}
+      </span>
+      {page ? (
+        <span className="tnum font-mono text-mono-xs text-ink-400">halaman {page}</span>
+      ) : null}
+
+      <span className="tnum ml-auto text-label text-ink-500">
+        {decided} dari {total} sudah ditinjau
+      </span>
+
+      <span className="flex gap-2">
+        <NavStep
+          onClick={() => onGo(index - 1)}
+          disabled={busy || index === 0}
+          label="Usulan sebelumnya"
+        >
+          Sebelumnya
+        </NavStep>
+        <NavStep
+          onClick={() => onGo(index + 1)}
+          disabled={busy || index >= total - 1}
+          label="Usulan berikutnya"
+        >
+          Berikutnya
+        </NavStep>
+      </span>
+    </nav>
+  )
+}
+
+function NavStep({ onClick, disabled, label, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      className="rounded-veto border border-ink-300 px-2.5 py-1 text-label text-ink-700 transition-colors hover:border-ink-500 hover:text-ink-900 disabled:cursor-not-allowed disabled:border-ink-200 disabled:text-ink-300"
+    >
+      {children}
+    </button>
   )
 }

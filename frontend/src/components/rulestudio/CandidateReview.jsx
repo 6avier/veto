@@ -21,7 +21,15 @@ const DIMENSION_LABELS = {
 
 const OPERATOR_LABELS = { LTE: 'maksimum', GTE: 'minimum', EQ: 'tepat' }
 
-export default function CandidateReview({ candidate, onApprove, onReject, busy, result }) {
+export default function CandidateReview({
+  candidate,
+  onApprove,
+  onReject,
+  busy,
+  result,
+  position = 1,
+  total = 1,
+}) {
   const [note, setNote] = useState('')
   const [rejecting, setRejecting] = useState(false)
 
@@ -61,8 +69,8 @@ export default function CandidateReview({ candidate, onApprove, onReject, busy, 
     <section className="border border-ink-200 bg-white">
       <header className="flex flex-wrap items-baseline gap-3 border-b border-ink-200 px-5 py-3">
         <h2 className="text-h2">Tinjau usulan aturan</h2>
-        <span className="font-mono text-mono-xs text-ink-400">
-          {candidate.status} · 1 dari 1
+        <span className="tnum font-mono text-mono-xs text-ink-400">
+          {candidate.status} · {position} dari {total}
         </span>
       </header>
 
