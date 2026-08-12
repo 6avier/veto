@@ -18,7 +18,7 @@ def seed_central_rules(apps, schema_editor):
         {
             "dimension": "GROSS_WEIGHT",
             "operator": "LTE",
-            "threshold": 25000,
+            "threshold": 24000,
             "unit": "kg",
             "legal_citation": "PP 55/2012 Lampiran JBI (Kelas I)"
         },
@@ -34,7 +34,7 @@ def seed_central_rules(apps, schema_editor):
         {
             "dimension": "AXLE_LOAD",
             "operator": "LTE",
-            "threshold": 16000,
+            "threshold": 18000,
             "unit": "kg",
             "axle_index": 1,
             "legal_citation": "PP 55/2012 Lampiran (Sumbu Ganda/Tandem)"
