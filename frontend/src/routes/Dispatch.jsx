@@ -102,7 +102,7 @@ export default function Dispatch() {
   const [errors, setErrors] = useState({})
   const [pending, setPending] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [limits, setLimits] = useState({})
+  const [rules, setRules] = useState([])
 
   // The form reads its ceilings from the active rule base rather than
   // hardcoding them, so a change to the seeded pack shows up here unedited.
@@ -110,12 +110,14 @@ export default function Dispatch() {
   useEffect(() => {
     let cancelled = false
     listRules({ origin: 'CENTRAL' })
-      .then((data) => !cancelled && setLimits(limitsFromRules(data.results)))
+      .then((data) => !cancelled && setRules(data.results))
       .catch(() => {})
     return () => {
       cancelled = true
     }
   }, [])
+
+  const limits = limitsFromRules(rules, form.axleConfig)
 
   const passed = decision?.outcome === 'PASS'
   const fieldViolations = violationsByField(decision)

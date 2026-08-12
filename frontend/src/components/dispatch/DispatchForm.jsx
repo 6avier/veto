@@ -62,21 +62,71 @@ export default function DispatchForm({
 
   const setAxleConfig = (axleConfig) => {
     const count = axleCountFor(axleConfig)
+    const newAxles = Array.from({ length: count }, (_, i) => value.axleLoads[i] ?? '')
+    const newAxleSum = newAxles.reduce((total, load) => total + (Number(load) || 0), 0)
     set({
       axleConfig,
-      axleLoads: Array.from({ length: count }, (_, i) => value.axleLoads[i] ?? ''),
+      axleLoads: newAxles,
+      grossWeight: newAxleSum > 0 ? String(newAxleSum) : value.grossWeight
     })
   }
 
   const setAxle = (index, next) => {
     const axles = [...value.axleLoads]
     axles[index] = next
-    set({ axleLoads: axles })
+    const newAxleSum = axles.reduce((total, load) => total + (Number(load) || 0), 0)
+    set({ 
+      axleLoads: axles,
+      grossWeight: newAxleSum > 0 ? String(newAxleSum) : value.grossWeight
+    })
   }
 
   const axleSum = value.axleLoads.reduce((total, load) => total + (Number(load) || 0), 0)
   const gross = Number(value.grossWeight) || 0
   const mismatch = gross > 0 && axleSum > 0 && Math.abs(axleSum - gross) > 500
+
+  // Balance Check (Proportional Distribution)
+  let balanceWarning = null
+  if (!mismatch && gross > 0 && value.axleLoads.length > 1) {
+    const count = value.axleLoads.length
+    const axleLimits = []
+    let totalLimit = 0
+    let hasAllLimits = true
+    for (let i = 0; i < count; i++) {
+      const limitObj = limits[`axle${i}`] || limits['axle_generic']
+      if (limitObj && limitObj.threshold) {
+        axleLimits.push(limitObj.threshold)
+        totalLimit += limitObj.threshold
+      } else {
+        hasAllLimits = false
+        break
+      }
+    }
+    
+    if (hasAllLimits && totalLimit > 0) {
+      let maxDeviation = 0
+      let unbalancedAxle = -1
+      
+      for (let i = 0; i < count; i++) {
+        const ratio = axleLimits[i] / totalLimit
+        const ideal = gross * ratio
+        const actual = Number(value.axleLoads[i]) || 0
+        const deviation = actual - ideal
+        
+        // Threshold: 1500 kg deviation from ideal proportion
+        if (deviation > 1500 && deviation > maxDeviation) {
+          maxDeviation = deviation
+          unbalancedAxle = i
+        }
+      }
+      
+      if (unbalancedAxle !== -1) {
+        const subject = unbalancedAxle === 0 ? "depan" : (unbalancedAxle === count - 1 ? "belakang" : "tengah")
+        const shiftTo = unbalancedAxle === 0 ? "belakang" : "depan"
+        balanceWarning = `Muatan terlalu berat di ${subject}. Pertimbangkan menggeser muatan sekitar ${formatKg(Math.round(maxDeviation))} ke sumbu ${shiftTo} agar lebih seimbang.`
+      }
+    }
+  }
 
   return (
     <form
@@ -187,9 +237,14 @@ export default function DispatchForm({
             Selisih {formatKg(Math.abs(axleSum - gross))} dari berat kotor. Periksa kembali.
           </p>
         )}
+        {balanceWarning && (
+          <p className="text-label text-[#8a5200]">
+            Peringatan Keseimbangan: {balanceWarning}
+          </p>
+        )}
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || mismatch}
           className="ml-auto rounded-veto bg-[#2d613b] px-4 py-2 text-label text-white transition-colors hover:bg-[#244f30] focus-visible:outline-offset-2 disabled:opacity-50"
         >
           {pending ? 'Memvalidasi…' : 'Validasi ke VETO'}

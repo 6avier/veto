@@ -94,19 +94,21 @@ def _evaluate_dimension(
     if not central_rule and not client_rule:
         return None
     
-    # Fetch operator dynamically
+    # Fetch operator dynamically based on strictest rule
     operator = client_rule.operator if client_rule else central_rule.operator
     strictest_rule, other_rule = _find_stricter_rule(central_rule, client_rule, operator)
+    actual_operator = strictest_rule.operator if strictest_rule else operator
     
     is_violation = False
+    excess = 0
     if strictest_rule:
-        if operator == "LTE" and actual_value > strictest_rule.threshold:
+        if actual_operator == "LTE" and actual_value > strictest_rule.threshold:
             is_violation = True
             excess = actual_value - strictest_rule.threshold
-        elif operator == "GTE" and actual_value < strictest_rule.threshold:
+        elif actual_operator == "GTE" and actual_value < strictest_rule.threshold:
             is_violation = True
             excess = strictest_rule.threshold - actual_value
-        elif operator == "EQ" and actual_value != strictest_rule.threshold:
+        elif actual_operator == "EQ" and actual_value != strictest_rule.threshold:
             is_violation = True
             excess = abs(actual_value - strictest_rule.threshold)
             
@@ -121,13 +123,18 @@ def _evaluate_dimension(
         elif dimension in DIMENSION_SUBJECTS:
             subject = DIMENSION_SUBJECTS[dimension]
 
-        directive = f"Kurangi {subject} {_format_number(excess)} {unit}"
+        if actual_operator == "GTE" or (actual_operator == "EQ" and actual_value < strictest_rule.threshold):
+            action = "Tambah"
+        else:
+            action = "Kurangi"
+
+        directive = f"{action} {subject} {_format_number(excess)} {unit}"
 
         # Contract: If client is stricter, contrast with legal limit.
         # A second sentence, not an em-dash: DESIGN.md \u00a77 bans em-dashes in
         # anything a user sees, directives included.
         if strictest_rule.rule_pack.origin == "CLIENT" and other_rule and other_rule.rule_pack.origin == "CENTRAL":
-            directive += f". SOP klien lebih ketat dari batas hukum {_format_number(other_rule.threshold)} {unit}"
+            directive += f". Batas maksimal SOP Klien adalah {_format_number(strictest_rule.threshold)} {unit}"
 
         # Build violation dict
         violation: Dict[str, Any] = {
@@ -159,14 +166,31 @@ def evaluate_payload(payload: Dict[str, Any], active_rules: List[Any]) -> Tuple[
     
     load = payload.get("load", {})
     
-    # 1. Gross Weight
+    # 1. Gross Weight vs Axle Sum Integrity Check
+    axle_loads = load.get("axle_loads_kg", [])
     gross = load.get("gross_weight_kg")
+    
+    if gross is not None and axle_loads:
+        axle_sum = sum(axle_loads)
+        if abs(axle_sum - gross) > 500:
+            violations.append({
+                "dimension": "GROSS_WEIGHT",
+                "actual_value": gross,
+                "limit_value": axle_sum,
+                "excess_value": abs(axle_sum - gross),
+                "unit": "kg",
+                "severity": "BLOCKING",
+                "rule_origin": "CENTRAL",
+                "legal_citation": "Integritas Data Sumbu vs Total",
+                "directive": f"Total sumbu ({_format_number(axle_sum)} kg) tidak sesuai dengan berat kotor ({_format_number(gross)} kg). Selisih {_format_number(abs(axle_sum - gross))} kg. Perbaiki data masukan."
+            })
+
+    # 1b. Gross Weight Rule Evaluation
     if gross is not None:
         v = _evaluate_dimension("GROSS_WEIGHT", gross, active_rules, "kg", axle_config=axle_config)
         if v: violations.append(v)
         
     # 2. Axle Loads
-    axle_loads = load.get("axle_loads_kg", [])
     total_axles = len(axle_loads)
     for idx, load_val in enumerate(axle_loads):
         v = _evaluate_dimension("AXLE_LOAD", load_val, active_rules, "kg", axle_index=idx, total_axles=total_axles, axle_config=axle_config)
@@ -181,5 +205,79 @@ def evaluate_payload(payload: Dict[str, Any], active_rules: List[Any]) -> Tuple[
             v = _evaluate_dimension(dim_key, val, active_rules, "mm", axle_config=axle_config)
             if v: violations.append(v)
             
+    # 4. Smart Directives (Konsultan Muatan Cerdas)
+    _apply_smart_recommendations(violations, load, active_rules, axle_config)
+            
     outcome = "HOLD" if violations else "PASS"
     return outcome, violations
+
+def _apply_smart_recommendations(violations: List[Dict[str, Any]], load: Dict[str, Any], active_rules: List[Any], axle_config: Optional[str]) -> None:
+    gross_violation = next((v for v in violations if v["dimension"] == "GROSS_WEIGHT" and v.get("legal_citation") != "Integritas Data Sumbu vs Total"), None)
+    axle_violations = [v for v in violations if v["dimension"] == "AXLE_LOAD"]
+    
+    if not axle_violations and not gross_violation:
+        return
+        
+    axle_loads = load.get("axle_loads_kg", [])
+    if not axle_loads:
+        return
+        
+    # Pre-calculate limits and headroom for all axles
+    axle_stats = []
+    total_axle_limit = 0
+    for idx, actual in enumerate(axle_loads):
+        dim_rules = [r for r in active_rules if r.dimension == "AXLE_LOAD"]
+        central_rule = _get_applicable_rule(dim_rules, "CENTRAL", idx, axle_config)
+        client_rule = _get_applicable_rule(dim_rules, "CLIENT", idx, axle_config)
+        
+        # operator logic is simplified since AXLE_LOAD is always LTE
+        limit = 10000 # fallback
+        if client_rule and central_rule:
+            limit = min(client_rule.threshold, central_rule.threshold)
+        elif client_rule: limit = client_rule.threshold
+        elif central_rule: limit = central_rule.threshold
+            
+        headroom = max(0, limit - actual)
+        excess = max(0, actual - limit)
+        axle_stats.append({
+            "index": idx,
+            "actual": actual,
+            "limit": limit,
+            "headroom": headroom,
+            "excess": excess
+        })
+        total_axle_limit += limit
+
+    # Case 1: Overloaded Gross Weight (Must reduce cargo)
+    if gross_violation:
+        excess_gross = gross_violation["excess_value"]
+        if total_axle_limit > 0:
+            recommendation_parts = []
+            for stat in axle_stats:
+                ratio = stat["limit"] / total_axle_limit
+                suggested_reduction = int(round(excess_gross * ratio))
+                subject = _axle_subject(stat["index"], len(axle_loads)).replace("beban ", "")
+                recommendation_parts.append(f"{_format_number(suggested_reduction)} kg dari {subject}")
+            
+            if recommendation_parts:
+                suggestion = " Saran proporsional: Turunkan " + ", dan ".join(recommendation_parts) + " agar keseimbangan terjaga."
+                gross_violation["directive"] += suggestion
+                
+    # Case 2: No Gross Violation, but Axle Violation (Can shift cargo)
+    elif axle_violations:
+        total_headroom = sum(s["headroom"] for s in axle_stats)
+        total_excess = sum(s["excess"] for s in axle_stats)
+        
+        if total_headroom >= total_excess and total_excess > 0:
+            # We can shift!
+            overloaded = [s for s in axle_stats if s["excess"] > 0]
+            underloaded = [s for s in axle_stats if s["headroom"] > 0]
+            
+            for v in axle_violations:
+                idx = v.get("axle_index")
+                if idx is not None:
+                    # Find a recipient
+                    recipient = underloaded[0] if underloaded else None
+                    if recipient:
+                        v["directive"] += f" Saran: Geser muatan {_format_number(v['excess_value'])} kg ke {_axle_subject(recipient['index'], len(axle_loads))}. Tidak perlu bongkar muat."
+

@@ -14,14 +14,23 @@ const FIELD_FOR_DIMENSION = {
 }
 
 /** rules[] -> { grossWeight: {threshold, unit, citation, origin}, axle0: {...}, ... } */
-export function limitsFromRules(rules = []) {
+export function limitsFromRules(rules = [], currentAxleConfig = null) {
   const limits = {}
   for (const rule of rules) {
     if (rule.operator !== 'LTE' || rule.status !== 'ACTIVE') continue
 
+    if (currentAxleConfig && rule.applies_to?.axle_config) {
+      const allowedConfigs = Array.isArray(rule.applies_to.axle_config) 
+        ? rule.applies_to.axle_config 
+        : [rule.applies_to.axle_config];
+      if (!allowedConfigs.includes(currentAxleConfig)) continue;
+    }
+
     const key =
       rule.dimension === 'AXLE_LOAD'
-        ? `axle${rule.applies_to?.axle_index ?? 0}`
+        ? (rule.applies_to?.axle_index !== null && rule.applies_to?.axle_index !== undefined)
+          ? `axle${rule.applies_to.axle_index}`
+          : 'axle_generic'
         : FIELD_FOR_DIMENSION[rule.dimension]
     if (!key) continue
 

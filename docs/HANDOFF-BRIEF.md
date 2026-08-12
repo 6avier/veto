@@ -43,10 +43,10 @@ same origin and the backend's CORS pin on 5173 never applies in dev.
 
 | Surface | State |
 |---|---|
-| `/dispatch` | Built, **verified live** |
+| `/dispatch` | Built, **verified live**. Added yellow frontend warnings for unbalanced payloads (Smart Balance Warnings) with shifting weight calculations. |
 | `/audit` | Built, **verified live** |
 | `/rule-studio` | Built, **verified live** — upload, triage, extract, source plate |
-| Backend | All endpoints respond. 38/38 tests passing as of 2026-08-13 (Iqbal's `65bc380` also fixed the Gemini-quota-flaky rules tests noted below — the flake description is kept for context, but re-verify the count if it's been a while). |
+| Backend | All endpoints respond. 38/38 tests passing as of 2026-08-13. Added **Smart Directives** to `engine.py` (proportional overload reduction & shifting recommendations). Added Gross Weight vs Axle integrity check. |
 
 Frontend is feature-complete. Nothing blocking is frontend work.
 
