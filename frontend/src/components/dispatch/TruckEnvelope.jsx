@@ -152,6 +152,13 @@ const REAR_WHEEL_LENGTH_MM = 900
 const REAR_WHEEL_POKE_MM = 300
 /** Offsets from the live box's back edge; negative pokes past it. Rearmost first. */
 const REAR_WHEEL_RIGHT_OFFSETS_MM = [-100, 1300]
+/** Front-to-back extent of the whole wheel set — how far forward of the box's
+ *  back edge the foremost rect reaches. The wheels are never pushed in front
+ *  of the cab by less body than this. */
+const REAR_WHEEL_SET_LENGTH_MM = Math.max(...REAR_WHEEL_RIGHT_OFFSETS_MM) + REAR_WHEEL_LENGTH_MM
+/** Minimum axle track. A truck's wheels do not narrow because its load is
+ *  narrow; without this the two rows collapse onto each other at width 0. */
+const REAR_WHEEL_MIN_TRACK_MM = 1600
 
 /** Evenly spaced positions strictly inside [start, start+size], excluding the edges. */
 function panelLines(start, size, count = PANEL_LINE_COUNT) {
@@ -248,10 +255,18 @@ function PlanView({ length, width, limits }) {
           // Anchored to the live input box's own back edge on both axes, never
           // the fixed legal-max line. Length is left-anchored, so the back edge
           // is outerOffset + innerSize (design doc §5, plan amendment Task 4).
+          //
+          // Both axes are floored at the vehicle's own minimum, because the
+          // wheels belong to the truck rather than the cargo. Unbounded, a
+          // short load reversed them into the cab, and a zero width collapsed
+          // the two rows onto the centreline as detached floating tabs.
           const boxRight = lengthGeo.outerOffset + lengthGeo.innerSize
-          const rectX = boxRight - offset - REAR_WHEEL_LENGTH_MM
-          const topY = widthGeo.innerOffset - REAR_WHEEL_POKE_MM + 60
-          const bottomY = widthGeo.innerOffset + widthGeo.innerSize - 60
+          const wheelRight = Math.max(boxRight, lengthGeo.outerOffset + REAR_WHEEL_SET_LENGTH_MM)
+          const track = Math.max(widthGeo.innerSize, REAR_WHEEL_MIN_TRACK_MM)
+          const trackTop = (widthGeo.canvas - track) / 2
+          const rectX = wheelRight - offset - REAR_WHEEL_LENGTH_MM
+          const topY = trackTop - REAR_WHEEL_POKE_MM + 60
+          const bottomY = trackTop + track - 60
           return (
             <g key={offset}>
               <motion.rect
