@@ -32,7 +32,12 @@ Verify with `manage.py test apps`, `npm --prefix frontend run lint`, and
 plain JavaScript.
 
 `VITE_USE_MOCKS=true` runs the whole frontend with no backend. Mocks are the
-booth fallback; keep them working.
+booth fallback; keep them working. **It is currently `false`** — flip it back
+before the booth.
+
+The dev server takes an assigned port when 5173 is busy. Safe because the
+frontend calls `/api/v1` relative through the Vite proxy, so the browser sees
+same origin and the backend's CORS pin on 5173 never applies in dev.
 
 ## Where it stands
 
@@ -40,41 +45,77 @@ booth fallback; keep them working.
 |---|---|
 | `/dispatch` | Built, **verified live** |
 | `/audit` | Built, **verified live** |
-| `/rule-studio` | Built, **mocks only, never run live** |
-| Backend | All 12 endpoints respond. 32 of 34 tests pass. |
+| `/rule-studio` | Built, **verified live** — upload, triage, extract, source plate |
+| Backend | All endpoints respond. 27 pass in validation/audit/profiles; 2 fail in rules (see below). |
 
 Frontend is feature-complete. Nothing blocking is frontend work.
 
+## Read this before touching Rule Studio
+
+**Live AI extraction had never once run** until 2026-08-12. `apps/rules/views.py`
+called `json.loads` without importing `json`, so every extraction raised
+`NameError`, was swallowed by a broad `except`, and returned the hardcoded
+fallback. The `25.000 kg` tagged `gemini-extracted` on screen was never read
+from any document. Fixed in `3912607`.
+
+**The Gemini free tier allows 20 extraction calls per DAY**, per model:
+
+```
+quotaId: GenerateRequestsPerDayPerProjectPerModel-FreeTier
+quotaValue: 20
+```
+
+This is what made the test suite look non-deterministic. It is rate limiting,
+not randomness. **At a booth this runs out in minutes.**
+
+`gemini-flash-lite-latest` works and carries a separate daily quota. Verified.
+To switch: `echo "GEMINI_MODEL=gemini-flash-lite-latest" >> backend/.env`.
+`gemini-2.0-flash` and `gemini-2.5-flash` both 404 for this key.
+
+The fallback is deliberately honest now: tagged `cadangan` /
+`belum-diverifikasi`, never `gemini-extracted`, and its excerpt says extraction
+was unavailable instead of posing as a quotation. Its threshold is a
+placeholder. **Do not make it invent a figure again** (`CLAUDE.md` §5).
+
 ## What blocks the demo
 
-All backend or ops:
-
-1. **Two enforced thresholds cite themselves as `Asumsi`** (assumption), and they
-   are the two the demo triggers. Human verification needed. An agent must not
-   invent replacements.
-2. **No CLIENT rule pack is seeded**, so the closing beat — approve a rule, watch
-   a nationally-legal load HOLD — has never been demonstrated.
-3. **Backend tests call Gemini live** and return different results on identical
-   input (2 / 2 / 1 errors across three runs). Inject a fake client.
+1. **No CLIENT rule pack is seeded**, so the closing beat — approve a rule, watch
+   a nationally-legal load HOLD — still has not been demonstrated. This is the
+   one that matters most.
+2. **Two enforced thresholds cite themselves as `Asumsi`** (assumption), and they
+   are the two the demo triggers. The word is **ours, not the regulation's** — it
+   appears zero times in `data/` and zero times in the corpus. The Lampiran of
+   PP 55/2012 was never obtained; `data/regulations/MISSING_REGULATIONS.md`
+   lists it as CRITICAL GAP #1. The corpus's own tandem figure is **18000**
+   while the engine enforces **16000**. Human verification needed. An agent must
+   not invent replacements.
+3. **Gemini quota** — see above.
 4. **Nothing is deployed.**
 
 ## Next task
 
-Wire `/rule-studio` live and prove the closing beat, in this order:
+Seed or create a CLIENT rule pack and prove the closing beat:
 
-1. Seed or create a CLIENT rule pack. Nothing else matters without one.
-2. `VITE_USE_MOCKS=false`, run upload → triage → extract → approve for real.
-3. On `/dispatch`, enter a load under 25000 kg but over the approved client
+1. Seed a CLIENT rule pack. Nothing else matters without one.
+2. On `/dispatch`, enter a load under 25000 kg but over the approved client
    limit. It must HOLD and read `[ SOP KLIEN ]`.
-4. Set `VITE_USE_MOCKS=true` again and confirm the mocked path still works.
+3. Set `VITE_USE_MOCKS=true` again and confirm the mocked path still works.
+
+A one-page client SOP PDF for this exists (22.000 kg gross, 4.000 mm height —
+both stricter than national), currently outside the repo. Ask the owner for
+`SOP-Cikarang-v2.pdf` or regenerate one; 22.000 is under the national 25.000,
+which is exactly what the closing beat needs.
 
 ## Watch the seam
 
 `contract/*.json` and the seeded rule base drifted twice in one day, both times
-silently. Most recent: the backend moved to full JBI axle notation, so `1.22`
-became `1.2.2` and four trailer configs appeared. The dropdown in
-`DispatchForm.jsx` had to be realigned, because a config absent from the rule
-base quietly misses its gross-weight rule instead of failing loudly.
+silently.
+
+**`backend/api-contract.md` is a stale tracked duplicate of the root
+`api-contract.md`** — 16 lines out of date, still carrying English directives,
+the old `1.22` axle notation, and a different citation. The root file is
+canonical per `CLAUDE.md`. Anyone reading the backend copy builds to a wrong
+contract. Not deleted yet because it is the other lane's file.
 
 **Before touching the dispatch form, run `curl localhost:8000/api/v1/rules` and
 check the `applies_to.axle_config` values against `AXLE_CONFIGS`.**
@@ -87,27 +128,38 @@ check the `applies_to.axle_config` values against `AXLE_CONFIGS`.**
 - **A HOLD is HTTP 403 and is a success**, never an error envelope.
 - **PASS has no colour.** The signal is *Cetak Surat Jalan* unlocking.
 - **Amber is VETO's only accent.** The ERP's green belongs to the host; VETO
-  never uses green.
+  never uses green. On the register surface amber is a marker, never text.
+- **`DIMENSION_NAMES` in `engine.py` holds payload keys**, not display text.
+  Translating it makes `dims.get()` miss and disables every dimension check
+  without raising. Display wording lives in `DIMENSION_SUBJECTS`.
 - **SAP 72 is the ERP's face only.** The verdict panel and HOLD dialog pin back
   to Archivo with `font-sans` even though they render inside the ERP tree.
 - **No monospace in the ERP chrome.**
 - **Never invent a regulation citation or a statistic.** `CLAUDE.md` §5.
 - **Commits are authored `6avier`.** No `Co-Authored-By`, no AI attribution.
 
-## Two traps already paid for
+## Three traps already paid for
 
 - Forms carry `noValidate`. HTML5 constraint validation blocks `onSubmit` before
   React sees it, which produces a dead button and no message.
 - Section titles are **not** `<legend>`. A legend renders on the fieldset's top
   border and `padding-top` cannot move it.
+- `test_approve_candidate` and `test_reject_candidate` were green **because**
+  extraction was broken: the fallback always returned exactly one candidate, so
+  `["candidates"][0]` always worked. With extraction fixed, a mock PDF
+  containing only the word `"SOP"` yields `[]` and they fail honestly. The real
+  fix is injecting a fake client, which also removes the quota dependency.
 
 ## Housekeeping
 
 `GEMINI_API_KEY` is in gitignored `backend/.env` and appears in zero commits, but
 it passed through a chat transcript. **Rotate it after the event.**
 
-`GEMINI_MODEL` defaults to `gemini-flash-latest`. Do not set `gemini-2.5-flash`;
-it 404s for newer keys even though `models.list()` still advertises it.
+The audit log was cleared on 2026-08-12 and regenerated through the live API, so
+every stored directive is Indonesian. The DB is local SQLite
+(`backend/db.sqlite3`); `DATABASE_URL` is unset, so that clearing affected one
+machine only.
 
-Six open decisions are in [HANDOFF.md](HANDOFF.md) §16, including an input
-treatment that was built and shown but never chosen. Do not silently decide them.
+Open decisions are in [HANDOFF.md](HANDOFF.md) §16. **Decision 4 is settled:**
+directives are Indonesian, with Indonesian thousands separators and no em-dash.
+The rest are not. Do not silently decide them.

@@ -4,15 +4,17 @@
 | | |
 |---|---|
 | **Project** | VETO |
-| **Date** | 2026-08-12, refreshed at end of session |
-| **Branch** | `main` · HEAD `9e85aaf` · clean · pushed, 0 ahead 0 behind |
+| **Date** | 2026-08-12, refreshed at end of evening session |
+| **Branch** | `main` · HEAD `5c867c7` · clean · pushed, 0 ahead 0 behind |
 | **Remote** | `https://github.com/6avier/veto.git` |
 | **Deadline** | Working product **2026-08-13 23:55 WIB**. Demo + booth **2026-08-14**. |
-| **Handoff status** | **NEEDS_REVIEW.** Frontend is feature-complete and two of three surfaces run live. Nothing blocking is frontend work. Four things block a credible demo, all backend or ops, listed in §14. |
+| **Handoff status** | **NEEDS_REVIEW.** Frontend is feature-complete and **all three surfaces now run live**. Nothing blocking is frontend work. Four things block a credible demo, all backend or ops, listed in §14 — the sharpest new one is a **20-call-per-day Gemini quota**. |
 
 **Lanes.** Iqbal owns `backend/`. The other lane owns `frontend/`. Shared seam: `api-contract.md`, `contract/*.json`, `frontend/src/api/`.
 
-**This session crossed into `backend/` three times, only to unbreak `main`.** Those are `f49e619` and `7e1c94b`. No feature work was done in the backend lane. See §14 P0-3 for what is still Iqbal's.
+**This session crossed into `backend/` again**, this time for feature work, not just repair: `3912607` fixes the missing `json` import that had silently disabled live extraction since it was written, makes the fallback stop posing as a document quotation, and adds `GET /documents/{id}/pages/{n}` so the frontend can render the source page. **Tell Iqbal**, because it touches `apps/rules/views.py` and the contract. See §14 P0-3.
+
+**Both lanes pushed to `main` within the same hour on 2026-08-12.** Fetch and rebase before starting. See §13.
 
 `AGENTS.md` is a pointer, not context. For a cold start read
 [HANDOFF-BRIEF.md](HANDOFF-BRIEF.md) first; this file is the full version.
@@ -144,9 +146,11 @@ frontend/src/
 - **`/audit`** — reads `GET /decisions` and `/decisions/{id}` for real. 34 decisions render, rows expand to violations, citations, rule pack versions.
 - **All twelve endpoints respond.**
 
+- **`/rule-studio`** — **now verified live** (2026-08-12). Upload, triage, live Gemini extraction, source-page plate, split-screen review. Two things had to be fixed to get there, both in §14: extraction had never actually run, and the free-tier quota is 20 calls per day.
+
 ### Working on mocks only
 
-- **`/rule-studio`** — the whole flow is built and verified on fixtures: upload, triage with three outcomes, staged extraction reveal, split-screen review, approve and reject. **It has never run against the live backend.** That is §15.
+Nothing. Every surface has been exercised against the live backend.
 
 ### Built this session, frontend
 
@@ -157,15 +161,21 @@ frontend/src/
 - **ERP has its own identity.** Forest green `#2d613b` sampled from the proposal mockup, and **SAP 72** — the actual SAP Fiori typeface, Apache-2.0, vendored in `frontend/src/assets/fonts/` with licence and notice. Brand and page heading at Bold 700.
 - **`/audit`** built from nothing, append-only visible in the UI.
 
+### Built 2026-08-12
+
+- **Directives are Indonesian.** Settles open decision 4. `Kurangi muatan total 500 kg`, id-ID thousands separators, no em-dash, axles named `sumbu depan/tengah/belakang` to match the form's own labels. Engine, fixture and contract moved together.
+- **Rule Studio source plate.** `GET /documents/{id}/pages/{n}` renders a page to an inline PNG and returns the rectangles each candidate clause occupies, as percentages of the page box. `SourcePlate.jsx` draws the page and marks the clause behind the rule under review. Only that one candidate is marked: drawing all of them lit 106 boxes across most of a table.
+- **Live extraction unbroken.** See §14 P0-3.
+
 ### Placeholder
 
 - Persona strings in `ErpLayout.jsx` are hardcoded, not a user model.
 - `loading_point_id: 'LP-CIKARANG-01'` hardcoded in `Dispatch.jsx`.
-- `DO-TEST` rows pollute the audit log from integration sweeps. Clear before the demo.
+- Audit log was cleared and regenerated on 2026-08-12; all stored directives are Indonesian. Local SQLite only, `DATABASE_URL` unset.
 
 ### Not implemented
 
-- No CLIENT rule pack seeded. No extraction fallback. No deployment. `apps/profiles` has endpoints but no UI (`P2`).
+- No CLIENT rule pack seeded. No deployment. `apps/profiles` has endpoints but no UI (`P2`).
 ## 6. Current user flow
 
 ### Implemented
@@ -306,6 +316,10 @@ From `backend/apps/rules/migrations/0002_seed_odol_central_rules.py`:
 
 `data/regulations/` contains a **scraped** corpus plus `MISSING_REGULATIONS.md` and `conflicts.json`. The repository owner has confirmed it is unverified reference material for humans, not a validated source. `CLAUDE.md` §5 forbids fabricating a regulation citation in code, seed data, or UI copy.
 
+**Traced 2026-08-12 — the word "Asumsi" is ours, not the regulation's.** It appears zero times across `data/` and zero times in `VETO_Regulatory_Corpus.md`. `MISSING_REGULATIONS.md` names the cause as CRITICAL GAP #1: the Lampiran of PP 55/2012, which holds the definitive JBI tables by axle configuration, was never obtained. The corpus's own vehicle records carry `"verification_required": true` and the note `"JBI PERLU VERIFIKASI dari lampiran PP 55/2012"`.
+
+**And the numbers disagree.** The corpus records `MST_rear_tandem_kg: 18000`; the engine enforces `16000`. See §14 P0-1 for the full trace and the source PDF link.
+
 **Do not** treat these as verified, propagate them into new seed data, or invent replacements. Either a human verifies them against source text, or the UI must state plainly that they are provisional.
 
 ### No CLIENT rules are seeded
@@ -387,20 +401,21 @@ uv run --directory backend python manage.py check
 ---
 
 ## 13. Git / working tree
-- **Branch:** `main`, the only branch.
-- **HEAD:** `4f7cbb5`. Working tree clean. 1 commit unpushed.
-- **Two contributors.** `6avier` and `iqbalvirdiansyah-commits`. A merge has already happened once.
+- **Branch:** `main`, the only branch on the remote. Everything ships straight to it.
+- **HEAD:** `5c867c7` as of 2026-08-12 evening. Working tree clean, pushed, in sync.
+- **Two contributors.** `6avier` and `iqbalvirdiansyah-commits`. Iqbal's commits land as `6avier <6avier@users.noreply.github.com>`.
+- **Both lanes are pushing to `main` the same afternoon.** Two pushes landed mid-session on 2026-08-12 and both needed a rebase. **Fetch before you start and rebase, do not merge.** Iqbal is touching `engine.py`, the seed migrations and `contract/*.json` — the same files the frontend lane reads.
+- **A stale worktree exists** at `/private/tmp/veto-dispatch-finish` on `codex/dispatch-finish`, 2 commits, superseded by `main`. Not cleaned up.
 - **`.agents/`** is a directory of vendored agent skill packs. It is gitignored on purpose. Do not commit it.
 
 ```
-4f7cbb5  fix(mocks): derive thresholds from the contract fixture, ignore .agents
-97240c4  feat(validation): implement dynamic evaluation engine with persistence
-5730bb5  docs: add engineering handoff
-1f478c5  feat(dispatch): build the ERP shell, design tokens, and dispatch form
-408d1f1  feat(backend): add audit and rules models, migrations, pyright config
-a4530c2  Merge branch 'main'
-999082e  Add files via upload            (iqbalvirdiansyah-commits)
-84b5a5f  add: data folder and VETO Regulatory Corpus
+5c867c7  feat(rule-studio): show the source page with the clause marked
+3912607  fix(rules): unbreak live extraction, add the source page endpoint
+3decc55  fix(validation): patch array bypass and logic vulnerabilities   (Iqbal)
+2fc63ba  feat(validation): speak the directive in Indonesian
+80b2b39  fix(dev): let the dev server take an assigned port
+3ac08a6  docs: standardize axle_config format to 1.2.2 in api contract   (Iqbal)
+043d578  fix(dispatch): realign axle configs with the seeded rule base
 ```
 
 Commits are authored `6avier`. **Do not add a `Co-Authored-By` trailer or any AI attribution.**
@@ -408,22 +423,48 @@ Commits are authored `6avier`. **Do not add a `Co-Authored-By` trailer or any AI
 ### P0 — blocks a credible demo. None of these are frontend.
 
 **P0-1 · Two enforced thresholds cite themselves as assumptions.**
-`PP 55/2012 Lampiran (Asumsi Sumbu Ganda/Tandem)` (16000 kg) and `PP 55/2012 Lampiran JBI (Asumsi Kelas I)` (25000 kg). These are the two rules the demo triggers, and the word *Asumsi* renders on screen as the legal basis for a HOLD. `data/regulations/` is scraped, unverified, confirmed by the owner.
-File: `backend/apps/rules/migrations/0002_seed_odol_central_rules.py`. **Human task, not an agent task.**
+`PP 55/2012 Lampiran (Asumsi Sumbu Ganda/Tandem)` (16000 kg) and `PP 55/2012 Lampiran JBI (Asumsi Kelas I)` (25000 kg). These are the two rules the demo triggers, and the word *Asumsi* renders on screen as the legal basis for a HOLD.
+
+Traced 2026-08-12. **The word is ours, not the regulation's.** It appears zero times in `data/` and zero times in `VETO_Regulatory_Corpus.md`. The cause is in `data/regulations/MISSING_REGULATIONS.md`, CRITICAL GAP #1: the Lampiran of PP 55/2012 — the annex holding the definitive JBI tables — was never obtained. The corpus records flag themselves too: `"verification_required": true`, `"JBI PERLU VERIFIKASI dari lampiran PP 55/2012"`.
+
+**There is also a numeric conflict.** The corpus carries `MST_rear_tandem_kg: 18000` (VRULE_002, VRULE_003) while the engine enforces **16000**. Two different figures, and the one in use is not the one in the corpus.
+
+Source PDF: https://peraturan.bpk.go.id/Details/5307
+Files: `backend/apps/rules/migrations/0002_seed_odol_central_rules.py`, `0005_seed_detailed_axle_rules.py`. **Human task, not an agent task. Do not choose values.**
+
+If the annex cannot be verified in time, the safer move is not to change the number but to change the string so it cannot be read as a citation — e.g. `PP 55/2012 Lampiran · angka belum diverifikasi`. **Owner decides.**
 
 **P0-2 · No CLIENT rule pack is seeded.**
 It exists only inside `test_contract.py`'s `setUp`. `PRODUCT.md` §7 step 7 — approve a client rule, watch a nationally-legal load HOLD — **has never been demonstrated and cannot be today.** This is the demo's closing beat.
 
-**P0-3 · The backend test suite calls Gemini live and is non-deterministic.**
-Three consecutive runs on identical input gave 2, 2, then 1 errors. Currently 2 failing. Takes 33s and spends tokens per run. This is also why `main` shipped broken: the tests could not run without a key, so nothing caught a missing dependency. Fix by injecting a fake client.
+**P0-3 · The Gemini free tier allows 20 extraction calls per day, and extraction had never actually run.**
+
+Two separate findings, both 2026-08-12.
+
+*The bug.* `apps/rules/views.py` called `json.loads` without ever importing `json`. Every extraction raised `NameError`, was swallowed by a broad `except`, and returned the hardcoded fallback. **Live AI extraction had never once succeeded.** The `25.000 kg` tagged `gemini-extracted` on screen was never read from any document. Fixed in `3912607`; the same 26-page PDF then yielded 15 real candidates.
+
+*The quota.* What looked like non-determinism is rate limiting:
+
+```
+quotaId: GenerateRequestsPerDayPerProjectPerModel-FreeTier
+quotaValue: 20
+```
+
+Twenty calls **per day**, per model. At a booth this runs out in minutes and every visitor after that sees the fallback. `gemini-flash-lite-latest` works and carries a separate daily quota — verified. `gemini-2.0-flash` and `gemini-2.5-flash` both 404 for this key. To switch: `echo "GEMINI_MODEL=gemini-flash-lite-latest" >> backend/.env`.
+
+*Consequence for the suite.* `test_approve_candidate` and `test_reject_candidate` now error. They were green **because** extraction was broken: the fallback always returned exactly one candidate, so `["candidates"][0]` always worked. Confirmed by stashing the fix — old code passes, fixed code fails. The mock PDF contains only the word `"SOP"`, so real extraction returns `[]`. Injecting a fake client fixes both the flakiness and the quota dependency.
 File: `backend/apps/rules/tests/test_rule_studio.py`.
+
+*Also.* If `GEMINI_API_KEY` is empty, `candidates_data` stays `[]` and `used_fallback` stays `False` — zero candidates with no signal that extraction never ran.
 
 **P0-4 · Nothing is deployed.** No `Dockerfile`, `vercel.json`, `railway.*`, `Procfile` or CI. `gunicorn` and `whitenoise` are installed and unused. Roughly a day and a half remains.
 
 ### P1
 
-- **Directives are English in an all-Indonesian UI**, and one carries an em-dash banned by `DESIGN.md` §8. Pinned to `engine.py` line 69 with the two fixture copies that must change with it. The front-axle directive also says `"Reduce axle 1 load"` while the UI labels that field *Sumbu depan*.
-- **`evaluated_at` returns `+00:00`** where `api-contract.md` §0 specifies WIB. Cosmetic; the frontend formatter renders local time.
+- ~~Directives are English~~ **Fixed 2026-08-12** (`2fc63ba`). Indonesian, id-ID separators, no em-dash, axles named to match the form labels.
+- ~~`evaluated_at` returns `+00:00`~~ **Fixed.** Now returns `+07:00`.
+- **`backend/api-contract.md` is a stale tracked duplicate** of the root `api-contract.md`, 16 lines out of date: English directives, the old `1.22` axle notation, and a different citation (`PM 111/2015 Pasal 4 ayat (2)` with 16100/1200). The root file is canonical per `CLAUDE.md` §2. Anyone reading the backend copy builds to a wrong contract. Left in place because it is the other lane's file — **needs a decision, then deletion.**
+- **Clause highlighting is text search.** A figure that also appears elsewhere on the page gets marked too. UI copy says *kemunculan*, not *sumber*, and must keep saying so.
 - **`GEMINI_API_KEY` was pasted into a chat transcript.** It lives only in gitignored `backend/.env` and appears in zero commits, verified with `git log --all -S`. **Rotate after the event.**
 - **`GEMINI_MODEL` matters.** `gemini-2.5-flash` returns 404 for keys created after its cutoff even though `models.list()` still advertises it. Default is now `gemini-flash-latest` via `settings.GEMINI_MODEL`.
 
@@ -433,19 +474,22 @@ Dead template assets (`hero.png`, `vite.svg`, `public/icons.svg`); `@types/react
 ## 15. Next task
 ### Goal
 
-Wire `/rule-studio` to the live backend and prove demo step 7.
+Seed a CLIENT rule pack and prove demo step 7.
 
 ### Why
 
-It is the last surface on mocks, every endpoint it needs exists and responds, and **the payoff has never been demonstrated**: approve a client rule, then watch a load that is legal nationally get held on `/dispatch`. That is the closing beat of the demo and right now there is nothing behind it.
+`/rule-studio` now runs live end to end, so the machinery is there. What is still missing is the payoff: approve a client rule, then watch a load that is legal nationally get held on `/dispatch`. That is the closing beat of the demo and there is still nothing behind it.
 
 ### Order of work
 
 1. **Seed or create a CLIENT rule pack** (P0-2). Without one, nothing below matters.
-2. `VITE_USE_MOCKS=false`, run the Rule Studio flow against real endpoints.
-3. Upload a real PDF with a clearly worded load limit. Extraction is non-deterministic, so expect to retry.
-4. Approve, then go to `/dispatch` and enter a load under 25000 kg but over the approved client limit. It must HOLD, and the violation must read `[ SOP KLIEN ]`.
-5. Flip back to `VITE_USE_MOCKS=true`. Mocks are the booth fallback if the backend dies.
+2. Approve a client rule through `/rule-studio`, or seed one directly if the Gemini quota is spent.
+3. On `/dispatch`, enter a load under 25000 kg but over the approved client limit. It must HOLD, and the violation must read `[ SOP KLIEN ]`.
+4. Flip back to `VITE_USE_MOCKS=true`. Mocks are the booth fallback if the backend dies.
+
+A one-page client SOP PDF built for exactly this exists outside the repo: `SOP-Cikarang-v2.pdf`, 22.000 kg gross and 4.000 mm height, both stricter than national. 22.000 is under the national 25.000, which is what makes the beat land. Ask the owner for it, or regenerate an equivalent — it is seed data, which `CLAUDE.md` §6 endorses.
+
+**Mind the quota before starting: 20 extraction calls per day.** Seed directly rather than burning calls on retries.
 
 ### Acceptance
 
@@ -469,7 +513,7 @@ Codex must not silently decide these.
 
 **3 · Warning icon colour.** The HOLD dialog icon is amber, matching the one-accent lock. The owner's reference image was red. Switching means switching the whole set, not one icon. **Owner decides.**
 
-**4 · Directive language.** English per `api-contract.md` §1, Indonesian per `DESIGN.md` §7. The two documents genuinely conflict and it is the most-read string in the demo. Recommended: Indonesian, em-dash removed, in one change across contract, fixtures and `engine.py`.
+**4 · Directive language. SETTLED 2026-08-12 — Indonesian.** Owner chose it. Shipped in `2fc63ba` across `engine.py`, `contract/validate.response.hold.json` and `api-contract.md` §1, with id-ID thousands separators and the em-dash replaced by a second sentence. Axles are named `sumbu depan/tengah/belakang` to match the form's own labels. Kept here as a record; not open.
 
 **5 · Regulation thresholds.** Must be verified by a human against source text. **Codex must not choose values or invent citations.**
 
