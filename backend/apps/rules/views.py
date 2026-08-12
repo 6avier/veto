@@ -48,6 +48,8 @@ class RuleListView(APIView):
             "total": len(results)
         })
 
+import base64
+import json
 import os
 import fitz
 from django.conf import settings
@@ -142,6 +144,8 @@ class DocumentExtractView(APIView):
             
         # Call Gemini API
         candidates_data = []
+        used_fallback = False
+        fallback_reason = None
         try:
             if settings.GEMINI_API_KEY:
                 client = genai.Client(api_key=settings.GEMINI_API_KEY)
@@ -179,7 +183,16 @@ class DocumentExtractView(APIView):
                     
                 candidates_data = json.loads(raw_json)
         except Exception as e:
-            # Fallback if API fails or is unavailable
+            # Fallback if API fails or is unavailable. It keeps the booth demo
+            # alive when the model is unreachable, so it must never pass itself
+            # off as something read out of the document: no gemini-extracted
+            # tag, and an excerpt that states plainly what happened instead of
+            # sitting under SUMBER looking like a quotation.
+            #
+            # CLAUDE.md §5: the threshold below is a placeholder, not a figure
+            # taken from any regulation or document. TODO: verify.
+            used_fallback = True
+            fallback_reason = str(e)
             candidates_data = [
                 {
                     "dimension": "GROSS_WEIGHT",
@@ -187,8 +200,12 @@ class DocumentExtractView(APIView):
                     "threshold": 25000,
                     "unit": "kg",
                     "applies_to": None,
-                    "source_text_excerpt": "Fallback extraction due to API error: " + str(e),
-                    "source_page": 1
+                    "source_text_excerpt": (
+                        "Ekstraksi otomatis tidak tersedia. Angka di bawah adalah contoh "
+                        "cadangan dan belum diverifikasi terhadap dokumen ini."
+                    ),
+                    "source_page": 1,
+                    "tags": ["cadangan", "belum-diverifikasi"],
                 }
             ]
             
@@ -204,7 +221,7 @@ class DocumentExtractView(APIView):
                 source_reference=doc.filename,
                 source_text_excerpt=cdata.get("source_text_excerpt", ""),
                 source_page=cdata.get("source_page", 1),
-                tags=["gemini-extracted"],
+                tags=cdata.get("tags") or ["gemini-extracted"],
                 status=CandidateStatus.PENDING
             )
             created_candidates.append({
@@ -223,11 +240,15 @@ class DocumentExtractView(APIView):
             
         extraction_ms = max(1, round((time.perf_counter() - started) * 1000))
         
+        # used_fallback is set where the fallback is built, not sniffed back out
+        # of the excerpt text. String-matching the excerpt meant that rewording
+        # the message silently turned the flag off.
         return Response({
             "document_id": str(doc.document_id),
             "candidates": created_candidates,
             "extraction_ms": extraction_ms,
-            "used_fallback": len(candidates_data) > 0 and "API error" in candidates_data[0].get("source_text_excerpt", "")
+            "used_fallback": used_fallback,
+            "fallback_reason": fallback_reason,
         })
 
 class RuleCandidateListView(APIView):
@@ -329,3 +350,104 @@ class RuleCandidateRejectView(APIView):
             "reviewed_by": c.reviewed_by,
             "reviewed_at": c.reviewed_at.isoformat()
         })
+
+
+class DocumentPageView(APIView):
+    """One rendered page plus the regions the extractor drew its rules from.
+
+    Rule Studio is specified as split-screen, source document against extracted
+    rule (CLAUDE.md §3). Until now the frontend had the rule but no way to show
+    the document, because nothing served the PDF. This serves both halves of the
+    comparison in a single request: the page as an image, and the location of
+    every candidate clause on it.
+
+    Rectangles are returned as percentages of the page box rather than pixels,
+    so the overlay stays aligned at any rendered width and the frontend never
+    has to know the DPI.
+    """
+
+    DPI = 110
+    MAX_DPI_PIXELS = 4000
+
+    def get(self, request, document_id, page_number):
+        try:
+            doc = Document.objects.get(document_id=document_id)
+        except Document.DoesNotExist:
+            return Response(
+                {"error": {"code": "NOT_FOUND", "message": "Document not found"}},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not doc.file_path or not os.path.exists(doc.file_path):
+            return Response(
+                {"error": {"code": "NOT_FOUND", "message": "Document file is no longer on disk"}},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if page_number < 1 or page_number > doc.page_count:
+            return Response(
+                {
+                    "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": f"page_number must be between 1 and {doc.page_count}",
+                        "field": "page_number",
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            with fitz.open(doc.file_path) as pdf_doc:
+                page = pdf_doc[page_number - 1]
+                box = page.rect
+                pixmap = page.get_pixmap(dpi=self.DPI)
+                image_b64 = base64.b64encode(pixmap.tobytes("png")).decode("ascii")
+
+                # Candidates that cite this page. search_for gives the clause its
+                # coordinates back; a excerpt the extractor paraphrased simply
+                # returns nothing, which degrades to an un-highlighted page
+                # rather than a wrong highlight.
+                regions = []
+                for c in RuleCandidate.objects.filter(document=doc, source_page=page_number):
+                    rects = []
+                    for line in (c.source_text_excerpt or "").split("\n"):
+                        line = line.strip()
+                        if len(line) < 3:
+                            continue
+                        for hit in page.search_for(line):
+                            rects.append(
+                                {
+                                    "x": round(hit.x0 / box.width * 100, 3),
+                                    "y": round(hit.y0 / box.height * 100, 3),
+                                    "w": round((hit.x1 - hit.x0) / box.width * 100, 3),
+                                    "h": round((hit.y1 - hit.y0) / box.height * 100, 3),
+                                }
+                            )
+                    regions.append(
+                        {
+                            "candidate_id": str(c.candidate_id),
+                            "dimension": c.dimension,
+                            "threshold": c.threshold,
+                            "unit": c.unit,
+                            "status": c.status,
+                            "rects": rects,
+                        }
+                    )
+        except Exception:
+            return Response(
+                {"error": {"code": "INTERNAL_ERROR", "message": "Failed to render PDF page"}},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        return Response(
+            {
+                "document_id": str(doc.document_id),
+                "filename": doc.filename,
+                "page_number": page_number,
+                "page_count": doc.page_count,
+                "width": round(box.width, 2),
+                "height": round(box.height, 2),
+                "image": f"data:image/png;base64,{image_b64}",
+                "regions": regions,
+            }
+        )

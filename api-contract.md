@@ -324,14 +324,52 @@ Runs full extraction. Only valid when `accepted` is `true`, or when the human ov
     }
   ],
   "extraction_ms": 4120,
-  "used_fallback": false
+  "used_fallback": false,
+  "fallback_reason": null
 }
 ```
 
 - `operator` enum: `LTE`, `GTE`, `EQ`.
 - `source_text_excerpt` and `source_page` drive the split-screen verification view. Both required.
-- `used_fallback` is `true` when the live LLM path failed and a pre-processed result was served. Frontend should indicate this in the UI rather than hiding it.
+- `used_fallback` is `true` when the live LLM path failed and a fallback candidate was served. Frontend should indicate this in the UI rather than hiding it.
+- `fallback_reason` carries the underlying error when `used_fallback` is true, and is `null` otherwise. It is diagnostic text for developers — **do not render it as document content.**
+- A fallback candidate is tagged `["cadangan", "belum-diverifikasi"]`, never `gemini-extracted`, and its `source_text_excerpt` states that extraction was unavailable rather than quoting the document. Its `threshold` is a placeholder, not a figure read from any source (`CLAUDE.md` §5).
 - Errors: 409 if the document was rejected and `force` is false. 504 on LLM timeout **only when no fallback exists**.
+
+### `GET /documents/{document_id}/pages/{page_number}`
+
+The source half of the split screen. Returns one rendered page plus the location of each candidate clause on it. `page_number` is 1-based.
+
+**Response — HTTP 200**
+
+```json
+{
+  "document_id": "…",
+  "filename": "SOP-Cikarang-v2.pdf",
+  "page_number": 3,
+  "page_count": 12,
+  "width": 595.28,
+  "height": 841.89,
+  "image": "data:image/png;base64,…",
+  "regions": [
+    {
+      "candidate_id": "…",
+      "dimension": "GROSS_WEIGHT",
+      "threshold": 24000,
+      "unit": "kg",
+      "status": "PENDING",
+      "rects": [{ "x": 10.91, "y": 27.45, "w": 5.26, "h": 1.25 }]
+    }
+  ]
+}
+```
+
+- `image` is an inline PNG data URI, rendered at 110 dpi. Roughly 150–200 KB per page.
+- `width` and `height` are PDF points, for reference only.
+- `rects` are **percentages of the page box**, not pixels, so an overlay stays aligned at any rendered width without knowing the DPI. Origin is top-left.
+- `rects` may be empty when the extractor paraphrased the clause instead of quoting it. That is a normal degraded state: show the page without marks, never a wrong mark.
+- Clauses are located by text search, so a figure that also appears elsewhere on the page will be marked as well. UI copy must not claim every mark is the source.
+- Errors: 404 if the document or its file is missing. 400 if `page_number` is outside `1..page_count`.
 
 ### `GET /rule-candidates`
 
