@@ -72,6 +72,11 @@ const PANEL_LINE_COUNT = 8
  */
 const REAR_DOOR_INSET_MM = 350
 
+const REAR_WHEEL_LENGTH_MM = 900
+const REAR_WHEEL_POKE_MM = 300
+/** Offsets from the live box's back edge; negative pokes past it. Rearmost first. */
+const REAR_WHEEL_RIGHT_OFFSETS_MM = [-100, 1300]
+
 /** Evenly spaced positions strictly inside [start, start+size], excluding the edges. */
 function panelLines(start, size, count = PANEL_LINE_COUNT) {
   const lines = []
@@ -167,6 +172,41 @@ function PlanView({ length, width, limits }) {
             vectorEffect="non-scaling-stroke"
           />
         )}
+        {REAR_WHEEL_RIGHT_OFFSETS_MM.map((offset) => {
+          // Anchored to the live input box's own back edge on both axes, never
+          // the fixed legal-max line. Length is left-anchored, so the back edge
+          // is outerOffset + innerSize (design doc §5, plan amendment Task 4).
+          const boxRight = lengthGeo.outerOffset + lengthGeo.innerSize
+          const rectX = boxRight - offset - REAR_WHEEL_LENGTH_MM
+          const topY = widthGeo.innerOffset - REAR_WHEEL_POKE_MM + 60
+          const bottomY = widthGeo.innerOffset + widthGeo.innerSize - 60
+          return (
+            <g key={offset}>
+              <motion.rect
+                initial={{ x: rectX, y: topY }}
+                animate={{ x: rectX, y: topY }}
+                transition={reduceMotion ? { duration: 0 } : SPRING}
+                width={REAR_WHEEL_LENGTH_MM}
+                height={REAR_WHEEL_POKE_MM}
+                fill="#fff"
+                stroke="#1f2933"
+                strokeWidth="1.5"
+                vectorEffect="non-scaling-stroke"
+              />
+              <motion.rect
+                initial={{ x: rectX, y: bottomY }}
+                animate={{ x: rectX, y: bottomY }}
+                transition={reduceMotion ? { duration: 0 } : SPRING}
+                width={REAR_WHEEL_LENGTH_MM}
+                height={REAR_WHEEL_POKE_MM}
+                fill="#fff"
+                stroke="#1f2933"
+                strokeWidth="1.5"
+                vectorEffect="non-scaling-stroke"
+              />
+            </g>
+          )
+        })}
         </svg>
       </div>
       <EnvelopeReadout
