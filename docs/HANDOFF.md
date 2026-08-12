@@ -264,7 +264,13 @@ There are no generic UI primitives yet, and **no component library**. Everything
 | `Section` | `DispatchForm.jsx` (local) | Numbered `fieldset` with a responsive grid. | `{ title, children }` | Extract to shared if a second form appears. |
 | `Field` | `DispatchForm.jsx` (local) | Label above input, hint or error below. Never placeholder-as-label. | `{ label, hint, error, children }` | Extract to shared when a second form needs it. |
 | `TextInput` / `NumberInput` | `DispatchForm.jsx` (local) | Bordered ERP-styled inputs. `NumberInput` carries `tnum`. | native input props | Extract if reused. |
-| `VerdictPanel` | `frontend/src/routes/Dispatch.jsx` (local) | VETO's graphite panel inside the ERP page. Idle / pending / error / decision states. | `{ decision, error, pending }` | **Extract this before F2.** It is the demo's hero and belongs in `frontend/src/components/dispatch/`. |
+| `VerdictPanel` | `frontend/src/components/dispatch/VerdictPanel.jsx` | VETO's graphite panel inside the ERP page. Idle / pending / error / decision states. | `{ decision, error, pending }` | **Extract this before F2.** It is the demo's hero and belongs in `frontend/src/components/dispatch/`. |
+
+| `ViolationDialog` | `frontend/src/components/dispatch/ViolationDialog.jsx` | HOLD announcement over a blurred scrim. Escape and backdrop close it; closing clears nothing. | `{ decision, onClose }` | **Yes.** |
+| `DropZone` · `TriageResult` · `ExtractionStages` · `CandidateReview` | `frontend/src/components/rulestudio/` | The Rule Studio flow. | see each file | **Yes.** |
+| `limitsFromRules` · `deltaFromLimit` | `frontend/src/lib/limits.js` | Turns `GET /rules` into per-field ceilings and signed distances. | pure functions | **Yes.** Do not hardcode a limit anywhere. |
+
+Icons come from `@phosphor-icons/react`. One family, no hand-rolled SVG, no emoji.
 
 **Not built, and needed:** override dialog, audit table and row detail, badge/status primitive, Rule Studio drop zone, triage result, extraction stage reveal, candidate split-screen review, loading skeletons, empty states. All are specified in the two plan files under `docs/plans/`.
 
@@ -458,26 +464,26 @@ Next action: inject a fake client so the suite is offline, free and deterministi
 ## 15. Next task
 ### Goal
 
-Wire `/rule-studio` to the live backend, the way `/dispatch` and `/audit` already are.
+Wire `/rule-studio` to the live backend. It is the last surface still on mocks, and every endpoint it needs now exists and responds.
 
 ### Why
 
-It is the last surface still running entirely on mocks, and every endpoint it needs now exists and responds. Until it is wired, the differentiator has never been exercised against real extraction, and the demo's closing segment is unproven.
+Until it runs live, the differentiator has never been exercised against real extraction, and the demo's closing segment is unproven.
 
 ### Files likely involved
 
-- `frontend/.env.local` — `VITE_USE_MOCKS=false`
-- `frontend/src/api/ruleStudio.js` — already written, mock branch only needs bypassing
-- `frontend/src/routes/RuleStudio.jsx` — real `document_id` and `candidate_id` values instead of fixture ids
+- `frontend/.env.local` — already `VITE_USE_MOCKS=false`
+- `frontend/src/routes/RuleStudio.jsx` — real ids instead of fixture ids
+- `frontend/src/api/ruleStudio.js` — written, mock branch only needs bypassing
 
 ### Acceptance criteria
 
-1. Uploading a real PDF returns a real `document_id` and a real triage classification.
+1. Uploading a real PDF returns a real `document_id` and triage classification.
 2. A document with no load constraints is rejected at triage and **no extraction call is made**.
-3. Extraction returns real candidates from Gemini, and the split screen shows the sentence they came from.
-4. Approve creates a real `Rule` with `origin = CLIENT` and returns a real pack version.
-5. **Then check demo step 7:** after approving a client rule, a load that is legal nationally must HOLD on `/dispatch`. This is the payoff and it has never been demonstrated.
-6. Flip back to `VITE_USE_MOCKS=true` afterwards and confirm the mocked path still works, since mocks are the booth fallback.
+3. Extraction returns real candidates and the split screen shows the source sentence.
+4. Approve creates a real `Rule` with `origin = CLIENT`.
+5. **Then demo step 7:** after approving a client rule, a nationally-legal load must HOLD on `/dispatch`, and the form's per-field ceiling for that dimension must drop to the client value, since `limits.js` keeps the strictest rule. This is the payoff and it has never been demonstrated.
+6. Flip `VITE_USE_MOCKS=true` afterwards and confirm the mocked path still works, since mocks are the booth fallback.
 
 ### Verification
 
@@ -485,13 +491,12 @@ It is the last surface still running entirely on mocks, and every endpoint it ne
 npm --prefix frontend run lint
 npm --prefix frontend run build
 uv run --directory backend python manage.py test apps
+node ~/.claude/skills/impeccable/scripts/detect.mjs --json frontend/src
 ```
-
-Then exercise the flow in a browser with both servers running.
 
 ### Known risk
 
-Extraction is non-deterministic (see P0-3). A short synthetic PDF sometimes yields no candidates. Use a document with a clearly worded load limit, and expect to retry.
+Extraction is non-deterministic (§14 P0-3). A short synthetic PDF sometimes yields no candidates. Use a document with a clearly worded load limit and expect to retry.
 ## 16. Open decisions
 
 **DECISION 1 — Directive language**

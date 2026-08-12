@@ -1,3 +1,4 @@
+import { WarningIcon } from '@phosphor-icons/react'
 import { useEffect, useRef } from 'react'
 
 import { formatNumber } from '@/lib/format'
@@ -37,13 +38,23 @@ export default function ViolationDialog({ decision, onClose }) {
         aria-labelledby="veto-hold-title"
         className="veto-dialog w-full max-w-[560px] rounded-veto bg-white shadow-[0_24px_60px_rgba(20,23,26,0.28)]"
       >
-        <div className="flex items-baseline gap-3 border-b border-ink-200 px-5 py-4">
-          <span aria-hidden className="h-3 w-3 shrink-0 bg-hold" />
-          <h2 id="veto-hold-title" className="text-h1 text-ink-900">
-            Pengiriman ditahan
-          </h2>
-          <span className="ml-auto font-mono text-mono-xs text-ink-400">
-            {decision.violations.length} pelanggaran
+        <div className="flex items-center gap-3.5 border-b border-ink-200 px-5 py-4">
+          <WarningIcon
+            aria-hidden
+            weight="fill"
+            size={30}
+            className="shrink-0 text-hold"
+          />
+          <div className="min-w-0">
+            <h2 id="veto-hold-title" className="text-h1 text-ink-900">
+              Pengiriman ditahan
+            </h2>
+            <p className="mt-0.5 text-label text-ink-500">
+              {decision.violations.length} ketentuan muatan terlampaui
+            </p>
+          </div>
+          <span className="ml-auto shrink-0 self-start font-mono text-mono-xs text-ink-400">
+            {decision.dispatch_ref}
           </span>
         </div>
 

@@ -85,6 +85,52 @@
     outline: 2px solid var(--color-hold);
     outline-offset: 2px;
   }
+
+  /* The surfaces we did not draw still ship with the product. Selection, the
+     caret and the scrollbar arrive with browser defaults belonging to no design
+     system, so they are themed from the palette like everything else. */
+  ::selection {
+    background: color-mix(in srgb, var(--color-hold) 32%, transparent);
+    color: var(--color-ink-950);
+  }
+
+  input,
+  textarea {
+    caret-color: var(--color-hold-ink);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ink-300) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-ink-200);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ink-300);
+    background-clip: content-box;
+  }
+
+  /* Number inputs carry spinners that fight a tabular column. */
+  input[type="number"] {
+    appearance: textfield;
+  }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+  }
 }
 
 @layer utilities {

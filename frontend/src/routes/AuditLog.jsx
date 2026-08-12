@@ -227,7 +227,7 @@ function DecisionRow({ row, expanded, onToggle }) {
                   {detail.violations?.length > 0 ? (
                     <ul className="space-y-3">
                       {detail.violations.map((violation, index) => (
-                        <li key={index} className="border-l-2 border-hold pl-3">
+                        <li key={index} className="border-l border-hold pl-3">
                           <p className="text-body">{violation.directive}</p>
                           <p className="mt-1 tnum text-data text-ink-500">
                             {formatNumber(violation.actual_value)} / batas{' '}

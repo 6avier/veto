@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-import { ApiError, validateDispatch } from '@/api'
+import { ApiError, listRules, validateDispatch } from '@/api'
 import DispatchForm from '@/components/dispatch/DispatchForm'
 import VerdictPanel from '@/components/dispatch/VerdictPanel'
 import ViolationDialog from '@/components/dispatch/ViolationDialog'
 import { axleCountFor } from '@/lib/format'
+import { limitsFromRules } from '@/lib/limits'
 
 /**
  * /dispatch — the client's dispatch screen, with VETO intervening inline.
@@ -92,6 +93,20 @@ export default function Dispatch() {
   const [errors, setErrors] = useState({})
   const [pending, setPending] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [limits, setLimits] = useState({})
+
+  // The form reads its ceilings from the active rule base rather than
+  // hardcoding them, so a change to the seeded pack shows up here unedited.
+  // A failure is silent: limits are an aid, and the engine is the authority.
+  useEffect(() => {
+    let cancelled = false
+    listRules({ origin: 'CENTRAL' })
+      .then((data) => !cancelled && setLimits(limitsFromRules(data.results)))
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const passed = decision?.outcome === 'PASS'
   const fieldViolations = violationsByField(decision)
@@ -163,6 +178,7 @@ export default function Dispatch() {
           pending={pending}
           errors={errors}
           violations={fieldViolations}
+          limits={limits}
         />
 
         <VerdictPanel
