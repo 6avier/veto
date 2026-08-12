@@ -1,5 +1,6 @@
 import { formatMm } from '@/lib/format'
-import { motion, useReducedMotion } from 'motion/react'
+import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
+import { useEffect } from 'react'
 
 /**
  * A booth gimmick on /dispatch (CLAUDE.md §4, P2 polish): a translucent
@@ -80,15 +81,41 @@ const OUTER_FILL = '#f4f6f7'
 const SPRING = { type: 'spring', stiffness: 90, damping: 12 }
 
 /**
- * Critically damped (damping >= 2*sqrt(stiffness) = 18.97), so it approaches
- * its target without overshooting. Used for `width`/`height` only.
+ * A spring-animated rect whose width/height can never render negative.
  *
- * SPRING is deliberately underdamped and overshoots, which is right for
- * position but invalid for a size: clearing an input animates the size to 0,
- * the overshoot carries it negative, and SVG rejects a negative width/height
- * on every frame of the bounce. Position keeps the bounce.
+ * Every property rides the SAME spring, which is what keeps geometric
+ * invariants true mid-flight rather than only at rest: the side view's body
+ * bottom stays pinned to the deck because `y` and `height` bounce in lockstep,
+ * and the plan view's body stays centred for the same reason. Damping `height`
+ * separately to stop it going negative broke exactly that — `y` bounced while
+ * `height` settled, so the body dipped below its own floor on every change.
+ *
+ * The negative is clamped at render instead, via useTransform. SPRING is
+ * underdamped by design, so animating a size to 0 overshoots past it, and SVG
+ * rejects a negative width/height on every frame of that bounce.
  */
-const SIZE_SPRING = { type: 'spring', stiffness: 90, damping: 19 }
+function SpringRect({ x, y, width, height, reduceMotion, ...rest }) {
+  const mx = useMotionValue(x)
+  const my = useMotionValue(y)
+  const mw = useMotionValue(width)
+  const mh = useMotionValue(height)
+
+  useEffect(() => {
+    const transition = reduceMotion ? { duration: 0 } : SPRING
+    const running = [
+      animate(mx, x, transition),
+      animate(my, y, transition),
+      animate(mw, width, transition),
+      animate(mh, height, transition),
+    ]
+    return () => running.forEach((control) => control.stop())
+  }, [x, y, width, height, reduceMotion, mx, my, mw, mh])
+
+  const safeWidth = useTransform(mw, (v) => Math.max(0, v))
+  const safeHeight = useTransform(mh, (v) => Math.max(0, v))
+
+  return <motion.rect x={mx} y={my} width={safeWidth} height={safeHeight} {...rest} />
+}
 
 /**
  * Geometry for one axis, in a fixed viewBox padded 20% past the legal limit
@@ -180,22 +207,12 @@ function PlanView({ length, width, limits }) {
           strokeDasharray="8 6"
           vectorEffect="non-scaling-stroke"
         />
-        <motion.rect
-          initial={{
-            x: lengthGeo.outerOffset,
-            y: widthGeo.innerOffset,
-            width: lengthGeo.innerSize,
-            height: widthGeo.innerSize,
-          }}
-          animate={{
-            x: lengthGeo.outerOffset,
-            y: widthGeo.innerOffset,
-            width: lengthGeo.innerSize,
-            height: widthGeo.innerSize,
-          }}
-          transition={
-            reduceMotion ? { duration: 0 } : { ...SPRING, width: SIZE_SPRING, height: SIZE_SPRING }
-          }
+        <SpringRect
+          x={lengthGeo.outerOffset}
+          y={widthGeo.innerOffset}
+          width={lengthGeo.innerSize}
+          height={widthGeo.innerSize}
+          reduceMotion={reduceMotion}
           fill="none"
           stroke={colour}
           strokeWidth={3}
@@ -283,7 +300,10 @@ function SideView({ height, limits }) {
   // canvas - height while its floor rests on the deck. The gap underneath is
   // where the wheels live.
   const deckY = heightGeo.canvas - DECK_HEIGHT_MM
-  const bodyTop = heightGeo.canvas - heightGeo.innerSize
+  // Never below the deck. An input under the deck height would otherwise put
+  // the body's top edge down among the wheels, so it grew up out from under
+  // the truck instead of off its floor.
+  const bodyTop = Math.min(deckY, heightGeo.canvas - heightGeo.innerSize)
   const bodyHeight = Math.max(0, heightGeo.innerSize - DECK_HEIGHT_MM)
   const legalTop = heightGeo.canvas - heightGeo.legalSize
   const colour = heightGeo.over ? OVER_COLOUR : NEUTRAL_COLOUR
@@ -308,14 +328,12 @@ function SideView({ height, limits }) {
           strokeDasharray="8 6"
           vectorEffect="non-scaling-stroke"
         />
-        <motion.rect
+        <SpringRect
           x={0}
+          y={bodyTop}
           width={SIDE_VIEW_NOMINAL_WIDTH_MM}
-          initial={{ y: bodyTop, height: bodyHeight }}
-          animate={{ y: bodyTop, height: bodyHeight }}
-          transition={
-            reduceMotion ? { duration: 0 } : { ...SPRING, width: SIZE_SPRING, height: SIZE_SPRING }
-          }
+          height={bodyHeight}
+          reduceMotion={reduceMotion}
           fill="none"
           stroke={colour}
           strokeWidth={3}
