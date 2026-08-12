@@ -4,17 +4,17 @@
 | | |
 |---|---|
 | **Project** | VETO |
-| **Date** | 2026-08-12, 13:40 WIB (refreshed) |
-| **Branch** | `main` |
-| **Commit** | HEAD is the commit adding this update. Last backend change: `7e1c94b`. |
-| **Working tree** | Clean. |
+| **Date** | 2026-08-12, refreshed at end of session |
+| **Branch** | `main` · HEAD `9e85aaf` · clean · pushed, 0 ahead 0 behind |
 | **Remote** | `https://github.com/6avier/veto.git` |
-| **Primary objective** | `dispatch data -> PASS/HOLD + actionable directive`, end to end on seeded rules, for a live demo on 2026-08-14. Due **2026-08-13 23:55 WIB**. |
-| **Handoff status** | **NEEDS_REVIEW.** All three frontend surfaces are built and two of them run against the live backend. What blocks a credible demo is regulatory and operational, not code: two enforced thresholds cite themselves as assumptions, no CLIENT rule pack is seeded, and nothing is deployed. |
+| **Deadline** | Working product **2026-08-13 23:55 WIB**. Demo + booth **2026-08-14**. |
+| **Handoff status** | **NEEDS_REVIEW.** Frontend is feature-complete and two of three surfaces run live. Nothing blocking is frontend work. Four things block a credible demo, all backend or ops, listed in §14. |
 
-**Two people work here.** Iqbal owns `backend/`. The other lane owns `frontend/`. The shared seam is `api-contract.md`, `contract/*.json`, and `frontend/src/api/`.
+**Lanes.** Iqbal owns `backend/`. The other lane owns `frontend/`. Shared seam: `api-contract.md`, `contract/*.json`, `frontend/src/api/`.
 
-`AGENTS.md` is a pointer file, not context. Read this document first.
+**This session crossed into `backend/` three times, only to unbreak `main`.** Those are `f49e619` and `7e1c94b`. No feature work was done in the backend lane. See §14 P0-3 for what is still Iqbal's.
+
+`AGENTS.md` is a pointer, not context. Read this file first.
 ## 2. What VETO is
 
 Compliance middleware for Indonesian freight logistics. A deterministic rule engine that converts ODOL (Over Dimension Over Load) vehicle regulations into a gate at the loading dock.
@@ -136,33 +136,35 @@ frontend/src/
 ---
 
 ## 5. Current implementation
-### Working, against the live backend
+### Working live against the backend
 
-- **`POST /api/v1/validate`** — `backend/apps/validation/views.py` + `engine.py`. Loads active `Rule` rows, resolves CENTRAL/CLIENT conflicts by keeping the stricter, persists a `DispatchDecision` and its `Violation` rows, returns contract-exact PASS (200) / HOLD (403). Swept across 12 cases with 0 mismatches: every dimension fires, `LTE` boundaries are exact, 3-axle configs evaluate per axle, four simultaneous violations all return.
-- **`/dispatch`** — verified end to end against the live API. Four violations map to the correct four fields; switching to tronton `1.22` adds a third axle input and an over-limit middle axle pins to it; PASS unlocks *Cetak Surat Jalan*; editing any field re-locks it.
-- **`/audit`** — **now live**, not mocked. Reads `GET /decisions` and `GET /decisions/{id}`. Table of every decision, rows expand to real violations, citations, rule pack versions and decision id. Filters by outcome and date. Loading, empty and error states.
-- **All twelve endpoints respond.** `/validate`, `/decisions`, `/decisions/{id}`, override, `/documents`, extract, `/rule-candidates`, approve, reject, `/rules`, `/vehicle-profiles`.
+- **`POST /api/v1/validate`** — DB-backed engine, persists a decision plus violations. Swept 12 cases, 0 mismatches: every dimension fires, `LTE` boundaries exact, 3-axle configs evaluate per axle, four simultaneous violations all return, malformed payload returns the contract error envelope.
+- **`/dispatch`** — verified end to end. Violations map to the correct fields, tronton `1.22` grows a third axle input, PASS unlocks *Cetak Surat Jalan*, editing re-locks it.
+- **`/audit`** — reads `GET /decisions` and `/decisions/{id}` for real. 34 decisions render, rows expand to violations, citations, rule pack versions.
+- **All twelve endpoints respond.**
 
-### Working, on mocks only
+### Working on mocks only
 
-- **`/rule-studio`** — the full flow is built and verified: upload, triage with three outcomes, staged extraction reveal, split-screen review, approve and reject. Backend endpoints now exist, so this can be wired live next, but it has not been.
+- **`/rule-studio`** — the whole flow is built and verified on fixtures: upload, triage with three outcomes, staged extraction reveal, split-screen review, approve and reject. **It has never run against the live backend.** That is §15.
+
+### Built this session, frontend
+
+- **HOLD is a dialog then a settle.** Announces over a blurred backdrop, dismisses to the side panel, violations stay pinned under the offending fields. Warning icon is Phosphor `WarningIcon`, amber.
+- **Fields report excess only.** `+1.340 kg melebihi batas` when over, silence otherwise. Ceilings come from `GET /rules` at runtime and are never displayed.
+- **Digit caps.** Six digits for weights, five for dimensions, clamped on change. `9000000000000` is refused; `12000` is not.
+- **Zero invalid on every numeric field**, including the three dimension fields which previously had no validation at all.
+- **ERP has its own identity.** Forest green `#2d613b` sampled from the proposal mockup, and **SAP 72** — the actual SAP Fiori typeface, Apache-2.0, vendored in `frontend/src/assets/fonts/` with licence and notice. Brand and page heading at Bold 700.
+- **`/audit`** built from nothing, append-only visible in the UI.
 
 ### Placeholder
 
-- **Persona labels** in `frontend/src/layouts/ErpLayout.jsx` are hardcoded strings, not a user model.
-- **`loading_point_id: 'LP-CIKARANG-01'`** hardcoded in `frontend/src/routes/Dispatch.jsx`.
-- **`contract/rules.list.json` is stale** — old 16100 / `PM 111/2015` values. Nothing consumes it.
-- **`DO-TEST` rows pollute the audit log** from integration sweeps. Dev data, needs clearing before the demo.
+- Persona strings in `ErpLayout.jsx` are hardcoded, not a user model.
+- `loading_point_id: 'LP-CIKARANG-01'` hardcoded in `Dispatch.jsx`.
+- `DO-TEST` rows pollute the audit log from integration sweeps. Clear before the demo.
 
 ### Not implemented
 
-- **No CLIENT rule pack is seeded.** Exists only inside `test_contract.py`'s `setUp`.
-- **No extraction fallback.** See §14 P0-2.
-- **`apps/profiles`** has endpoints but no UI, and is `P2`.
-
-### Broken
-
-Nothing is broken. `main` runs, `check` is clean, 32 of 34 tests pass; the 2 failures are the flaky live-LLM tests in §14 P0-3.
+- No CLIENT rule pack seeded. No extraction fallback. No deployment. `apps/profiles` has endpoints but no UI (`P2`).
 ## 6. Current user flow
 
 ### Implemented
@@ -198,58 +200,31 @@ Switching to **VETO** reaches `/rule-studio` and `/audit`, both of which render 
 ---
 
 ## 7. Design system
+System of record is **`DESIGN.md`**, implemented in `frontend/src/index.css` as a Tailwind v4 `@theme`. Change `DESIGN.md` first.
 
-The system of record is **`DESIGN.md`**. It is implemented in `frontend/src/index.css` as a Tailwind v4 `@theme` block. Change `DESIGN.md` first, then the CSS.
+### Two systems, two typefaces
 
-### Intended direction
+| | ERP (host) | VETO |
+|---|---|---|
+| Typeface | **SAP 72** (Apache-2.0, vendored) | **Archivo** + JetBrains Mono for identifiers |
+| Ground | `#eef0f2`, green `#2d613b` chrome | white panels, graphite only on `/audit` copy |
+| Role | ordinary software the officer already uses | the instrument speaking inside it |
 
-Industrial, operational, regulatory, high-density, restrained. Explicitly **not** generic AI SaaS. `DESIGN.md` §8 bans: green success ticks, a second accent colour, purple/blue gradients, cards inside cards, generic dashboard card grids, glassmorphism, pills, Inter, decorative status dots, section-number eyebrows, dismissible modals for compliance results, spinners, and fake precision.
+72 is metrically almost identical to Archivo (x/cap identical to three decimals), so it dropped in without retuning anything. **Scope is strict**: the verdict panel and HOLD dialog pin back to Archivo with `font-sans` even though they render inside the ERP's DOM tree.
 
-### Two systems, two densities
+### Decisions that are easy to get wrong
 
-- **Client ERP** (`ErpLayout.jsx`, `/dispatch`) — deliberately unremarkable enterprise software. Light `#eef0f2` ground, boxy bordered panels, a dull institutional blue `#2c5d8f`. This is intentional: `PRODUCT.md` F2 says the officer must not have to learn a new interface, and the only way to show that is to make the host look ordinary.
-- **VETO instrumentation** (verdict panel, `/audit`) — graphite ground, dense readouts, amber for HOLD.
-- **VETO register** (`/rule-studio`) — light `--color-paper`, editorial measure.
+- **PASS has no colour.** The signal is *Cetak Surat Jalan* unlocking. Do not add a green tick.
+- **Amber is the only VETO accent.** The ERP's green is a documented exception and belongs to the host. VETO never uses green.
+- **No monospace in the ERP chrome.** Mono uppercase with wide tracking is a terminal signature; no shipping ERP uses it. It was the single thing making the host read as robotic.
+- **Do not copy sap.com's marketing hero.** That is 72 Black at 56px. Fiori product UI looks nothing like it. Bold 700 is as far as product register goes; 72 Black is deliberately not vendored.
+- **Section titles are not `<legend>`.** A legend renders on the fieldset's top border and `padding-top` cannot move it. Use an in-flow element with `aria-labelledby`.
 
-The ERP's blue is a **documented exception** to the one-accent lock, noted in `ErpLayout.jsx`. It earns its place by making VETO's amber unmistakably foreign to the host system.
+### Known gaps
 
-### Typography
-
-| Role | Face |
-|---|---|
-| Language **and quantity** | **Archivo Variable**, always with `tabular-nums` on numerics |
-| Machine references only | **JetBrains Mono Variable** — decision IDs, dispatch refs, legal citations, timestamps, versions, latency |
-
-Chosen on measured font metrics, then confirmed by rendering candidates at working sizes. Rationale and the comparison tables are in `DESIGN.md` §2.
-
-Scale tokens in `index.css`: `text-display` 32/36 w600, `text-h1` 24/30 w600, `text-h2` 18/24 w500, `text-body` 15/23, `text-label` 13/16 w500, `text-data-lg` 22/26 w500, `text-data` 14/20, `text-mono` 13/18, `text-mono-xs` 11/16.
-
-Dark surfaces get `.on-dark` (`letter-spacing: 0.005em`) to compensate for optical thinning.
-
-### Colour
-
-Graphite ramp `--color-ink-950` → `--color-ink-50` plus `--color-paper`. One accent: `--color-hold: #f2a93b`, and `--color-hold-ink: #8a5200` for light grounds (plain amber fails contrast on paper at 1.9:1). All ratios verified and listed in `DESIGN.md` §4.
-
-**PASS has no colour.** No green tick. The signal is functional: the *Cetak Surat Jalan* button unlocks. This is load-bearing — do not add a green success state.
-
-Rule origin is distinguished by **form, not hue**: `CENTRAL` renders the citation plain, `CLIENT` renders it as `[ SOP KLIEN ] …`.
-
-### Shape, space, motion
-
-- **Radius: `--radius-veto` = 2px, everywhere.** No pills, no `rounded-xl`.
-- Spacing on a 4px base. No cards; group with borders and `divide-y`.
-- Motion: only three moments animate (verdict arrival 180ms, HOLD→PASS 240ms, Rule Studio stage reveal 400ms), all `cubic-bezier(0.16, 1, 0.3, 1)`, all collapsing to opacity-only under `prefers-reduced-motion`.
-
-### Where implementation differs from the intended direction
-
-1. **Motion is specified but not implemented.** The verdict currently appears instantly. No `transition` or animation exists on the verdict panel in `Dispatch.jsx`.
-2. **Responsive behaviour is only partly done.** `DispatchForm` collapses `sm:grid-cols-2 lg:grid-cols-3`, and the page grid collapses below `lg`. Nothing has been checked at mobile width; `DESIGN.md`'s "collapse to one column at `px-16`" is unverified.
-3. **The `/dispatch` page has a large empty region** below the form at desktop width. Cosmetic, not yet addressed.
-4. **`index.html` still has `<title>frontend</title>`** and the default Vite favicon.
-5. **Light/dark mode:** there is no toggle and none is planned. Theme is a property of each surface, locked. This matches `DESIGN.md` §4.
-
----
-
+- Motion: dialog and settle are built; the other moments in `DESIGN.md` §6 are not.
+- Mobile unverified below `lg`.
+- Input treatment options (Fiori value-state / Fluent filled / ruled grid) were specced and shown but **not chosen**. See §16.
 ## 8. Important UI components
 
 There are no generic UI primitives yet, and **no component library**. Everything below is hand-written. Reuse these rather than creating parallel versions.
@@ -429,61 +404,51 @@ a4530c2  Merge branch 'main'
 
 Commits are authored `6avier`. **Do not add a `Co-Authored-By` trailer or any AI attribution.**
 ## 14. Known issues
-### P0 — blocks a credible demo
+### P0 — blocks a credible demo. None of these are frontend.
 
 **P0-1 · Two enforced thresholds cite themselves as assumptions.**
-`PP 55/2012 Lampiran (Asumsi Sumbu Ganda/Tandem)` (16000 kg) and `PP 55/2012 Lampiran JBI (Asumsi Kelas I)` (25000 kg). These are the two rules the demo actually triggers, and the word *Asumsi* renders on screen as the legal basis for a HOLD. `data/regulations/` is scraped, unverified reference material, confirmed by the repository owner.
-Files: `backend/apps/rules/migrations/0002_seed_odol_central_rules.py`.
-Next action: human verification, or explicit provisional labelling in the UI. **Not an agent task.**
+`PP 55/2012 Lampiran (Asumsi Sumbu Ganda/Tandem)` (16000 kg) and `PP 55/2012 Lampiran JBI (Asumsi Kelas I)` (25000 kg). These are the two rules the demo triggers, and the word *Asumsi* renders on screen as the legal basis for a HOLD. `data/regulations/` is scraped, unverified, confirmed by the owner.
+File: `backend/apps/rules/migrations/0002_seed_odol_central_rules.py`. **Human task, not an agent task.**
 
-**P0-2 · No CLIENT rule pack is seeded, and there is no extraction fallback.**
-Two symptoms of one gap. `PRODUCT.md` §7 step 7 needs a client rule to exist. `PRODUCT.md` §8 needs a pre-processed extraction result so an LLM outage costs one demo segment rather than the demo. What exists is `views.py` line 235, which infers `used_fallback` by sniffing for the string `"API error"` inside a candidate excerpt, so it cannot fire when there are zero candidates, which is exactly the failure case.
+**P0-2 · No CLIENT rule pack is seeded.**
+It exists only inside `test_contract.py`'s `setUp`. `PRODUCT.md` §7 step 7 — approve a client rule, watch a nationally-legal load HOLD — **has never been demonstrated and cannot be today.** This is the demo's closing beat.
 
 **P0-3 · The backend test suite calls Gemini live and is non-deterministic.**
-Three consecutive runs on identical input gave 2, 2, then 1 errors. The suite takes 33 seconds and spends tokens on every run. This is also why `main` shipped broken earlier: the tests could not run without a key, so nothing caught a missing dependency.
-Files: `backend/apps/rules/tests/test_rule_studio.py`.
-Next action: inject a fake client so the suite is offline, free and deterministic.
+Three consecutive runs on identical input gave 2, 2, then 1 errors. Currently 2 failing. Takes 33s and spends tokens per run. This is also why `main` shipped broken: the tests could not run without a key, so nothing caught a missing dependency. Fix by injecting a fake client.
+File: `backend/apps/rules/tests/test_rule_studio.py`.
 
-**P0-4 · Nothing is deployed.** No `Dockerfile`, `vercel.json`, `railway.*`, `Procfile` or CI. `gunicorn` and `whitenoise` are installed and unused.
+**P0-4 · Nothing is deployed.** No `Dockerfile`, `vercel.json`, `railway.*`, `Procfile` or CI. `gunicorn` and `whitenoise` are installed and unused. Roughly a day and a half remains.
 
 ### P1
 
-- **Directives are English inside an all-Indonesian interface**, and one carries an em-dash banned by `DESIGN.md` §8. Pinned to `engine.py` line 69. The front-axle directive also reads `"Reduce axle 1 load"` while the UI labels that field *Sumbu depan*.
-- **`evaluated_at` returns a `+00:00` offset**, but `api-contract.md` §0 specifies a WIB offset. Cosmetic today because the frontend formatter renders in local time.
-- **Specified motion is only partly implemented.** `DESIGN.md` §6 lists five moments; the dialog and settle are built, the rest are not.
-- **`GEMINI_API_KEY` was pasted into a chat transcript.** It lives only in the gitignored `backend/.env` and appears in zero commits, but treat it as exposed and rotate after the event.
+- **Directives are English in an all-Indonesian UI**, and one carries an em-dash banned by `DESIGN.md` §8. Pinned to `engine.py` line 69 with the two fixture copies that must change with it. The front-axle directive also says `"Reduce axle 1 load"` while the UI labels that field *Sumbu depan*.
+- **`evaluated_at` returns `+00:00`** where `api-contract.md` §0 specifies WIB. Cosmetic; the frontend formatter renders local time.
+- **`GEMINI_API_KEY` was pasted into a chat transcript.** It lives only in gitignored `backend/.env` and appears in zero commits, verified with `git log --all -S`. **Rotate after the event.**
+- **`GEMINI_MODEL` matters.** `gemini-2.5-flash` returns 404 for keys created after its cutoff even though `models.list()` still advertises it. Default is now `gemini-flash-latest` via `settings.GEMINI_MODEL`.
 
 ### P2
 
-- Dead template assets: `frontend/src/assets/hero.png`, `vite.svg`, `frontend/public/icons.svg`.
-- `@types/react` installed with no TypeScript in the project.
-- Mobile layout unverified below `lg`.
-- `VerdictPanel` and `ViolationDialog` now live in `frontend/src/components/dispatch/`; `RowSkeleton` and the table primitives in `AuditLog.jsx` are still local.
-- `[tool.pyright]` is configured but pyright is not a dependency, so there is still no runnable typecheck.
-- `rule_packs_applied` lists every active pack rather than only those consulted.
+Dead template assets (`hero.png`, `vite.svg`, `public/icons.svg`); `@types/react` with no TypeScript; mobile unverified; `RowSkeleton` and table primitives still local to `AuditLog.jsx`; pyright configured but not installed so there is still no typecheck; `rule_packs_applied` lists every active pack rather than those consulted.
 ## 15. Next task
 ### Goal
 
-Wire `/rule-studio` to the live backend. It is the last surface still on mocks, and every endpoint it needs now exists and responds.
+Wire `/rule-studio` to the live backend and prove demo step 7.
 
 ### Why
 
-Until it runs live, the differentiator has never been exercised against real extraction, and the demo's closing segment is unproven.
+It is the last surface on mocks, every endpoint it needs exists and responds, and **the payoff has never been demonstrated**: approve a client rule, then watch a load that is legal nationally get held on `/dispatch`. That is the closing beat of the demo and right now there is nothing behind it.
 
-### Files likely involved
+### Order of work
 
-- `frontend/.env.local` — already `VITE_USE_MOCKS=false`
-- `frontend/src/routes/RuleStudio.jsx` — real ids instead of fixture ids
-- `frontend/src/api/ruleStudio.js` — written, mock branch only needs bypassing
+1. **Seed or create a CLIENT rule pack** (P0-2). Without one, nothing below matters.
+2. `VITE_USE_MOCKS=false`, run the Rule Studio flow against real endpoints.
+3. Upload a real PDF with a clearly worded load limit. Extraction is non-deterministic, so expect to retry.
+4. Approve, then go to `/dispatch` and enter a load under 25000 kg but over the approved client limit. It must HOLD, and the violation must read `[ SOP KLIEN ]`.
+5. Flip back to `VITE_USE_MOCKS=true`. Mocks are the booth fallback if the backend dies.
 
-### Acceptance criteria
+### Acceptance
 
-1. Uploading a real PDF returns a real `document_id` and triage classification.
-2. A document with no load constraints is rejected at triage and **no extraction call is made**.
-3. Extraction returns real candidates and the split screen shows the source sentence.
-4. Approve creates a real `Rule` with `origin = CLIENT`.
-5. **Then demo step 7:** after approving a client rule, a nationally-legal load must HOLD on `/dispatch`, and the form's per-field ceiling for that dimension must drop to the client value, since `limits.js` keeps the strictest rule. This is the payoff and it has never been demonstrated.
-6. Flip `VITE_USE_MOCKS=true` afterwards and confirm the mocked path still works, since mocks are the booth fallback.
+Rejected document makes **no extraction call**. Approve creates a real `Rule` with `origin = CLIENT` and returns a real pack version. Demo step 7 works end to end. Both mocked and live paths green.
 
 ### Verification
 
@@ -491,41 +456,23 @@ Until it runs live, the differentiator has never been exercised against real ext
 npm --prefix frontend run lint
 npm --prefix frontend run build
 uv run --directory backend python manage.py test apps
-node ~/.claude/skills/impeccable/scripts/detect.mjs --json frontend/src
 ```
 
-### Known risk
-
-Extraction is non-deterministic (§14 P0-3). A short synthetic PDF sometimes yields no candidates. Use a document with a clearly worded load limit and expect to retry.
+Then exercise the flow in a browser with both servers up.
 ## 16. Open decisions
+Codex must not silently decide these.
 
-**DECISION 1 — Directive language**
-Current options: (a) keep English per `api-contract.md` §1; (b) switch directives to Indonesian and update the contract, the fixtures, and the backend templates.
-Recommended: (b). Everything around the directive is Indonesian, the proposal's own mockups used Indonesian, and this is the string judges read most. Fix the em-dash (P1-2) in the same change.
-Who must decide: the repository owner. It changes a frozen contract and affects the backend lane.
+**1 · Input treatment.** Three options were built and shown at `scratchpad/fonts/input-specimen.html`: **A** Fiori value-state (unit inside the field, number right-aligned, 2px green bottom edge on focus), **B** Fluent filled (grey wells, white on focus), **C** ruled data grid (no boxes, hairline rows). All three right-align numerics and move the unit into the field, which is the strongest "enterprise software" signal available. Recommended **A**. C has an affordance risk at the booth: fields do not look like fields until hover. **Owner decides.**
 
-**DECISION 2 — Regulation thresholds and citations**
-Current options: (a) verify against primary regulation text and replace; (b) keep placeholders and never display them.
-Recommended: (a), via Task B1's verified-seed mechanism.
-Who must decide: a human must do the research. **Codex must not choose values.**
+**2 · VETO's typeface.** Archivo is still VETO's face. The owner wants to revisit it now that the ERP has 72. Not started.
 
-**DECISION 3 — Deployment target**
-Current options: (a) Vercel for the frontend plus a container host for Django; (b) localhost only for the demo.
-Recommended: not yet settled. Nothing is configured either way.
-Who must decide: the repository owner.
+**3 · Warning icon colour.** The HOLD dialog icon is amber, matching the one-accent lock. The owner's reference image was red. Switching means switching the whole set, not one icon. **Owner decides.**
 
-**DECISION 4 — How the client rule pack comes into existence**
-Current options: (a) seed it alongside the central pack; (b) create it only through Rule Studio approval.
-Why it matters: the demo's closing beat depends on approving a client rule and watching a nationally-legal load turn into a HOLD. If it is already seeded, that beat is gone.
-Recommended: (b).
-Who must decide: the repository owner, with the Rule Studio owner.
+**4 · Directive language.** English per `api-contract.md` §1, Indonesian per `DESIGN.md` §7. The two documents genuinely conflict and it is the most-read string in the demo. Recommended: Indonesian, em-dash removed, in one change across contract, fixtures and `engine.py`.
 
-**DECISION 5 — Whether `POST /validate` should require an API key**
-`api-contract.md` §0 says no auth in MVP and that `X-Client-Id` may be ignored. Leaving it open is a deliberate, documented MVP choice.
-Recommended: leave as is. Do not describe any endpoint as access-controlled.
+**5 · Regulation thresholds.** Must be verified by a human against source text. **Codex must not choose values or invent citations.**
 
----
-
+**6 · Deployment target.** Nothing configured. Owner decides.
 ## 17. Do not change
 
 - **`api-contract.md` response shapes** without also updating `contract/*.json` and telling both lanes. The backend tests and the frontend mocks both consume those fixtures; that is the drift alarm.
