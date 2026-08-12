@@ -115,10 +115,13 @@ function SideView({ height, limits }) {
 
   return (
     <EnvelopeFrame label="Tampak Samping">
-      <svg
-        viewBox={`0 0 ${SIDE_VIEW_NOMINAL_WIDTH_MM} ${heightGeo.canvas}`}
-        className="min-h-0 w-full flex-1"
-      >
+      <div className="flex min-h-0 w-full flex-1 items-stretch gap-0">
+        <SideCab />
+        <svg
+          viewBox={`0 0 ${SIDE_VIEW_NOMINAL_WIDTH_MM} ${heightGeo.canvas}`}
+          preserveAspectRatio="xMinYMax meet"
+          className="min-h-0 w-full flex-1"
+        >
         <rect
           x={0}
           y={heightGeo.canvas - heightGeo.legalSize}
@@ -141,13 +144,56 @@ function SideView({ height, limits }) {
           strokeWidth={3}
           vectorEffect="non-scaling-stroke"
         />
-      </svg>
+        </svg>
+      </div>
       <EnvelopeReadout
         primary={formatMm(height)}
         secondary={`Batas ${formatMm(limits.height?.threshold)}`}
         over={heightGeo.over}
       />
     </EnvelopeFrame>
+  )
+}
+
+/**
+ * Fixed, decorative — never reads form values, never animates. Its own
+ * small local viewBox rather than the mm-scale canvas the box uses, so it
+ * needs no scaling/transform math to sit next to it: a plain flex row
+ * keeps them visually adjacent. viewBox height (112) is cropped exactly to
+ * the chassis line, so "the ground" is the literal bottom edge of this SVG,
+ * matching how SideView's box is bottom-anchored.
+ *
+ * The `preserveAspectRatio` on both this SVG and SideView's box SVG is
+ * load-bearing, not decoration. The default (`xMidYMid meet`) letterboxes
+ * each viewBox independently — this one vertically, the box's horizontally
+ * — which put the cab's ground line ~28px above the box's and opened a wide
+ * gap between them. Anchoring this one bottom-RIGHT and the box bottom-LEFT
+ * pins both to the seam they share. Verified by screenshot; it is not
+ * visible from reading the coordinates.
+ */
+function SideCab() {
+  return (
+    <svg viewBox="0 0 100 112" preserveAspectRatio="xMaxYMax meet" className="h-full w-24 shrink-0">
+      <line x1="0" y1="112" x2="100" y2="112" stroke="#1f2933" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+      <path
+        d="M39,112 L39,92 L46,70 L58,46 L92,46 L92,112 Z"
+        fill="#fff"
+        stroke="#1f2933"
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path
+        d="M52,63 L61,50 L88,50 L88,58 Z"
+        fill="#c4cad0"
+        stroke="#1f2933"
+        strokeWidth="1"
+      />
+      <line x1="76" y1="60" x2="76" y2="108" stroke="#98a0a9" strokeWidth="1.25" />
+      <rect x="79" y="82" width="5" height="2.5" rx="1" fill="#1f2933" />
+      <line x1="40" y1="88" x2="26" y2="78" stroke="#1f2933" strokeWidth="1.75" strokeLinecap="round" />
+      <rect x="20" y="72" width="8" height="11" rx="2" fill="#fff" stroke="#1f2933" strokeWidth="1.5" />
+    </svg>
   )
 }
 
