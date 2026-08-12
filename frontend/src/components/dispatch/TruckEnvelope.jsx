@@ -79,6 +79,12 @@ function PlanView({ length, width, limits }) {
           vectorEffect="non-scaling-stroke"
         />
         <motion.rect
+          initial={{
+            x: lengthGeo.innerOffset,
+            y: widthGeo.innerOffset,
+            width: lengthGeo.innerSize,
+            height: widthGeo.innerSize,
+          }}
           animate={{
             x: lengthGeo.innerOffset,
             y: widthGeo.innerOffset,
@@ -127,6 +133,7 @@ function SideView({ height, limits }) {
         <motion.rect
           x={0}
           width={SIDE_VIEW_NOMINAL_WIDTH_MM}
+          initial={{ y: heightGeo.innerOffset, height: heightGeo.innerSize }}
           animate={{ y: heightGeo.innerOffset, height: heightGeo.innerSize }}
           transition={reduceMotion ? { duration: 0 } : SPRING}
           fill="none"
