@@ -14,6 +14,21 @@ Design reference: [`docs/plans/2026-08-12-truck-envelope-illustrated-design.md`]
 
 - **Frontend-only.** No `backend/` file changes.
 - **`axisGeometry()`'s contract for `PlanView`'s two axes (length, width) does not change** — it stays centered (a load sitting centered left-right on the bed is correct). Only `SideView`'s height axis changes from centered to bottom-anchored (Task 2) — that change is computed locally in `SideView`, `axisGeometry` itself is untouched so `PlanView` is unaffected.
+
+  > **AMENDED during execution (Task 4), with 6avier's agreement.** Length is
+  > **left-anchored**, not centered. Once `PlanCab` is drawn at the front, a
+  > centered box renders the cargo body floating behind the cab whenever the
+  > load is under the legal max, with the gap opening and closing as the
+  > operator types — the same failure Task 2 fixes for height. `PlanView` now
+  > draws the inner box at `x = lengthGeo.outerOffset` and its `viewBox`
+  > starts at `outerOffset` rather than 0 (the canvas's leading padding only
+  > needs to exist at the back, where overflow renders). **Width is still
+  > centered** — a body does sit centred on its chassis. `axisGeometry` is
+  > still untouched; this is computed locally in `PlanView`.
+  >
+  > **Task 7 depends on this:** its `boxRight` must be
+  > `lengthGeo.outerOffset + lengthGeo.innerSize`, not
+  > `lengthGeo.innerOffset + lengthGeo.innerSize`.
 - **No new npm dependency.** Motion is already installed.
 - **Colour:** `#2f8f4e` (green) when every dimension fits, `#a02a1f` (existing convention, unchanged) the moment any dimension is over. This is a confirmed, deliberate override of `DESIGN.md` §4's "VETO never uses green" — Task 1 patches `DESIGN.md` §4 with a short recorded exception, scoped to this file only.
 - **Only the box outline and the rear wheel-hint pair (top-down) get Motion spring animation** (`SPRING = { type: 'spring', stiffness: 90, damping: 12 }`, already defined, unchanged). Panel lines and every other detail recompute from plain (non-animated) geometry each render and snap — this is a deliberate scope cut recorded in the design doc §6, not a shortcut to relitigate.
