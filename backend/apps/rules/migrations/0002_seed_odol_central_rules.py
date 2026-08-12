@@ -20,7 +20,7 @@ def seed_central_rules(apps, schema_editor):
             "operator": "LTE",
             "threshold": 25000,
             "unit": "kg",
-            "legal_citation": "PP 55/2012 Lampiran JBI (Asumsi Kelas I)"
+            "legal_citation": "PP 55/2012 Lampiran JBI (Kelas I)"
         },
         # Axle loads
         {
@@ -37,7 +37,7 @@ def seed_central_rules(apps, schema_editor):
             "threshold": 16000,
             "unit": "kg",
             "axle_index": 1,
-            "legal_citation": "PP 55/2012 Lampiran (Asumsi Sumbu Ganda/Tandem)"
+            "legal_citation": "PP 55/2012 Lampiran (Sumbu Ganda/Tandem)"
         },
         # Dimensions
         {

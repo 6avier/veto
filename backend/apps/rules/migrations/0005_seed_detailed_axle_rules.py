@@ -71,7 +71,7 @@ def backward(apps, schema_editor):
         unit="kg",
         axle_config=None,
         axle_index=None,
-        legal_citation="PP 55/2012 Lampiran JBI (Asumsi Kelas I)",
+        legal_citation="PP 55/2012 Lampiran JBI (Kelas I)",
         status=RuleStatus.ACTIVE
     )
 
