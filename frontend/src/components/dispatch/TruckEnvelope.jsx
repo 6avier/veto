@@ -121,7 +121,7 @@ function SideView({ height, limits }) {
       >
         <rect
           x={0}
-          y={heightGeo.outerOffset}
+          y={heightGeo.canvas - heightGeo.legalSize}
           width={SIDE_VIEW_NOMINAL_WIDTH_MM}
           height={heightGeo.legalSize}
           fill={OUTER_FILL}
@@ -133,8 +133,8 @@ function SideView({ height, limits }) {
         <motion.rect
           x={0}
           width={SIDE_VIEW_NOMINAL_WIDTH_MM}
-          initial={{ y: heightGeo.innerOffset, height: heightGeo.innerSize }}
-          animate={{ y: heightGeo.innerOffset, height: heightGeo.innerSize }}
+          initial={{ y: heightGeo.canvas - heightGeo.innerSize, height: heightGeo.innerSize }}
+          animate={{ y: heightGeo.canvas - heightGeo.innerSize, height: heightGeo.innerSize }}
           transition={reduceMotion ? { duration: 0 } : SPRING}
           fill="none"
           stroke={heightGeo.over ? OVER_COLOUR : NEUTRAL_COLOUR}
