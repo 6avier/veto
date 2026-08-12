@@ -52,6 +52,24 @@ function axisGeometry(actualMm, legalMm) {
   }
 }
 
+const PANEL_LINE_COUNT = 8
+
+/**
+ * How far in front of the box's back edge the rear door seam sits. The plan
+ * put it exactly on the back edge, where it renders underneath the 3px
+ * outline and is invisible — a door frame has to be inset to read as one.
+ */
+const REAR_DOOR_INSET_MM = 350
+
+/** Evenly spaced positions strictly inside [start, start+size], excluding the edges. */
+function panelLines(start, size, count = PANEL_LINE_COUNT) {
+  const lines = []
+  for (let i = 1; i <= count; i++) {
+    lines.push(start + (size * i) / (count + 1))
+  }
+  return lines
+}
+
 /**
  * Length is LEFT-anchored, width stays centred.
  *
@@ -115,6 +133,29 @@ function PlanView({ length, width, limits }) {
           strokeWidth={3}
           vectorEffect="non-scaling-stroke"
         />
+        {panelLines(lengthGeo.outerOffset, lengthGeo.innerSize).map((x) => (
+          <line
+            key={x}
+            x1={x}
+            y1={widthGeo.innerOffset}
+            x2={x}
+            y2={widthGeo.innerOffset + widthGeo.innerSize}
+            stroke="#c4cad0"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
+        {lengthGeo.innerSize > REAR_DOOR_INSET_MM * 2 && (
+          <line
+            x1={lengthGeo.outerOffset + lengthGeo.innerSize - REAR_DOOR_INSET_MM}
+            y1={widthGeo.innerOffset}
+            x2={lengthGeo.outerOffset + lengthGeo.innerSize - REAR_DOOR_INSET_MM}
+            y2={widthGeo.innerOffset + widthGeo.innerSize}
+            stroke={over ? OVER_COLOUR : NEUTRAL_COLOUR}
+            strokeWidth="1.5"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
         </svg>
       </div>
       <EnvelopeReadout
@@ -161,6 +202,27 @@ function SideView({ height, limits }) {
           fill="none"
           stroke={heightGeo.over ? OVER_COLOUR : NEUTRAL_COLOUR}
           strokeWidth={3}
+          vectorEffect="non-scaling-stroke"
+        />
+        {panelLines(0, SIDE_VIEW_NOMINAL_WIDTH_MM).map((x) => (
+          <line
+            key={x}
+            x1={x}
+            y1={heightGeo.canvas - heightGeo.innerSize}
+            x2={x}
+            y2={heightGeo.canvas}
+            stroke="#c4cad0"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
+        <line
+          x1={SIDE_VIEW_NOMINAL_WIDTH_MM - REAR_DOOR_INSET_MM}
+          y1={heightGeo.canvas - heightGeo.innerSize}
+          x2={SIDE_VIEW_NOMINAL_WIDTH_MM - REAR_DOOR_INSET_MM}
+          y2={heightGeo.canvas}
+          stroke={heightGeo.over ? OVER_COLOUR : NEUTRAL_COLOUR}
+          strokeWidth="1.5"
           vectorEffect="non-scaling-stroke"
         />
         </svg>
