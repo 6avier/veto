@@ -1,4 +1,5 @@
 import { formatMm } from '@/lib/format'
+import { motion } from 'motion/react'
 
 /**
  * A booth gimmick on /dispatch (CLAUDE.md §4, P2 polish): a translucent
@@ -27,6 +28,7 @@ const OVER_COLOUR = '#a02a1f'
 const NEUTRAL_COLOUR = '#1f2933'
 const OUTER_STROKE = '#98a0a9'
 const OUTER_FILL = '#f4f6f7'
+const SPRING = { type: 'spring', stiffness: 90, damping: 12 }
 
 /**
  * Geometry for one axis, in a fixed viewBox padded 20% past the legal limit
@@ -72,11 +74,14 @@ function PlanView({ length, width, limits }) {
           strokeDasharray="8 6"
           vectorEffect="non-scaling-stroke"
         />
-        <rect
-          x={lengthGeo.innerOffset}
-          y={widthGeo.innerOffset}
-          width={lengthGeo.innerSize}
-          height={widthGeo.innerSize}
+        <motion.rect
+          animate={{
+            x: lengthGeo.innerOffset,
+            y: widthGeo.innerOffset,
+            width: lengthGeo.innerSize,
+            height: widthGeo.innerSize,
+          }}
+          transition={SPRING}
           fill="none"
           stroke={over ? OVER_COLOUR : NEUTRAL_COLOUR}
           strokeWidth={3}
@@ -114,11 +119,11 @@ function SideView({ height, limits }) {
           strokeDasharray="8 6"
           vectorEffect="non-scaling-stroke"
         />
-        <rect
+        <motion.rect
           x={0}
-          y={heightGeo.innerOffset}
           width={SIDE_VIEW_NOMINAL_WIDTH_MM}
-          height={heightGeo.innerSize}
+          animate={{ y: heightGeo.innerOffset, height: heightGeo.innerSize }}
+          transition={SPRING}
           fill="none"
           stroke={heightGeo.over ? OVER_COLOUR : NEUTRAL_COLOUR}
           strokeWidth={3}
