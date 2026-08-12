@@ -166,7 +166,7 @@ export default function DispatchForm({
         ))}
       </Section>
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 bg-[#f4f6f7] px-4 py-3">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 bg-[#f4f6f7] px-[18px] py-3.5">
         <p className="text-label text-[#5a646e]">
           Total beban sumbu{' '}
           <span className="tnum text-data font-medium text-[#1f2933]">{formatKg(axleSum)}</span>
@@ -189,11 +189,24 @@ export default function DispatchForm({
   )
 }
 
+/**
+ * Section spacing follows the craft floor: more room above a heading than
+ * below it, so the title belongs to the group it introduces rather than
+ * colliding with the rule above. 20 above, 12 below, 18 to the closing edge.
+ *
+ * The title is a plain element, not a <legend>. A legend is lifted out of flow
+ * and painted on the fieldset's top border, so padding-top cannot move it and
+ * it sits welded to the divider no matter what the value is. The grouping stays
+ * accessible through aria-labelledby.
+ */
 function Section({ title, children }) {
+  const id = `sec-${title.replace(/[^a-zA-Z]+/g, '-').toLowerCase()}`
   return (
-    <fieldset className="px-4 py-3">
-      <legend className="mb-2.5 text-label font-semibold text-[#1f2933]">{title}</legend>
-      <div className="grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+    <fieldset aria-labelledby={id} className="px-[18px] pt-5 pb-[18px]">
+      <p id={id} className="mb-3 text-label font-semibold text-[#1f2933]">
+        {title}
+      </p>
+      <div className="grid gap-x-6 gap-y-[18px] sm:grid-cols-2 lg:grid-cols-3">{children}</div>
     </fieldset>
   )
 }

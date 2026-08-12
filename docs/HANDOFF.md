@@ -564,6 +564,8 @@ Extracted from the existing code.
 - Forms carry `noValidate` and own their validation. HTML5 constraint attributes (`min`, `max`) stay for the steppers and for clamping, but native validation must not arbitrate submission: it blocks `onSubmit` before React sees it, which produces a dead button and no message.
 - Numeric inputs clamp on change rather than relying on `max`, which only fails validation and does not stop typing.
 
+- Do not use `<legend>` for a section heading you intend to space. A legend is lifted out of flow and painted on the fieldset's top border, so `padding-top` cannot move it. Use an in-flow element and keep the grouping with `aria-labelledby` on the fieldset.
+
 **Backend**
 
 - Function-based DRF views with `@api_view`. No class-based views, no ViewSets.
