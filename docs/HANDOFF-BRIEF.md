@@ -68,6 +68,17 @@ Wire `/rule-studio` live and prove the closing beat, in this order:
    limit. It must HOLD and read `[ SOP KLIEN ]`.
 4. Set `VITE_USE_MOCKS=true` again and confirm the mocked path still works.
 
+## Watch the seam
+
+`contract/*.json` and the seeded rule base drifted twice in one day, both times
+silently. Most recent: the backend moved to full JBI axle notation, so `1.22`
+became `1.2.2` and four trailer configs appeared. The dropdown in
+`DispatchForm.jsx` had to be realigned, because a config absent from the rule
+base quietly misses its gross-weight rule instead of failing loudly.
+
+**Before touching the dispatch form, run `curl localhost:8000/api/v1/rules` and
+check the `applies_to.axle_config` values against `AXLE_CONFIGS`.**
+
 ## Do not break
 
 - **`api-contract.md` and `contract/*.json`** are the frontend/backend seam.

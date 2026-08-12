@@ -14,10 +14,20 @@ import { deltaFromLimit } from '@/lib/limits'
  * typed and what counts as excess.
  */
 
+/**
+ * JBI axle notation, matching the values the seeded rule pack keys its
+ * gross-weight limits on. A config not in the rule base silently misses its
+ * JBI rule, so this list tracks the backend rather than being invented here.
+ * Verify against GET /rules if the seed changes.
+ */
 const AXLE_CONFIGS = [
   { value: '1.1', label: '1.1 · dua sumbu, truk ringan' },
   { value: '1.2', label: '1.2 · dua sumbu, roda ganda' },
-  { value: '1.22', label: '1.22 · tiga sumbu, tronton' },
+  { value: '1.2.2', label: '1.2.2 · tiga sumbu, tronton' },
+  { value: '1.1-2.2', label: '1.1-2.2 · empat sumbu, truk dan gandengan' },
+  { value: '1.2-2.2', label: '1.2-2.2 · empat sumbu, roda ganda dan gandengan' },
+  { value: '1.2.2-2.2', label: '1.2.2-2.2 · lima sumbu' },
+  { value: '1.2.2-2.2.2', label: '1.2.2-2.2.2 · enam sumbu, trailer' },
 ]
 
 const AXLE_NAMES = ['Sumbu depan', 'Sumbu tengah', 'Sumbu belakang']

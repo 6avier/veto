@@ -50,8 +50,14 @@ export const formatTimestamp = (iso) => {
   }).format(d)
 }
 
-/** How many axle-load inputs an axle configuration implies. */
+/**
+ * How many axle-load inputs an axle configuration implies.
+ *
+ * JBI notation groups axles with dots and separates a trailer with a hyphen:
+ * 1.2.2 is a three-axle tronton, 1.2-2.2 is a four-axle truck and trailer.
+ * Both separators are punctuation; only the digits count.
+ */
 export const axleCountFor = (axleConfig) => {
-  const digits = String(axleConfig ?? '').replace(/\./g, '')
+  const digits = String(axleConfig ?? '').replace(/[^0-9]/g, '')
   return Math.max(1, digits.length)
 }
