@@ -4,6 +4,21 @@
 
 **Goal:** Replace `TruckEnvelope.jsx`'s plain-rectangle rendering with an illustrated truck (cab, wheels, panel lines) in both the top-down and side views, keeping the existing geometry engine, data flow, and placement untouched.
 
+> **AMENDED during execution — this architecture was reversed.** Both cabs now
+> live **inside** their view's box SVG, drawn in the same millimetre space,
+> occupying negative x in front of the box. The two-SVG split is sound only
+> while the cab is pure decoration with no geometric relationship to the box.
+> It gained three — the ground line, the deck line, and wheel size — and two
+> viewBoxes that resolve to different pixel scales cannot be relied on to
+> agree about any of them. Symptoms, each caught only by screenshot: the cab's
+> ground line sat ~28px above the box's (patched with `preserveAspectRatio`,
+> Task 3); the cab's floor ran to the ground while the body's floor sat on the
+> deck, which no constant in the cab's local units could fix; and the plan
+> view's cab kept a fixed pixel width while the body tracked the width input,
+> so a narrow load detached from it. Sharing one coordinate system makes all
+> of this structural instead of a coincidence to re-tune. The original
+> reasoning below is kept for the record.
+
 **Architecture:** Each view (`PlanView`, `SideView`) becomes a **two-SVG layout**: a small, fixed-viewBox SVG for the cab (decorative, never animates, own local coordinate system — no scaling math against the mm-based canvas needed) sitting beside the existing box SVG (unchanged coordinate system: still `lengthGeo.canvas` / `widthGeo.canvas` / `heightGeo.canvas` in real millimetres). This sidesteps compositing two different coordinate systems into one `viewBox` — a plain CSS flex row keeps them visually adjacent, and because both share the same row height, their vertically-centered (or bottom-anchored) content lines up without a transform.
 
 **Tech Stack:** React 19, Tailwind v4, Motion (`motion/react`, already a dependency).

@@ -47,6 +47,27 @@ const REAR_WHEEL_OFFSETS_MM = [1350, 500]
  * not the full span from the ground.
  */
 const DECK_HEIGHT_MM = 900
+
+/**
+ * The side-view cab is drawn in the SAME millimetre space as the cargo box,
+ * inside the box's own SVG, occupying negative x in front of it.
+ *
+ * It used to be a separate SVG with its own small local viewBox. That was
+ * fine while the cab was pure decoration, but it has three real geometric
+ * relationships now — the ground line, the deck line, and wheel size — and
+ * two SVGs scaled independently cannot be relied on to agree about any of
+ * them. The cab's floor ran to the ground while the body's floor sat on the
+ * deck, and no constant in the cab's local units could fix that, because the
+ * two viewBoxes resolve to different pixel scales. Sharing one coordinate
+ * system makes the alignment structural instead of a coincidence to re-tune.
+ */
+const CAB_LENGTH_MM = 2400
+const CAB_HEIGHT_MM = 2900
+/** Left edge of the viewBox: cab length plus clearance for the mirror. */
+const CAB_VIEW_LEFT_MM = -3000
+/** Cab track width, drawn in the plan view. The legal maximum, so a
+ *  full-width load reads as exactly as wide as its own truck. */
+const CAB_WIDTH_MM = 2500
 const OVER_COLOUR = '#a02a1f'
 const NEUTRAL_COLOUR = '#2f8f4e'
 const OUTER_STROKE = '#98a0a9'
@@ -126,12 +147,12 @@ function PlanView({ length, width, limits }) {
   return (
     <EnvelopeFrame label="Tampak Atas">
       <div className="flex min-h-0 w-full flex-1 items-stretch gap-0">
-        <PlanCab colour={colour} />
         <svg
-          viewBox={`${lengthGeo.outerOffset} 0 ${lengthGeo.canvas - lengthGeo.outerOffset} ${widthGeo.canvas}`}
+          viewBox={`${lengthGeo.outerOffset - CAB_LENGTH_MM} 0 ${lengthGeo.canvas - lengthGeo.outerOffset + CAB_LENGTH_MM} ${widthGeo.canvas}`}
           preserveAspectRatio="xMinYMid meet"
           className="min-h-0 w-full flex-1"
         >
+        <PlanCab boxFront={lengthGeo.outerOffset} centreY={widthGeo.canvas / 2} colour={colour} />
         <rect
           x={lengthGeo.outerOffset}
           y={widthGeo.outerOffset}
@@ -249,12 +270,12 @@ function SideView({ height, limits }) {
   return (
     <EnvelopeFrame label="Tampak Samping">
       <div className="flex min-h-0 w-full flex-1 items-stretch gap-0">
-        <SideCab colour={colour} />
         <svg
-          viewBox={`0 0 ${SIDE_VIEW_NOMINAL_WIDTH_MM} ${heightGeo.canvas}`}
+          viewBox={`${CAB_VIEW_LEFT_MM} 0 ${SIDE_VIEW_NOMINAL_WIDTH_MM - CAB_VIEW_LEFT_MM} ${heightGeo.canvas}`}
           preserveAspectRatio="xMinYMax meet"
           className="min-h-0 w-full flex-1"
         >
+        <SideCab groundY={heightGeo.canvas} colour={colour} />
         <rect
           x={0}
           y={legalTop}
@@ -298,10 +319,9 @@ function SideView({ height, limits }) {
           strokeWidth="1.5"
           vectorEffect="non-scaling-stroke"
         />
-        {/* Continues the cab SVG's chassis line across the box, so the wheels
-            of both read as standing on one ground. */}
+        {/* One ground line under the whole vehicle, cab included. */}
         <line
-          x1={0}
+          x1={CAB_VIEW_LEFT_MM}
           y1={heightGeo.canvas}
           x2={SIDE_VIEW_NOMINAL_WIDTH_MM}
           y2={heightGeo.canvas}
@@ -338,23 +358,31 @@ function SideView({ height, limits }) {
  * because axisGeometry always centres PlanView's outer envelope at
  * canvas/2 regardless of state.
  */
-function PlanCab({ colour }) {
+function PlanCab({ boxFront, centreY, colour }) {
+  const front = boxFront - CAB_LENGTH_MM
+  const half = CAB_WIDTH_MM / 2
+  const top = centreY - half
+  const bottom = centreY + half
+  const poke = 180
   return (
-    <svg viewBox="28 19 65 62" preserveAspectRatio="xMaxYMid meet" className="h-full w-32 shrink-0">
+    <g>
+      {/* Tapered nose: straight facets with one rounded curve at the tip. */}
       <path
-        d="M92,28 L52,28 L34,40 Q30,50 34,60 L52,72 L92,72 Z"
+        d={`M${boxFront},${top} L${front + 800},${top} L${front + 200},${top + 500} Q${front},${centreY} ${front + 200},${bottom - 500} L${front + 800},${bottom} L${boxFront},${bottom} Z`}
         fill="#fff"
         stroke={colour}
         strokeWidth="2.5"
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
       />
-      <rect x="54" y="37" width="26" height="26" rx="2" fill="#c4cad0" stroke={colour} strokeWidth="1" />
-      <rect x="44" y="23" width="10" height="7" rx="1.5" fill="#fff" stroke={colour} strokeWidth="1.5" />
-      <rect x="44" y="70" width="10" height="7" rx="1.5" fill="#fff" stroke={colour} strokeWidth="1.5" />
-      <rect x="68" y="26" width="14" height="6" fill="#fff" stroke={colour} strokeWidth="1.5" />
-      <rect x="68" y="68" width="14" height="6" fill="#fff" stroke={colour} strokeWidth="1.5" />
-    </svg>
+      <rect x={front + 950} y={top + 300} width="850" height={CAB_WIDTH_MM - 600} rx="60" fill="#c4cad0" stroke={colour} strokeWidth="1" vectorEffect="non-scaling-stroke" />
+      {/* Mirrors overlap the body edge directly — a connecting stalk line is
+          near-invisible at render scale and reads as floating debris. */}
+      <rect x={front + 650} y={top - poke} width="480" height={poke} fill="#fff" stroke={colour} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+      <rect x={front + 650} y={bottom} width="480" height={poke} fill="#fff" stroke={colour} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+      <rect x={front + 1500} y={top - poke} width="700" height={poke} fill="#fff" stroke={colour} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+      <rect x={front + 1500} y={bottom} width="700" height={poke} fill="#fff" stroke={colour} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+    </g>
   )
 }
 
@@ -374,12 +402,15 @@ function PlanCab({ colour }) {
  * pins both to the seam they share. Verified by screenshot; it is not
  * visible from reading the coordinates.
  */
-function SideCab({ colour }) {
+function SideCab({ groundY, colour }) {
+  const g = groundY
+  const front = -CAB_LENGTH_MM
   return (
-    <svg viewBox="0 0 100 112" preserveAspectRatio="xMaxYMax meet" className="h-full w-24 shrink-0">
-      <line x1="0" y1="112" x2="100" y2="112" stroke="#1f2933" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+    <g>
+      {/* Cab-over profile: the floor sits on the deck line, exactly like the
+          cargo body's, so the two read as one vehicle. */}
       <path
-        d="M39,112 L39,92 L46,70 L58,46 L92,46 L92,112 Z"
+        d={`M${front},${g - DECK_HEIGHT_MM} L${front},${g - 1700} L${front + 150},${g - 2050} L${front + 400},${g - CAB_HEIGHT_MM} L0,${g - CAB_HEIGHT_MM} L0,${g - DECK_HEIGHT_MM} Z`}
         fill="#fff"
         stroke={colour}
         strokeWidth="2.5"
@@ -387,20 +418,19 @@ function SideCab({ colour }) {
         vectorEffect="non-scaling-stroke"
       />
       <path
-        d="M52,63 L61,50 L88,50 L88,58 Z"
+        d={`M${front + 220},${g - 2300} L${front + 430},${g - 2820} L${front + 1150},${g - 2820} L${front + 1150},${g - 2350} Z`}
         fill="#c4cad0"
         stroke={colour}
         strokeWidth="1"
+        vectorEffect="non-scaling-stroke"
       />
-      <line x1="76" y1="60" x2="76" y2="108" stroke="#98a0a9" strokeWidth="1.25" />
-      <rect x="79" y="82" width="5" height="2.5" rx="1" fill="#1f2933" />
-      <line x1="40" y1="88" x2="26" y2="78" stroke={colour} strokeWidth="1.75" strokeLinecap="round" />
-      <rect x="20" y="72" width="8" height="11" rx="2" fill="#fff" stroke={colour} strokeWidth="1.5" />
-      {/* cy is 112 - r, not 112: the wheel's bottom edge touches the chassis
-          line. Centring it on the line clips half the wheel out of the viewBox. */}
-      <circle cx="55" cy="99" r="13" fill="#fff" stroke={colour} strokeWidth="2.5" />
-      <circle cx="55" cy="99" r="5" fill="none" stroke={colour} strokeWidth="1.25" />
-    </svg>
+      <line x1={front + 1400} y1={g - 2780} x2={front + 1400} y2={g - 950} stroke="#98a0a9" strokeWidth="1.25" vectorEffect="non-scaling-stroke" />
+      <rect x={front + 1250} y={g - 1850} width="180" height="70" fill="#1f2933" />
+      <line x1={front + 50} y1={g - 2450} x2={front - 250} y2={g - 2550} stroke={colour} strokeWidth="1.75" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      <rect x={front - 420} y={g - 2700} width="170" height="330" rx="40" fill="#fff" stroke={colour} strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+      <circle cx={front + 1000} cy={g - WHEEL_RADIUS_MM} r={WHEEL_RADIUS_MM} fill="#fff" stroke={colour} strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
+      <circle cx={front + 1000} cy={g - WHEEL_RADIUS_MM} r={WHEEL_HUB_RADIUS_MM} fill="none" stroke={colour} strokeWidth="1.25" vectorEffect="non-scaling-stroke" />
+    </g>
   )
 }
 
