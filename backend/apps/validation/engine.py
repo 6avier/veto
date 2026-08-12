@@ -1,14 +1,37 @@
 from typing import Dict, List, Any, Optional, Tuple, Union
 
-# Dimension mapping for easy lookup
+# Dimension mapping for easy lookup. These values are payload keys under
+# load.dimensions_mm — wire format, never display text. Do not translate them.
 DIMENSION_NAMES = {
     "DIMENSION_LENGTH": "length",
     "DIMENSION_WIDTH": "width",
     "DIMENSION_HEIGHT": "height"
 }
 
+# What a directive calls each dimension. DESIGN.md §7: the interface is
+# Indonesian, and directives render verbatim from the server, so the sentence
+# the operator reads exists here and nowhere else.
+DIMENSION_SUBJECTS = {
+    "DIMENSION_LENGTH": "panjang muatan",
+    "DIMENSION_WIDTH": "lebar muatan",
+    "DIMENSION_HEIGHT": "tinggi muatan",
+}
+
 def _format_number(num: int) -> str:
-    return f"{num:,}"
+    """1300 -> "1.300". Indonesian separators, matching the frontend's id-ID
+    formatting so a directive agrees with the figures printed beside it."""
+    return f"{num:,}".replace(",", ".")
+
+def _axle_subject(axle_index: Optional[int], total_axles: int) -> str:
+    """Mirrors axleLabel() in DispatchForm.jsx. A directive must name an axle the
+    same way the field the operator is about to correct names it."""
+    if axle_index is None:
+        return "beban sumbu"
+    if axle_index == 0:
+        return "beban sumbu depan"
+    if axle_index == total_axles - 1:
+        return "beban sumbu belakang"
+    return "beban sumbu tengah"
 
 def _find_stricter_rule(central_rule: Any, client_rule: Any, operator: str) -> Tuple[Any, Any]:
     """
@@ -80,23 +103,19 @@ def _evaluate_dimension(
         # Build directive
         subject = ""
         if dimension == "GROSS_WEIGHT":
-            subject = "total load"
+            subject = "muatan total"
         elif dimension == "AXLE_LOAD":
-            if axle_index is not None:
-                if axle_index > 0 and axle_index == total_axles - 1:
-                    subject = "rear axle load"
-                else:
-                    subject = f"axle {axle_index + 1} load"
-            else:
-                subject = "axle load"
-        elif dimension in DIMENSION_NAMES:
-            subject = f"load {DIMENSION_NAMES[dimension]}"
-            
-        directive = f"Reduce {subject} by {_format_number(excess)} {unit}"
-        
-        # Contract: If client is stricter, contrast with legal limit
+            subject = _axle_subject(axle_index, total_axles)
+        elif dimension in DIMENSION_SUBJECTS:
+            subject = DIMENSION_SUBJECTS[dimension]
+
+        directive = f"Kurangi {subject} {_format_number(excess)} {unit}"
+
+        # Contract: If client is stricter, contrast with legal limit.
+        # A second sentence, not an em-dash: DESIGN.md \u00a77 bans em-dashes in
+        # anything a user sees, directives included.
         if strictest_rule.rule_pack.origin == "CLIENT" and other_rule and other_rule.rule_pack.origin == "CENTRAL":
-            directive += f" \u2014 client policy is stricter than the legal limit of {_format_number(other_rule.threshold)} {unit}"
+            directive += f". SOP klien lebih ketat dari batas hukum {_format_number(other_rule.threshold)} {unit}"
 
         # Build violation dict
         violation: Dict[str, Any] = {

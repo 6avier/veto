@@ -13,7 +13,7 @@
       "severity": "BLOCKING",
       "rule_origin": "CENTRAL",
       "legal_citation": "PP 55/2012 Lampiran (Asumsi Sumbu Ganda/Tandem)",
-      "directive": "Reduce rear axle load by 1,300 kg"
+      "directive": "Kurangi beban sumbu belakang 1.300 kg"
     },
     {
       "dimension": "GROSS_WEIGHT",
@@ -24,7 +24,7 @@
       "severity": "BLOCKING",
       "rule_origin": "CLIENT",
       "legal_citation": "SOP Internal Gudang Cikarang v2 \u00a73.1",
-      "directive": "Reduce total load by 1,500 kg \u2014 client policy is stricter than the legal limit of 24,000 kg"
+      "directive": "Kurangi muatan total 1.500 kg. SOP klien lebih ketat dari batas hukum 24.000 kg"
     }
   ],
   "rule_packs_applied": [

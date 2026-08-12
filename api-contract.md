@@ -114,7 +114,7 @@ Notes:
       "severity": "BLOCKING",
       "rule_origin": "CENTRAL",
       "legal_citation": "PP 55/2012 Lampiran (Asumsi Sumbu Ganda/Tandem)",
-      "directive": "Reduce rear axle load by 1,300 kg"
+      "directive": "Kurangi beban sumbu belakang 1.300 kg"
     },
     {
       "dimension": "GROSS_WEIGHT",
@@ -125,7 +125,7 @@ Notes:
       "severity": "BLOCKING",
       "rule_origin": "CLIENT",
       "legal_citation": "SOP Internal Gudang Cikarang v2 §3.1",
-      "directive": "Reduce total load by 500 kg — client policy is stricter than the legal limit of 25,000 kg"
+      "directive": "Kurangi muatan total 500 kg. SOP klien lebih ketat dari batas hukum 25.000 kg"
     }
   ],
   "rule_packs_applied": [
@@ -146,7 +146,7 @@ Notes:
 - `severity` enum: `BLOCKING`, `WARNING`. MVP emits `BLOCKING` only; the field exists so warnings can be added without a contract change.
 - `rule_origin` enum: `CENTRAL`, `CLIENT`.
 - Where a client rule is stricter than a central rule on the same dimension, only the client rule appears, and `directive` names the legal limit for contrast (see the second violation above).
-- `directive` is a complete, human-readable sentence in English. Frontend renders it as-is — do not build directive text on the frontend.
+- `directive` is a complete, human-readable sentence in **Indonesian**, with Indonesian thousands separators (`1.300`) and no em-dash, per `DESIGN.md` §7. Frontend renders it as-is — do not build directive text on the frontend. Field names (`GROSS_WEIGHT`, `axle_index`) and enums stay English; only the operator-facing sentence is translated.
 - A HOLD is a **successful evaluation**, not a server error.
 
 > **Frontend gotcha:** axios throws on 403. A HOLD lands in `catch`, not `then`. Read the body from `err.response.data` and branch on `outcome`. Do not treat it as a failure state — it is the most important success path in the product.
