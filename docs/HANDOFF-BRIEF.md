@@ -79,6 +79,24 @@ placeholder. **Do not make it invent a figure again** (`CLAUDE.md` §5).
 
 ## What blocks the demo
 
+0. **`main` is red, and the mocks fallback does not exist.** Both from
+   `3d4be46` (`feat(dispatch): add smart payload directives and balance
+   warnings`), bisected 2026-08-13 — `2626fc8` was green.
+
+   - `test_directives_match_the_fixture_wording` fails: the engine emits a
+     `GROSS_WEIGHT` directive where `contract/validate.response.hold.json`
+     still expects `AXLE_LOAD`. The §17 drift alarm working as designed.
+     Someone must decide whether engine or fixture is right, then move
+     `api-contract.md` with it.
+   - `frontend/src/api/client.js:16` hardcodes
+     `export const USE_MOCKS = false`, with the original
+     `import.meta.env.VITE_USE_MOCKS === 'true'` left in a trailing comment.
+     **So "flip `VITE_USE_MOCKS` back to `true` before the booth", below, does
+     nothing.** There is no no-backend fallback. Verified by running with the
+     flag on: no MOCKS badge, requests still hit the real API. Left unchanged
+     at the owner's instruction; the fix is to uncomment the line, but do not
+     ship that without then proving the mocks path with the backend stopped.
+
 1. ~~No CLIENT rule pack is seeded~~ **Done 2026-08-13** (Iqbal, `65bc380`,
    "feat(rules): seed Client SOP rules and finalize closing beat"). The closing
    beat — approve a rule, watch a nationally-legal load HOLD — should now be

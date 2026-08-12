@@ -457,6 +457,40 @@ File: `backend/apps/rules/tests/test_rule_studio.py`.
 
 *Also.* If `GEMINI_API_KEY` is empty, `candidates_data` stays `[]` and `used_fallback` stays `False` — zero candidates with no signal that extraction never ran.
 
+**P0-5 · The mocks fallback does not exist. `VITE_USE_MOCKS` is wired to nothing.**
+
+`frontend/src/api/client.js:16` reads:
+
+```js
+export const USE_MOCKS = false // import.meta.env.VITE_USE_MOCKS === 'true'
+```
+
+Changed in `3d4be46`; the original line survives in the comment, so this looks
+like a debug hack that got committed rather than a decision. **Flipping
+`.env.local` to `true` before the booth — exactly what `HANDOFF-BRIEF.md`
+instructs — does nothing.** The app still requires a live Django server, and
+there is no fallback if the backend dies mid-demo. Confirmed 2026-08-13 by
+running the frontend with `VITE_USE_MOCKS=true`: no MOCKS badge, and requests
+still hit the real API.
+
+Left in place deliberately — the owner chose to be told rather than have it
+changed. **One-line fix if wanted:** uncomment the env read. Do not ship it
+without then proving the mocks path end-to-end with the backend stopped; it
+has been dead long enough that the fixtures may have drifted.
+
+**P0-6 · `main` is red. `test_directives_match_the_fixture_wording` fails.**
+
+Bisected 2026-08-13: `2626fc8` green → **`3d4be46` red** (`feat(dispatch): add
+smart payload directives and balance warnings`) → `14bf445` red. The engine now
+emits a `GROSS_WEIGHT` directive where `contract/validate.response.hold.json`
+still expects `AXLE_LOAD`.
+
+This is the contract drift alarm in §17 firing as designed. **Not an agent
+decision:** someone has to choose whether the engine or the fixture is correct,
+then move `api-contract.md` with it. The truck-envelope merge (`7d7d30a`) did
+not cause it and does not make it worse — the failure predates that merge on
+`origin/main`.
+
 **P0-4 · Nothing is deployed.** No `Dockerfile`, `vercel.json`, `railway.*`, `Procfile` or CI. `gunicorn` and `whitenoise` are installed and unused. Roughly a day and a half remains.
 
 ### P1
