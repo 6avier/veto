@@ -36,7 +36,7 @@ class ValidateContractTests(TestCase):
             rule_pack=client_pack,
             dimension="GROSS_WEIGHT",
             operator="LTE",
-            threshold=24000,
+            threshold=23000,
             unit="kg",
             legal_citation="SOP Internal Gudang Cikarang v2 §3.1"
         )

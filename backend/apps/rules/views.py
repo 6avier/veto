@@ -1,10 +1,9 @@
-import json
-from django.views import View
-from django.http import JsonResponse
-from django.utils.dateparse import parse_datetime
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 from .models import Rule, RuleOrigin, RuleDimension, RuleStatus
 
-class RuleListView(View):
+class RuleListView(APIView):
     def get(self, request):
         queryset = Rule.objects.select_related('rule_pack')
         
@@ -44,7 +43,7 @@ class RuleListView(View):
                 "effective_from": r.rule_pack.effective_from.isoformat()
             })
             
-        return JsonResponse({
+        return Response({
             "results": results,
             "total": len(results)
         })
@@ -59,17 +58,17 @@ from datetime import datetime, timezone
 from django.utils import timezone as django_timezone
 from .models import Document, DocumentClassification, RuleCandidate, CandidateStatus, RuleOperator, RulePack
 
-class DocumentUploadView(View):
+class DocumentUploadView(APIView):
     def post(self, request):
         if 'file' not in request.FILES:
-            return JsonResponse({"error": {"code": "VALIDATION_ERROR", "message": "file is required"}}, status=400)
+            return Response({"error": {"code": "VALIDATION_ERROR", "message": "file is required"}}, status=status.HTTP_400_BAD_REQUEST)
             
         file = request.FILES['file']
         if not file.name.lower().endswith('.pdf'):
-            return JsonResponse({"error": {"code": "VALIDATION_ERROR", "message": "Only PDF files are supported"}}, status=400)
+            return Response({"error": {"code": "VALIDATION_ERROR", "message": "Only PDF files are supported"}}, status=status.HTTP_400_BAD_REQUEST)
             
         if file.size > 10 * 1024 * 1024:
-            return JsonResponse({"error": {"code": "VALIDATION_ERROR", "message": "File exceeds 10MB limit"}}, status=400)
+            return Response({"error": {"code": "VALIDATION_ERROR", "message": "File exceeds 10MB limit"}}, status=status.HTTP_400_BAD_REQUEST)
             
         # Save file locally. MEDIA_ROOT is gitignored, so the directory does not
         # exist on a fresh clone or a new deploy and has to be created here.
@@ -89,7 +88,7 @@ class DocumentUploadView(View):
                 if page_count > 0:
                     first_page_text = pdf_doc[0].get_text().lower()
         except Exception:
-            return JsonResponse({"error": {"code": "INTERNAL_ERROR", "message": "Failed to read PDF"}}, status=500)
+            return Response({"error": {"code": "INTERNAL_ERROR", "message": "Failed to read PDF"}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
         # Check text for relevance
         is_relevant = any(word in first_page_text for word in ["sop", "kebijakan", "peraturan", "standar", "muatan", "logistik", "berat"])
@@ -105,7 +104,7 @@ class DocumentUploadView(View):
             needs_human_review=False
         )
         
-        return JsonResponse({
+        return Response({
             "document_id": str(doc.document_id),
             "filename": doc.filename,
             "page_count": doc.page_count,
@@ -115,24 +114,20 @@ class DocumentUploadView(View):
             "rejection_reason_code": doc.rejection_reason_code,
             "needs_human_review": doc.needs_human_review,
             "uploaded_at": doc.uploaded_at.isoformat()
-        }, status=201)
+        }, status=status.HTTP_201_CREATED)
 
-class DocumentExtractView(View):
+class DocumentExtractView(APIView):
     def post(self, request, document_id):
         try:
             doc = Document.objects.get(document_id=document_id)
         except Document.DoesNotExist:
-            return JsonResponse({"error": {"code": "NOT_FOUND", "message": "Document not found"}}, status=404)
+            return Response({"error": {"code": "NOT_FOUND", "message": "Document not found"}}, status=status.HTTP_404_NOT_FOUND)
             
-        try:
-            body = json.loads(request.body) if request.body else {}
-        except json.JSONDecodeError:
-            body = {}
-            
+        body = request.data or {}
         force = body.get("force", False)
         
         if not doc.accepted and not force:
-            return JsonResponse({"error": {"code": "VALIDATION_ERROR", "message": "Document was rejected during triage"}}, status=409)
+            return Response({"error": {"code": "VALIDATION_ERROR", "message": "Document was rejected during triage"}}, status=status.HTTP_409_CONFLICT)
             
         started = time.perf_counter()
         
@@ -143,7 +138,7 @@ class DocumentExtractView(View):
                 for i in range(pdf_doc.page_count):
                     pdf_text += f"\n--- Page {i+1} ---\n" + pdf_doc[i].get_text()
         except Exception:
-            return JsonResponse({"error": {"code": "INTERNAL_ERROR", "message": "Failed to read PDF text"}}, status=500)
+            return Response({"error": {"code": "INTERNAL_ERROR", "message": "Failed to read PDF text"}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
         # Call Gemini API
         candidates_data = []
@@ -228,14 +223,14 @@ class DocumentExtractView(View):
             
         extraction_ms = max(1, round((time.perf_counter() - started) * 1000))
         
-        return JsonResponse({
+        return Response({
             "document_id": str(doc.document_id),
             "candidates": created_candidates,
             "extraction_ms": extraction_ms,
             "used_fallback": len(candidates_data) > 0 and "API error" in candidates_data[0].get("source_text_excerpt", "")
         })
 
-class RuleCandidateListView(View):
+class RuleCandidateListView(APIView):
     def get(self, request):
         status_filter = request.GET.get('status', CandidateStatus.PENDING)
         queryset = RuleCandidate.objects.filter(status=status_filter)
@@ -256,26 +251,22 @@ class RuleCandidateListView(View):
                 "status": c.status
             })
             
-        return JsonResponse({
+        return Response({
             "results": results,
             "total": len(results)
         })
 
-class RuleCandidateApproveView(View):
+class RuleCandidateApproveView(APIView):
     def post(self, request, candidate_id):
         try:
             c = RuleCandidate.objects.get(candidate_id=candidate_id)
         except RuleCandidate.DoesNotExist:
-            return JsonResponse({"error": {"code": "NOT_FOUND", "message": "Candidate not found"}}, status=404)
+            return Response({"error": {"code": "NOT_FOUND", "message": "Candidate not found"}}, status=status.HTTP_404_NOT_FOUND)
             
         if c.status != CandidateStatus.PENDING:
-            return JsonResponse({"error": {"code": "VALIDATION_ERROR", "message": "Candidate is not PENDING"}}, status=409)
+            return Response({"error": {"code": "VALIDATION_ERROR", "message": "Candidate is not PENDING"}}, status=status.HTTP_409_CONFLICT)
             
-        try:
-            body = json.loads(request.body)
-        except json.JSONDecodeError:
-            body = {}
-            
+        body = request.data or {}
         reviewed_by = body.get("reviewed_by", "Unknown")
         
         # Get or create active CLIENT RulePack
@@ -304,7 +295,7 @@ class RuleCandidateApproveView(View):
         c.reviewed_at = django_timezone.now()
         c.save()
         
-        return JsonResponse({
+        return Response({
             "candidate_id": str(c.candidate_id),
             "status": c.status,
             "rule_id": str(c.rule_id),
@@ -314,21 +305,17 @@ class RuleCandidateApproveView(View):
             "reviewed_at": c.reviewed_at.isoformat()
         })
 
-class RuleCandidateRejectView(View):
+class RuleCandidateRejectView(APIView):
     def post(self, request, candidate_id):
         try:
             c = RuleCandidate.objects.get(candidate_id=candidate_id)
         except RuleCandidate.DoesNotExist:
-            return JsonResponse({"error": {"code": "NOT_FOUND", "message": "Candidate not found"}}, status=404)
+            return Response({"error": {"code": "NOT_FOUND", "message": "Candidate not found"}}, status=status.HTTP_404_NOT_FOUND)
             
         if c.status != CandidateStatus.PENDING:
-            return JsonResponse({"error": {"code": "VALIDATION_ERROR", "message": "Candidate is not PENDING"}}, status=409)
+            return Response({"error": {"code": "VALIDATION_ERROR", "message": "Candidate is not PENDING"}}, status=status.HTTP_409_CONFLICT)
             
-        try:
-            body = json.loads(request.body)
-        except json.JSONDecodeError:
-            body = {}
-            
+        body = request.data or {}
         reviewed_by = body.get("reviewed_by", "Unknown")
         
         c.status = CandidateStatus.REJECTED
@@ -336,7 +323,7 @@ class RuleCandidateRejectView(View):
         c.reviewed_at = django_timezone.now()
         c.save()
         
-        return JsonResponse({
+        return Response({
             "candidate_id": str(c.candidate_id),
             "status": c.status,
             "reviewed_by": c.reviewed_by,

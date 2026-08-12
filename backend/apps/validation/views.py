@@ -1,19 +1,3 @@
-"""POST /api/v1/validate — api-contract.md §1.
-
-STUB. Shapes are contract-exact and safe to build the frontend against, but the
-thresholds below are hardcoded rather than read from a seeded rule pack, and no
-decision is persisted yet.
-
-Replacing this is the backend lane's first real task:
-  1. Seed the central ODOL rule pack (origin=CENTRAL) from verified regulation text
-  2. Move evaluation into apps/validation/engine.py as a pure function
-  3. Write the DispatchDecision audit record before returning
-  4. Delete STUB_LIMITS and this docstring
-
-The response shape must not change when that happens. If it has to, update
-api-contract.md and tell the frontend lane before touching code.
-"""
-
 import time
 import uuid
 from datetime import datetime, timezone

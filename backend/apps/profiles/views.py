@@ -1,9 +1,9 @@
-import json
-from django.views import View
-from django.http import JsonResponse
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 from .models import VehicleProfile
 
-class VehicleProfileListCreateView(View):
+class VehicleProfileListCreateView(APIView):
     def get(self, request):
         queryset = VehicleProfile.objects.all()
         
@@ -39,26 +39,25 @@ class VehicleProfileListCreateView(View):
                 }
             })
             
-        return JsonResponse({
+        return Response({
             "results": data,
             "total": total
         })
         
     def post(self, request):
-        try:
-            body = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({"error": {"code": "VALIDATION_ERROR", "message": "Invalid JSON body"}}, status=400)
+        body = request.data
+        if not body:
+            return Response({"error": {"code": "VALIDATION_ERROR", "message": "Invalid or empty JSON body"}}, status=status.HTTP_400_BAD_REQUEST)
             
         # Basic validation
         required_fields = ["name", "axle_config", "tare_weight_kg", "max_dimensions_mm"]
         for field in required_fields:
             if field not in body:
-                return JsonResponse({"error": {"code": "VALIDATION_ERROR", "message": f"{field} is required", "field": field}}, status=400)
+                return Response({"error": {"code": "VALIDATION_ERROR", "message": f"{field} is required", "field": field}}, status=status.HTTP_400_BAD_REQUEST)
                 
         dims = body["max_dimensions_mm"]
         if not isinstance(dims, dict):
-            return JsonResponse({"error": {"code": "VALIDATION_ERROR", "message": "max_dimensions_mm must be an object", "field": "max_dimensions_mm"}}, status=400)
+            return Response({"error": {"code": "VALIDATION_ERROR", "message": "max_dimensions_mm must be an object", "field": "max_dimensions_mm"}}, status=status.HTTP_400_BAD_REQUEST)
             
         p = VehicleProfile.objects.create(
             name=body["name"],
@@ -69,7 +68,7 @@ class VehicleProfileListCreateView(View):
             max_height_mm=dims.get("height", 0)
         )
         
-        return JsonResponse({
+        return Response({
             "profile_id": str(p.profile_id),
             "name": p.name,
             "axle_config": p.axle_config,
@@ -80,20 +79,19 @@ class VehicleProfileListCreateView(View):
                 "width": p.max_width_mm,
                 "height": p.max_height_mm
             }
-        }, status=201)
+        }, status=status.HTTP_201_CREATED)
 
 
-class VehicleProfileDetailView(View):
+class VehicleProfileDetailView(APIView):
     def patch(self, request, profile_id):
         try:
             p = VehicleProfile.objects.get(profile_id=profile_id)
         except VehicleProfile.DoesNotExist:
-            return JsonResponse({"error": {"code": "NOT_FOUND", "message": "Vehicle profile not found"}}, status=404)
+            return Response({"error": {"code": "NOT_FOUND", "message": "Vehicle profile not found"}}, status=status.HTTP_404_NOT_FOUND)
             
-        try:
-            body = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({"error": {"code": "VALIDATION_ERROR", "message": "Invalid JSON body"}}, status=400)
+        body = request.data
+        if not body:
+            return Response({"error": {"code": "VALIDATION_ERROR", "message": "Invalid or empty JSON body"}}, status=status.HTTP_400_BAD_REQUEST)
             
         if "name" in body: p.name = body["name"]
         if "axle_config" in body: p.axle_config = body["axle_config"]
@@ -107,7 +105,7 @@ class VehicleProfileDetailView(View):
                 
         p.save()
         
-        return JsonResponse({
+        return Response({
             "profile_id": str(p.profile_id),
             "name": p.name,
             "axle_config": p.axle_config,
@@ -124,8 +122,6 @@ class VehicleProfileDetailView(View):
         try:
             p = VehicleProfile.objects.get(profile_id=profile_id)
             p.delete()
-            # Django JsonResponse doesn't support 204 well, use HttpResponse
-            from django.http import HttpResponse
-            return HttpResponse(status=204)
+            return Response(status=status.HTTP_204_NO_CONTENT)
         except VehicleProfile.DoesNotExist:
-            return JsonResponse({"error": {"code": "NOT_FOUND", "message": "Vehicle profile not found"}}, status=404)
+            return Response({"error": {"code": "NOT_FOUND", "message": "Vehicle profile not found"}}, status=status.HTTP_404_NOT_FOUND)

@@ -18,13 +18,13 @@
     {
       "dimension": "GROSS_WEIGHT",
       "actual_value": 24500,
-      "limit_value": 24000,
-      "excess_value": 500,
+      "limit_value": 23000,
+      "excess_value": 1500,
       "unit": "kg",
       "severity": "BLOCKING",
       "rule_origin": "CLIENT",
-      "legal_citation": "SOP Internal Gudang Cikarang v2 §3.1",
-      "directive": "Reduce total load by 500 kg \u2014 client policy is stricter than the legal limit of 25,000 kg"
+      "legal_citation": "SOP Internal Gudang Cikarang v2 \u00a73.1",
+      "directive": "Reduce total load by 1,500 kg \u2014 client policy is stricter than the legal limit of 24,000 kg"
     }
   ],
   "rule_packs_applied": [
