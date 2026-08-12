@@ -52,16 +52,24 @@ function validate(form) {
   const errors = {}
   if (!form.dispatchRef.trim()) errors.dispatchRef = 'Nomor surat jalan wajib diisi.'
 
-  const positive = (raw) => Number.isInteger(Number(raw)) && Number(raw) > 0
-  if (!positive(form.grossWeight)) errors.grossWeight = 'Isi bilangan bulat lebih dari nol.'
-  if (!positive(form.tareWeight)) errors.tareWeight = 'Isi bilangan bulat lebih dari nol.'
+  // Zero is not a dispatch. An empty trailer is not a shipment, and a load with
+  // no height is not a load, so every numeric field must be a positive integer.
+  const positive = (raw) =>
+    raw !== '' && Number.isInteger(Number(raw)) && Number(raw) > 0
+  const REQUIRED = 'Isi bilangan bulat lebih dari nol.'
+
+  if (!positive(form.grossWeight)) errors.grossWeight = REQUIRED
+  if (!positive(form.tareWeight)) errors.tareWeight = REQUIRED
+  for (const key of ['length', 'width', 'height']) {
+    if (!positive(form[key])) errors[key] = REQUIRED
+  }
 
   const expected = axleCountFor(form.axleConfig)
   if (form.axleLoads.length !== expected) {
     errors.axle0 = `Konfigurasi ${form.axleConfig} butuh ${expected} nilai sumbu.`
   }
   form.axleLoads.forEach((load, index) => {
-    if (!positive(load)) errors[`axle${index}`] = 'Isi bilangan bulat lebih dari nol.'
+    if (!positive(load)) errors[`axle${index}`] = REQUIRED
   })
   return errors
 }

@@ -7,9 +7,11 @@ import { deltaFromLimit } from '@/lib/limits'
  * Controlled. The parent owns the value so input survives a HOLD and the
  * officer can correct one number and resubmit (PRODUCT.md F2).
  *
- * Each field shows its legal ceiling and the signed distance to it, so the
- * officer can see a load going out of bounds while typing rather than learning
- * it from the verdict.
+ * A field stays quiet while the value is plausible. It speaks only when the
+ * value exceeds its ceiling, showing the excess as +N, so the officer sees a
+ * load going out of bounds while typing rather than learning it from the
+ * verdict. Ceilings themselves are not displayed; they govern what can be
+ * typed and what counts as excess.
  */
 
 const AXLE_CONFIGS = [
@@ -65,7 +67,15 @@ export default function DispatchForm({
   const mismatch = gross > 0 && axleSum > 0 && Math.abs(axleSum - gross) > 500
 
   return (
-    <form onSubmit={onSubmit} className="divide-y divide-[#c9ced4] border border-[#c9ced4] bg-white">
+    <form
+      onSubmit={onSubmit}
+      // Our own validation owns this form. Without noValidate the browser's
+      // constraint check (min/max on the number inputs) blocks submission
+      // before onSubmit fires, so the button goes dead and no message renders.
+      // min/max stay for the steppers and for clamping.
+      noValidate
+      className="divide-y divide-[#c9ced4] border border-[#c9ced4] bg-white"
+    >
       <Section title="1. Identifikasi Kendaraan">
         <Field label="Nomor Surat Jalan" error={errors.dispatchRef}>
           <TextInput
@@ -140,6 +150,7 @@ export default function DispatchForm({
             key={key}
             label={label}
             unit="mm"
+            error={errors[key]}
             violation={violations[key]}
             limit={limits[key]}
             current={value[key]}
@@ -186,25 +197,18 @@ function Section({ title, children }) {
 }
 
 /**
- * Label, input, then the field's ceiling and how far the current value sits
- * from it. A violation replaces the neutral readout with the directive, pinned
- * to the field that caused it (PRODUCT.md F2).
+ * Label, input, then at most one line beneath it: a validation error, or the
+ * violation directive pinned to the field that caused it (PRODUCT.md F2), or
+ * the excess over the ceiling. Nothing when the value is fine.
  */
 function Field({ label, unit, error, violation, limit, current, children }) {
   const gap = deltaFromLimit(current, limit)
 
   return (
     <label className="flex flex-col gap-1">
-      <span className="flex items-baseline justify-between gap-2">
-        <span className="text-label text-[#4a545e]">
-          {label}
-          {unit && <span className="text-[#98a0a9]"> ({unit})</span>}
-        </span>
-        {limit && (
-          <span className="tnum font-mono text-mono-xs text-[#8b949d]">
-            batas {formatNumber(limit.threshold)}
-          </span>
-        )}
+      <span className="text-label text-[#4a545e]">
+        {label}
+        {unit && <span className="text-[#98a0a9]"> ({unit})</span>}
       </span>
 
       <span className={violation ? 'block rounded-veto ring-2 ring-[#c0392b]/30' : 'block'}>
@@ -220,21 +224,10 @@ function Field({ label, unit, error, violation, limit, current, children }) {
             {violation.legal_citation}
           </span>
         </span>
-      ) : gap && gap.delta === 0 ? (
-        // Exactly at the ceiling is its own state, and a signed zero says nothing.
-        <span className="text-label text-[#8a5200]">Tepat di batas</span>
-      ) : gap ? (
-        <span
-          className={[
-            'tnum text-label',
-            gap.over ? 'font-medium text-[#a02a1f]' : 'text-[#6b757f]',
-          ].join(' ')}
-        >
-          {gap.over ? '+' : '−'}
-          {formatNumber(Math.abs(gap.delta))} {gap.unit}
-          <span className="text-[#98a0a9]">
-            {gap.over ? ' melebihi batas' : ' di bawah batas'}
-          </span>
+      ) : gap?.over ? (
+        <span className="tnum text-label font-medium text-[#a02a1f]">
+          +{formatNumber(gap.delta)} {gap.unit}
+          <span className="text-[#98a0a9]"> melebihi batas</span>
         </span>
       ) : null}
     </label>
@@ -248,13 +241,22 @@ function TextInput({ className = '', ...props }) {
   return <input type="text" {...props} className={`${inputClass} ${className}`} />
 }
 
-function NumberInput(props) {
+function NumberInput({ onChange, max, ...props }) {
+  const clamp = (event) => {
+    const raw = event.target.value
+    // Allow an empty field while editing; reject anything longer than the
+    // ceiling can express so the input cannot hold an implausible number.
+    if (raw !== '' && max !== undefined && Number(raw) > Number(max)) return
+    onChange(event)
+  }
   return (
     <input
       type="number"
       inputMode="numeric"
-      min="0"
+      min="1"
       step="1"
+      max={max}
+      onChange={clamp}
       {...props}
       className={`${inputClass} tnum`}
     />

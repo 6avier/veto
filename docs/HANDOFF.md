@@ -561,6 +561,9 @@ Extracted from the existing code.
 - Errors surface as `ApiError` with `{ code, message, field, status }` and render as clean Indonesian sentences. Never a raw stack trace.
 - Comments explain **why**, and cite the governing document by section (`PRODUCT.md F2`, `api-contract.md §1`, `DESIGN.md §4`).
 
+- Forms carry `noValidate` and own their validation. HTML5 constraint attributes (`min`, `max`) stay for the steppers and for clamping, but native validation must not arbitrate submission: it blocks `onSubmit` before React sees it, which produces a dead button and no message.
+- Numeric inputs clamp on change rather than relying on `max`, which only fails validation and does not stop typing.
+
 **Backend**
 
 - Function-based DRF views with `@api_view`. No class-based views, no ViewSets.
