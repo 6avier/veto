@@ -21,9 +21,9 @@ export default function VetoLayout() {
       <nav className="flex items-center gap-1 border-b border-ink-200 bg-white px-4 py-1.5">
         {/* Identity sits at the head of VETO's own chrome, ahead of the surface
             links, so both Rule Studio and Jejak Audit carry it without either
-            page having to draw its own. Ink, not brand blue: DESIGN.md §8. */}
+            page having to draw its own. The brand artwork, not a redraw. */}
         <span className="mr-3 flex items-center gap-2">
-          <VetoMark className="h-3.5 w-auto text-ink-900" title="VETO" />
+          <VetoMark className="h-3.5 w-auto" title="VETO" />
           <span className="text-label font-semibold tracking-[-0.01em] text-ink-900">VETO</span>
         </span>
         <span aria-hidden className="mr-3 h-4 w-px bg-ink-200" />

@@ -24,8 +24,9 @@ export default function VerdictPanel({ decision, error, pending, settled }) {
       <div className="flex items-center gap-2 border-b border-ink-200 px-4 py-2">
         {/* The mark is the one thing in this panel that belongs to VETO rather
             than to the host, so it sits at the head of the panel where the
-            handover from ERP to VETO happens. Ink, not brand blue: DESIGN.md §8. */}
-        <VetoMark className="h-3 w-auto text-ink-700" />
+            handover from ERP to VETO happens. DESIGN.md §8 records why the
+            brand blue is allowed to sit this close to the amber HOLD marker. */}
+        <VetoMark className="h-3 w-auto" />
         <span className="font-mono text-mono-xs tracking-[0.14em] text-ink-400">VETO</span>
         {pending && <span className="font-mono text-mono-xs text-ink-500">memeriksa…</span>}
       </div>

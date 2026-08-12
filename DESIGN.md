@@ -265,23 +265,43 @@ It does not license green anywhere else — `PASS has no colour` and `VETO never
 uses green` still govern every other surface, including `VerdictPanel` a few
 lines away in the same page.
 
-### The logo mark is ink, not brand blue
+### The logo is the brand artwork, and it keeps its blue
 
-VETO's mark (`frontend/src/components/VetoMark.jsx`) is drawn in `currentColor`
-and takes the ink of whatever surface it sits on. Its brand blue appears in
-exactly one place: `frontend/public/favicon.svg`, which is the browser tab and
-therefore outside the interface.
+`frontend/src/components/VetoMark.jsx` renders the real brand file, cropped to
+the mark's own bounds from `frontend/src/assets/brand/`. **Do not redraw it.**
 
-This is not timidity about the brand. The mark's most important placement is the
-head of the verdict panel, which is inches from the amber HOLD marker, and the
-one-accent lock is the whole reason amber reads as a warning rather than as
-decoration. A blue logo there would spend the lock for recall the shape already
-provides. Unlike the `TruckEnvelope` green, this needs no exception, because
-nothing about it breaks the rule.
+An earlier pass rebuilt the mark as hand-written SVG geometry in `currentColor`,
+reasoning that the one-accent lock could not afford a second hue beside the
+amber HOLD marker. The owner overruled it: the logo is the logo, and an
+approximation of it — however close, and that one was close — is not the brand.
+The gradient went missing in the redraw, which is the tell.
 
-Placed at the head of the verdict panel (VETO speaking inside the host's ERP)
-and at the head of `VetoLayout`'s sub-nav, so Rule Studio and Jejak Audit both
-carry it without either page drawing its own.
+**This is a deliberate, owner-made exception to the one-accent lock, and it is
+narrow.** Brand blue is permitted *only* as the logo artwork, at logo sizes, in
+the three placements below. It does not become available as a UI colour: no blue
+text, no blue borders, no blue states, no second accent anywhere. Amber still
+means HOLD and nothing else.
+
+The exception is affordable because of what the mark is and where it sits. It is
+artwork at 12–14px carrying identity, not a status signal, and nothing else on
+those surfaces competes for the same reading. The amber marker is a filled
+square against a verdict word; the logo is a gradient wordless mark at the panel
+head. They are not confusable.
+
+Because it is artwork rather than a glyph, it does not take the ink of its
+surface. **Do not pass text-colour classes to `VetoMark`** — they do nothing.
+
+Three placements:
+
+- head of the verdict panel, where the handover from the host ERP to VETO happens
+- head of `VetoLayout`'s sub-nav, so Rule Studio and Jejak Audit both carry it
+  without either page drawing its own
+- `frontend/public/favicon.png`, padded square so a browser tab does not crop it
+
+Both in-product placements set the word *VETO* in type beside the mark, so the
+mark-only crop is the correct asset there. `veto-logo.png` is the full lockup
+including the wordmark, for anywhere with room to give it — it is currently
+unused in the product.
 
 ### Rule origin
 

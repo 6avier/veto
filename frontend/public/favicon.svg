@@ -1,9 +1,0 @@
-<!-- Square viewBox: the mark is 368x254, centred in a 448 box so a browser tab
-     renders it without letterboxing. Brand blue lives here and nowhere in the
-     product itself, per DESIGN.md §8's one-accent lock. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -97 448 448" fill="#2f6bff">
-  <rect x="0" y="0" width="229" height="47" rx="23.5"/>
-  <rect x="43" y="87" width="177" height="45" rx="22.5"/>
-  <rect x="88" y="159" width="90" height="43" rx="21.5"/>
-  <path d="M286,0 L368,0 L236,254 L154,254 Z"/>
-</svg>
