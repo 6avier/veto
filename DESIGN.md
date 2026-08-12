@@ -51,7 +51,7 @@ The old green-sidebar / navy-sidebar coding from the proposal is retired. The tw
 
 ## 2. Typography
 
-**Archivo** for language and quantity. **JetBrains Mono** for machine references.
+**Archivo** for VETO's language and quantity. **JetBrains Mono** for machine references. **SAP 72** for the client ERP surface only.
 
 ```bash
 npm --prefix frontend install @fontsource-variable/archivo @fontsource-variable/jetbrains-mono
@@ -93,6 +93,37 @@ The mono only has to survive identifiers and citations at 11–13px, so x-height
 | IBM Plex Mono | 0.516 | 0.739 | 0.600 |
 
 Same advance width, so no density cost, and 7% more x-height where it matters most. IBM Plex Mono was the earlier pick only because the Plex superfamily would have covered both roles at once. Plex Sans ships no tabular figures, that plan collapsed, and the mono lost the one argument that was holding it up.
+
+### SAP 72, for the host ERP only
+
+The client ERP runs **SAP 72**, the actual SAP Fiori typeface, obtained from
+[`SAP/theming-base-content`](https://github.com/SAP/theming-base-content) under
+Apache-2.0. Regular, Semibold and Bold are vendored in
+`frontend/src/assets/fonts/` with the licence and a notice.
+
+It is there because the host is supposed to read as ordinary enterprise
+software the officer already uses, and nothing signals that faster than the
+typography of an actual ERP. Segoe UI and SF Pro were both considered and both
+ruled out on licence: Segoe cannot be self-hosted, and Apple's licence permits
+SF Pro on Apple platforms only, never the web.
+
+It drops in cleanly because it is metrically almost identical to Archivo:
+
+| | x-height | x/cap | width `n` | `tnum` |
+|---|---|---|---|---|
+| SAP 72 Semibold | 0.528 | 0.767 | 0.588 | yes |
+| Archivo | 0.526 | 0.767 | 0.584 | yes |
+
+**Scope is strict.** 72 covers the NUSANTARA WMS chrome and the dispatch form.
+VETO never uses it: the verdict panel and the HOLD dialog pin themselves back to
+Archivo even though they render inside the ERP's tree. One face per system is
+the cleanest expression of the two-systems idea.
+
+**No monospace in the ERP chrome.** Mono set uppercase with wide tracking is a
+terminal signature. No shipping ERP uses it, and it was the single thing making
+the host read as robotic rather than corporate.
+
+A VETO-side replacement for Archivo is still open.
 
 ### Verified on screen, not only in the metrics
 

@@ -4,10 +4,35 @@
 @import "@fontsource-variable/archivo";
 @import "@fontsource-variable/jetbrains-mono";
 
+/* SAP 72, the SAP Fiori typeface, Apache-2.0. Used on the client ERP surface
+   only, so the host reads as ordinary enterprise software. VETO never uses it.
+   See src/assets/fonts/NOTICE.md. */
+@font-face {
+  font-family: "SAP 72";
+  src: url("./assets/fonts/72-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "SAP 72";
+  src: url("./assets/fonts/72-Semibold.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "SAP 72";
+  src: url("./assets/fonts/72-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
 /* Design tokens. The system of record is DESIGN.md — change it there first. */
 @theme {
   --font-sans: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", monospace;
+  /* The host ERP's own voice. Metrically near-identical to Archivo, so it
+     drops in without disturbing the scale. */
+  --font-erp: "SAP 72", "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
 
   /* Graphite. DESIGN.md §4. */
   --color-ink-950: #0e1013;

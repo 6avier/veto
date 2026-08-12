@@ -3,10 +3,13 @@ import { Outlet } from 'react-router-dom'
 /**
  * Chrome for the client's warehouse system.
  *
- * DESIGN.md §1 — this is the host, not VETO. It gets its own identity: the
- * forest green sampled from the proposal's WMS mockup (#2d613b), a real product
- * bar and a live tab row, so it reads as software someone actually uses rather
- * than a grey placeholder.
+ * DESIGN.md §1 — this is the host, not VETO. It gets its own identity: SAP 72,
+ * the SAP Fiori typeface, over the forest green sampled from the proposal's WMS
+ * mockup (#2d613b). Real enterprise typography on a real product bar, so the
+ * surface reads as software someone already uses.
+ *
+ * No monospace anywhere in this chrome. Mono set in uppercase with wide
+ * tracking is a terminal signature, and no shipping ERP uses it.
  *
  * That green is the documented exception to VETO's one-accent lock. It belongs
  * to NUSANTARA WMS, and it earns its place by making VETO's amber unmistakably
@@ -18,17 +21,15 @@ const ACTIVE = 'Pengiriman'
 
 export default function ErpLayout() {
   return (
-    <div className="min-h-[calc(100dvh-2.75rem)] bg-[#eef0f2] text-[#1f2933]">
+    <div className="min-h-[calc(100dvh-2.75rem)] bg-[#eef0f2] font-erp text-[#1f2933]">
       <div className="bg-[#2d613b] text-white">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2">
-          <span className="text-label font-semibold tracking-tight">NUSANTARA WMS</span>
-          <span className="font-mono text-mono-xs text-white/60">v4.2.1</span>
-          <span className="ml-auto font-mono text-mono-xs text-white/60">
-            GUDANG CIKARANG 01
-          </span>
+          <span className="text-label font-semibold tracking-[-0.01em]">NUSANTARA WMS</span>
+          <span className="text-mono-xs text-white/70">v4.2.1</span>
+          <span className="ml-auto text-label text-white/75">Gudang Cikarang 01</span>
           <span aria-hidden className="h-3.5 w-px bg-white/25" />
           <span className="text-label">Budi Santoso</span>
-          <span className="font-mono text-mono-xs text-white/60">PETUGAS GUDANG</span>
+          <span className="text-mono-xs text-white/70">Petugas Gudang</span>
         </div>
       </div>
 

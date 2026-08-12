@@ -36,7 +36,7 @@ export default function ViolationDialog({ decision, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="veto-hold-title"
-        className="veto-dialog w-full max-w-[560px] rounded-veto bg-white shadow-[0_24px_60px_rgba(20,23,26,0.28)]"
+        className="veto-dialog w-full max-w-[560px] rounded-veto bg-white font-sans shadow-[0_24px_60px_rgba(20,23,26,0.28)]"
       >
         <div className="flex items-center gap-3.5 border-b border-ink-200 px-5 py-4">
           <WarningIcon

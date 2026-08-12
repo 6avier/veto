@@ -16,7 +16,7 @@ export default function VerdictPanel({ decision, error, pending, settled }) {
   return (
     <aside
       className={[
-        'border border-ink-200 bg-white lg:sticky lg:top-4',
+        'border border-ink-200 bg-white font-sans lg:sticky lg:top-4',
         settled ? 'veto-settle' : '',
       ].join(' ')}
     >
