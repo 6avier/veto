@@ -23,7 +23,18 @@ export default function TruckEnvelope({ length, width, height, limits }) {
 }
 
 const CANVAS_PADDING = 1.2
-const SIDE_VIEW_NOMINAL_WIDTH_MM = 3000
+/**
+ * The side view's horizontal extent is decorative — length is not re-shown
+ * here, only height is data-driven (design doc §5). It was 3000, which made
+ * the box taller than wide: with `meet` scaling that fits by height and
+ * rendered the whole truck ~100px into ~320px of frame, stranding half the
+ * panel empty. 9000 is a realistic cargo-body length and fills the row.
+ */
+const SIDE_VIEW_NOMINAL_WIDTH_MM = 9000
+const WHEEL_RADIUS_MM = 450
+const WHEEL_HUB_RADIUS_MM = 180
+/** Distance from the box's back edge to each wheel centre — the back ~15%. */
+const REAR_WHEEL_OFFSETS_MM = [1350, 500]
 const OVER_COLOUR = '#a02a1f'
 const NEUTRAL_COLOUR = '#2f8f4e'
 const OUTER_STROKE = '#98a0a9'
@@ -225,6 +236,16 @@ function SideView({ height, limits }) {
           strokeWidth="1.5"
           vectorEffect="non-scaling-stroke"
         />
+        {REAR_WHEEL_OFFSETS_MM.map((offset) => {
+          const cx = SIDE_VIEW_NOMINAL_WIDTH_MM - offset
+          const cy = heightGeo.canvas - WHEEL_RADIUS_MM
+          return (
+            <g key={offset}>
+              <circle cx={cx} cy={cy} r={WHEEL_RADIUS_MM} fill="#fff" stroke="#1f2933" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
+              <circle cx={cx} cy={cy} r={WHEEL_HUB_RADIUS_MM} fill="none" stroke="#1f2933" strokeWidth="1.25" vectorEffect="non-scaling-stroke" />
+            </g>
+          )
+        })}
         </svg>
       </div>
       <EnvelopeReadout
@@ -302,6 +323,10 @@ function SideCab() {
       <rect x="79" y="82" width="5" height="2.5" rx="1" fill="#1f2933" />
       <line x1="40" y1="88" x2="26" y2="78" stroke="#1f2933" strokeWidth="1.75" strokeLinecap="round" />
       <rect x="20" y="72" width="8" height="11" rx="2" fill="#fff" stroke="#1f2933" strokeWidth="1.5" />
+      {/* cy is 112 - r, not 112: the wheel's bottom edge touches the chassis
+          line. Centring it on the line clips half the wheel out of the viewBox. */}
+      <circle cx="55" cy="99" r="13" fill="#fff" stroke="#1f2933" strokeWidth="2.5" />
+      <circle cx="55" cy="99" r="5" fill="none" stroke="#1f2933" strokeWidth="1.25" />
     </svg>
   )
 }

@@ -554,6 +554,16 @@ snaps to its new position instead."
 **Interfaces:**
 - Produces: new constants `WHEEL_RADIUS_MM = 450`, `WHEEL_HUB_RADIUS_MM = 180`, `REAR_WHEEL_OFFSETS_MM = [400, 120]` (distances from the box's right edge, i.e. `SIDE_VIEW_NOMINAL_WIDTH_MM`, to each wheel's centre).
 
+  > **AMENDED during execution (Task 6).** `SIDE_VIEW_NOMINAL_WIDTH_MM` is now
+  > **9000**, was 3000. At 3000 the viewBox is taller than wide, so `meet`
+  > scaling fit it by height and rendered the entire truck ~100px into ~320px
+  > of frame, leaving half the panel empty — obvious once a cab and wheels
+  > made it read as an object rather than a rectangle. 9000 is a realistic
+  > cargo-body length and fills the row. The constant is decorative by design
+  > (§5: length is not re-shown in the side view), so nothing data-driven
+  > moves. `REAR_WHEEL_OFFSETS_MM` rescales to **`[1350, 500]`** to stay in
+  > the back ~15% as this task's checklist intends.
+
 - [ ] **Step 1: Add the wheel constants**
 
 Near `SIDE_VIEW_NOMINAL_WIDTH_MM`, add:
