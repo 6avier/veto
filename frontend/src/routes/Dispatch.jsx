@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { ApiError, listRules, validateDispatch } from '@/api'
 import DispatchForm from '@/components/dispatch/DispatchForm'
+import TruckEnvelope from '@/components/dispatch/TruckEnvelope'
 import VerdictPanel from '@/components/dispatch/VerdictPanel'
 import ViolationDialog from '@/components/dispatch/ViolationDialog'
 import { axleCountFor } from '@/lib/format'
@@ -196,6 +197,13 @@ export default function Dispatch() {
           settled={Boolean(decision) && !dialogOpen}
         />
       </div>
+
+      <TruckEnvelope
+        length={form.length}
+        width={form.width}
+        height={form.height}
+        limits={limits}
+      />
 
       <p className="mt-4 max-w-[65ch] text-label text-[#6b757f]">
         VETO memeriksa angka yang dideklarasikan pada surat jalan, bukan hasil timbangan.
