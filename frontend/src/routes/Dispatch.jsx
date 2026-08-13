@@ -5,6 +5,7 @@ import DispatchForm from '@/components/dispatch/DispatchForm'
 import TruckEnvelope from '@/components/dispatch/TruckEnvelope'
 import VerdictPanel from '@/components/dispatch/VerdictPanel'
 import ViolationDialog from '@/components/dispatch/ViolationDialog'
+import PrintableWaybill from '@/components/dispatch/PrintableWaybill'
 import { axleCountFor } from '@/lib/format'
 import { limitsFromRules } from '@/lib/limits'
 
@@ -169,7 +170,8 @@ export default function Dispatch() {
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 py-5">
+    <>
+    <div className="mx-auto max-w-[1400px] px-4 py-5 print:hidden">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-h1 font-bold tracking-[-0.02em] text-[#1f2933]">Buat Surat Jalan</h1>
@@ -187,6 +189,7 @@ export default function Dispatch() {
           <button
             type="button"
             disabled={!passed}
+            onClick={() => window.print()}
             className={[
               'rounded-veto px-4 py-2 text-label transition-colors',
               passed
@@ -234,5 +237,9 @@ export default function Dispatch() {
         <ViolationDialog decision={decision} onClose={() => setDialogOpen(false)} />
       )}
     </div>
+    <div className="hidden print:block">
+      <PrintableWaybill form={form} />
+    </div>
+    </>
   )
 }
