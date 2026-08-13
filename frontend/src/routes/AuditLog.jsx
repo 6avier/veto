@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { ApiError, getDecision, listDecisions } from '@/api'
 import { formatNumber, formatTimestamp } from '@/lib/format'
+import { dayBoundary, latest, resetSession, sessionStart } from '@/lib/session'
 
 /**
  * /audit — PRODUCT.md F4. Every decision the engine has made.
@@ -22,10 +23,21 @@ export default function AuditLog() {
   const [outcome, setOutcome] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
+  const [scope, setScope] = useState('session')
+  const [since, setSince] = useState(sessionStart)
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(null)
+
+  // Scoping happens server-side, through the `from` filter the API already
+  // supports. That keeps every figure on this page a server total rather than
+  // something counted on the client. DESIGN.md §8.
+  const scopedFrom = latest(
+    scope === 'session' ? since : null,
+    dayBoundary(from, 'start'),
+  )
+  const scopedTo = dayBoundary(to, 'end')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -36,15 +48,15 @@ export default function AuditLog() {
       // which is the one thing an append-only log cannot do.
       const params = { limit: 100 }
       if (outcome) params.outcome = outcome
-      if (from) params.from = from
-      if (to) params.to = to
+      if (scopedFrom) params.from = scopedFrom
+      if (scopedTo) params.to = scopedTo
       setData(await listDecisions(params))
     } catch (caught) {
       setError(caught instanceof ApiError ? caught : ApiError.from(caught))
     } finally {
       setLoading(false)
     }
-  }, [outcome, from, to])
+  }, [outcome, scopedFrom, scopedTo])
 
   useEffect(() => {
     load()
@@ -62,10 +74,27 @@ export default function AuditLog() {
             berlaku saat itu. Catatan tidak dapat diubah maupun dihapus.
           </p>
         </div>
-        <Readout />
+        <Readout from={scopedFrom} to={scopedTo} />
       </div>
 
       <div className="mt-5 flex flex-wrap items-end gap-4 border-y border-ink-200 py-3">
+        {/*
+          The scope, stated rather than implied. A trail that quietly showed a
+          subset under a heading promising the complete record would be the one
+          dishonest thing on the screen — so the filter is named, and switching
+          to Semua catatan produces every record that was ever written, which is
+          also the proof that scoping deleted nothing.
+        */}
+        <Filter label="Cakupan">
+          <select
+            value={scope}
+            onChange={(event) => setScope(event.target.value)}
+            className="rounded-veto border border-ink-300 bg-white px-2 py-1.5 text-data"
+          >
+            <option value="session">Sesi ini</option>
+            <option value="all">Semua catatan</option>
+          </select>
+        </Filter>
         <Filter label="Hasil">
           <select
             value={outcome}
@@ -98,6 +127,18 @@ export default function AuditLog() {
             Bersihkan filter
           </button>
         )}
+        {scope === 'session' && (
+          <button
+            type="button"
+            onClick={() => {
+              setSince(resetSession())
+              setExpanded(null)
+            }}
+            className="pb-1.5 text-label text-ink-500 underline underline-offset-4 hover:text-ink-900"
+          >
+            Mulai sesi baru
+          </button>
+        )}
         <p className="ml-auto pb-1.5 font-mono text-mono-xs text-ink-500">
           HANYA-BACA · TIDAK DAPAT DIUBAH
         </p>
@@ -121,9 +162,14 @@ export default function AuditLog() {
 
       {!loading && !error && rows.length === 0 && (
         <div className="mt-6 border border-dashed border-ink-300 px-4 py-10 text-center">
-          <p className="text-body text-ink-500">Belum ada keputusan yang tercatat.</p>
+          <p className="text-body text-ink-500">
+            {scope === 'session'
+              ? 'Belum ada keputusan pada sesi ini.'
+              : 'Belum ada keputusan yang tercatat.'}
+          </p>
           <p className="mt-1 text-label text-ink-500">
             Jalankan validasi di Client ERP, lalu catatannya muncul di sini.
+            {scope === 'session' && ' Pilih Semua catatan untuk melihat riwayat sebelumnya.'}
           </p>
         </div>
       )}
@@ -168,6 +214,7 @@ export default function AuditLog() {
       {!loading && !error && rows.length > 0 && (
         <p className="mt-3 border-t border-ink-200 pt-2 text-label text-ink-500">
           Menampilkan {formatNumber(rows.length)} dari {formatNumber(data.total)} keputusan
+          {scope === 'session' ? ' pada sesi ini' : ''}
           {rows.length < data.total && ' · persempit rentang tanggal untuk melihat sisanya'}.
         </p>
       )}
@@ -313,15 +360,22 @@ function DecisionRow({ row, expanded, onToggle }) {
  * only the count is wanted; nothing here is computed on the client except PASS,
  * which is the difference of two server totals.
  */
-function Readout() {
+function Readout({ from, to }) {
   const [counts, setCounts] = useState(null)
 
   useEffect(() => {
     let cancelled = false
+    // The readout answers questions about whatever the trail is currently
+    // scoped to, so it carries the same window as the table. A readout counting
+    // every record ever written, above a table showing this session's four,
+    // would just be two contradictory answers on one screen.
+    const window = {}
+    if (from) window.from = from
+    if (to) window.to = to
     Promise.all([
-      listDecisions({ limit: 1 }),
-      listDecisions({ outcome: 'HOLD', limit: 1 }),
-      listDecisions({ has_override: true, limit: 1 }),
+      listDecisions({ ...window, limit: 1 }),
+      listDecisions({ ...window, outcome: 'HOLD', limit: 1 }),
+      listDecisions({ ...window, has_override: true, limit: 1 }),
     ])
       .then(([all, held, overridden]) => {
         if (cancelled) return
@@ -338,7 +392,7 @@ function Readout() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [from, to])
 
   if (!counts) return null
 
