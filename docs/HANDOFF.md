@@ -8,7 +8,7 @@
 | **Branch** | `main` · HEAD `56a9f3f` · clean · pushed, 0 ahead 0 behind |
 | **Remote** | `https://github.com/6avier/veto.git` |
 | **Deadline** | Working product **2026-08-13 23:55 WIB**. Demo + booth **2026-08-14**. |
-| **Handoff status** | **Frontend is feature-complete and green.** The illustrated truck envelope, the ERP icon rail, Rule Studio multi-candidate review, and the logo all shipped this session. **Nothing outstanding is frontend work.** What remains is P0-1 (unverified thresholds), P0-4 (no deployment), and P0-5 (the dead mocks fallback) — see §14 and §15. |
+| **Handoff status** | **Frontend is feature-complete and green.** **The one thing that matters now is deploying** — every config file is written and verified locally, but nothing has been deployed. **Read [DEPLOY.md](DEPLOY.md) first.** P0-5 (mocks fallback) is fixed. P0-1 (unverified thresholds) is unchanged and human-only; note the corrected values live in the migrations but **not** in this machine's database. |
 
 **Lanes.** Iqbal owns `backend/`. The other lane owns `frontend/`. Shared seam: `api-contract.md`, `contract/*.json`, `frontend/src/api/`.
 
@@ -86,6 +86,10 @@ Compliance middleware for Indonesian freight logistics. A deterministic rule eng
 | Auth | **None.** No login, no API key check, no permission classes. | — |
 | Validation | Hand-rolled type/range checks inside the view | `backend/apps/validation/views.py` |
 | Tests | Django `TestCase`, **38 passing** | `backend/apps/*/tests/` |
+
+### Deployment — see [DEPLOY.md](DEPLOY.md)
+
+Config committed and locally verified as of 2026-08-13: `render.yaml`, `backend/render-build.sh`, a root `vercel.json`, `.vercelignore`. Nothing deployed yet.
 
 ### Not configured
 
@@ -505,7 +509,11 @@ re-verified 2026-08-13.** Kept as a record because this is the §17 drift alarm
 doing its job: the fixture and the engine moved apart, and the test caught it
 within the hour.
 
-**P0-4 · Nothing is deployed.** No `Dockerfile`, `vercel.json`, `railway.*`, `Procfile` or CI. `gunicorn` and `whitenoise` are installed and unused. Roughly a day and a half remains.
+**P0-4 · Nothing is deployed, but the config now exists.** `render.yaml`, `backend/render-build.sh`, a root `vercel.json` and `.vercelignore` are committed and verified locally (`check --deploy` clean, collectstatic 157 files, WSGI imports, Vercel's own commands produce a 924 KB bundle with the `contract/` fixtures resolved). `settings.py` needed no changes — it was already env-driven.
+
+**Nothing has actually been deployed:** no Render Postgres, no web service, no Vercel project, no environment variables set.
+
+**[DEPLOY.md](DEPLOY.md) is the authoritative record** — current state, the decisions already made (Postgres over SQLite; spin-down accepted; backend cannot go on Vercel, with the code-level reason), the remaining steps in order, and six traps already paid for.
 
 ### P1
 
@@ -523,13 +531,13 @@ Dead template assets (`hero.png`, `vite.svg`, `public/icons.svg`); `@types/react
 
 **No frontend work is outstanding.** Everything below is backend, ops, or a human decision. Ordered by what actually threatens 2026-08-14.
 
-### 1 · Deploy something (P0-4)
+### 1 · Deploy (P0-4)
 
-Still nothing: no `Dockerfile`, `vercel.json`, `railway.*`, `Procfile`, or CI. `gunicorn`, `whitenoise`, `psycopg2-binary` and `dj-database-url` are all installed and unused. Iqbal added the Postgres deps in `14bf445`, so the intent exists; the target is still an open decision (§16.6). This is the single biggest risk left.
+**The config is written and verified; nothing is deployed.** Target settled: frontend on Vercel, backend on Render with a free Postgres. Follow **[DEPLOY.md](DEPLOY.md)** — it carries the step-by-step, the decisions already made, and the traps. This is still the single biggest risk left.
 
-### 2 · Restore the mocks fallback (P0-5)
+### 2 · ~~Restore the mocks fallback~~ DONE
 
-`frontend/src/api/client.js:16` hardcodes `USE_MOCKS = false`, so `VITE_USE_MOCKS` does nothing and there is **no way to run the booth without a live Django server**. One-line fix, but do not ship it without then walking `/dispatch` end to end with the backend stopped — it has been dead long enough that the fixtures may have drifted. Full detail in §14 P0-5.
+Fixed by Iqbal in `e15ea75`. Verified after the fix: with `VITE_USE_MOCKS=true` the MOCKS badge appears, the rule register renders 15 rules from `contract/rules.list.json`, and no request leaves the page. `contract/rules.list.json` was resynced in `c0d8f1d` because it had drifted to pre-correction thresholds and carried no CLIENT rules at all, which would have hidden the product's core mechanic in exactly the situation the fallback exists for.
 
 ### 3 · Verify or relabel the two `Asumsi` thresholds (P0-1)
 

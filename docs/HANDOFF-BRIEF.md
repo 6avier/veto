@@ -4,6 +4,11 @@ Short version for a cold session. Full detail: [HANDOFF.md](HANDOFF.md).
 
 **Deadline: 2026-08-13 23:55 WIB.** Demo and booth 2026-08-14.
 
+> **If you are picking this up to deploy, go straight to [DEPLOY.md](DEPLOY.md).**
+> Every config file is written, committed and verified locally. Nothing has been
+> deployed yet. That document has the current state, the decisions already made,
+> the remaining steps in order, and the traps.
+
 ---
 
 ## What VETO is
@@ -19,7 +24,7 @@ override**, never a hard block.
 ## Run it
 
 ```bash
-cp backend/.env.example backend/.env      # then add GEMINI_API_KEY
+cp backend/.env.example backend/.env      # then add OPENAI_API_KEY
 uv run --directory backend python manage.py migrate
 uv run --directory backend python manage.py runserver 8000
 
@@ -31,10 +36,11 @@ Verify with `manage.py test apps`, `npm --prefix frontend run lint`, and
 `npm --prefix frontend run build`. **There is no typecheck** — the frontend is
 plain JavaScript.
 
-`VITE_USE_MOCKS` **currently does nothing** — `frontend/src/api/client.js:16`
-hardcodes `USE_MOCKS = false`. Flipping the env var before the booth, as older
-notes told you to, has no effect. There is no no-backend fallback until that
-line is restored. See "What blocks the demo" below.
+`VITE_USE_MOCKS=true` runs the whole frontend with no backend, and **works
+again** as of `e15ea75`. Verified: MOCKS badge appears, the rule register still
+renders its 15 rules from `contract/rules.list.json`, no request leaves the
+page. Mocks are the booth fallback; keep them working. `frontend/.env.local` is
+currently `false`.
 
 The dev server takes an assigned port when 5173 is busy. Safe because the
 frontend calls `/api/v1` relative through the Vite proxy, so the browser sees
@@ -59,19 +65,16 @@ called `json.loads` without importing `json`, so every extraction raised
 fallback. The `25.000 kg` tagged `gemini-extracted` on screen was never read
 from any document. Fixed in `3912607`.
 
-**The Gemini free tier allows 20 extraction calls per DAY**, per model:
+**Extraction now runs on OpenAI**, not Gemini (Iqbal, `9ffd8b5`). That removed
+the old 20-calls-per-day Gemini quota, which was what made the test suite look
+non-deterministic — it was rate limiting, not randomness.
 
-```
-quotaId: GenerateRequestsPerDayPerProjectPerModel-FreeTier
-quotaValue: 20
-```
-
-This is what made the test suite look non-deterministic. It is rate limiting,
-not randomness. **At a booth this runs out in minutes.**
-
-`gemini-flash-lite-latest` works and carries a separate daily quota. Verified.
-To switch: `echo "GEMINI_MODEL=gemini-flash-lite-latest" >> backend/.env`.
-`gemini-2.0-flash` and `gemini-2.5-flash` both 404 for this key.
+**But `OPENAI_API_KEY` is set nowhere**, so extraction always falls back today.
+With no key configured, `views.py` used to return zero candidates with
+`used_fallback: false`, which made the UI say *"no payload clauses in this
+document"* about a document nothing had read — at a booth, that would have been
+the answer to every upload. An unset key now routes through the honest fallback
+path instead. Set the key on Render to get real extraction.
 
 The fallback is deliberately honest now: tagged `cadangan` /
 `belum-diverifikasi`, never `gemini-extracted`, and its excerpt says extraction
@@ -80,44 +83,46 @@ placeholder. **Do not make it invent a figure again** (`CLAUDE.md` §5).
 
 ## What blocks the demo
 
-0. **The mocks fallback does not exist.** From `3d4be46` (`feat(dispatch): add
-   smart payload directives and balance warnings`), bisected 2026-08-13.
+0. ~~The mocks fallback does not exist~~ **Fixed 2026-08-13** (Iqbal, `e15ea75`,
+   "restore VITE_USE_MOCKS env variable toggle"). Verified working: with the
+   flag on, the MOCKS badge shows and no request reaches the API.
 
-   - ~~`test_directives_match_the_fixture_wording` fails~~ **Fixed same day by
-     `2098dd2`**, which synced the fixture and `api-contract.md` to the engine.
-     38/38 green. The §17 drift alarm worked exactly as intended.
-   - `frontend/src/api/client.js:16` hardcodes
-     `export const USE_MOCKS = false`, with the original
-     `import.meta.env.VITE_USE_MOCKS === 'true'` left in a trailing comment.
-     **So "flip `VITE_USE_MOCKS` back to `true` before the booth", below, does
-     nothing.** There is no no-backend fallback. Verified by running with the
-     flag on: no MOCKS badge, requests still hit the real API. Left unchanged
-     at the owner's instruction; the fix is to uncomment the line, but do not
-     ship that without then proving the mocks path with the backend stopped.
+1. ~~No CLIENT rule pack is seeded~~ **Done 2026-08-13** (Iqbal, `65bc380`).
+   **Verified end to end** on this machine: 23.000 kg on a `1.2.2` is legal
+   nationally (24.000) but HOLDs against the client SOP (22.000) and reads
+   `[ SOP KLIEN ]`. The closing beat works.
 
-1. ~~No CLIENT rule pack is seeded~~ **Done 2026-08-13** (Iqbal, `65bc380`,
-   "feat(rules): seed Client SOP rules and finalize closing beat"). The closing
-   beat — approve a rule, watch a nationally-legal load HOLD — should now be
-   demonstrable. Verify it before assuming so; it hasn't been re-checked from
-   the frontend side since it landed.
-2. **Two enforced thresholds cite themselves as `Asumsi`** (assumption), and they
-   are the two the demo triggers. The word is **ours, not the regulation's** — it
-   appears zero times in `data/` and zero times in the corpus. The Lampiran of
-   PP 55/2012 was never obtained; `data/regulations/MISSING_REGULATIONS.md`
-   lists it as CRITICAL GAP #1. The corpus's own tandem figure is **18000**
-   while the engine enforces **16000**. Human verification needed. An agent must
-   not invent replacements.
-3. **Gemini quota** — see above.
-4. **Nothing is deployed.**
+2. **The `Asumsi` thresholds are corrected in the migrations but NOT in this
+   machine's database.** Iqbal removed the word (`a908ef7`) and corrected the
+   numbers (`d9e4a12`, tandem 16000 → 18000, gross 25000 → 24000). Both edited
+   `0002`, which was already applied, and **Django never re-runs an applied
+   migration**, so the local DB still shows 16000 and still renders `Asumsi` on
+   screen. A fresh database gets the corrected values. Needs an `0008` data
+   migration for existing databases. Whether 18000 is right under PP 55/2012 is
+   still unverified against the Lampiran — human task, an agent must not pick
+   values.
+
+3. ~~Gemini quota~~ **Moot.** Iqbal migrated to OpenAI (`9ffd8b5`). But
+   **`OPENAI_API_KEY` is not set anywhere**, so extraction currently always
+   falls back. See "Read this before touching Rule Studio".
+
+4. **Nothing is deployed** — but all the config now exists and is verified.
+   **See [DEPLOY.md](DEPLOY.md) for exactly where that stands and what is left.**
 
 ## Next task
 
-**No frontend work is outstanding.** In priority order, all backend/ops/human:
+**Deploy. That is the whole list.** No frontend work is outstanding, and
+[DEPLOY.md](DEPLOY.md) has the step-by-step.
 
-1. **Deploy something.** Still no `Dockerfile`, `Procfile`, `railway.*`, `vercel.json` or CI. `gunicorn`, `whitenoise` and `psycopg2-binary` are installed and unused. Biggest risk left.
-2. **Restore the mocks fallback** — one line, see above. Then walk `/dispatch` with Django stopped before trusting it.
-3. **Verify or relabel the two `Asumsi` thresholds.** Human only; an agent must not pick values.
-4. **Gemini quota** — today's 20 calls were spent verifying Rule Studio. Resets daily; `gemini-flash-lite-latest` has a separate allowance.
+After that, in priority order:
+
+1. **`0008` data migration** so existing databases get the corrected thresholds
+   (item 2 above). Backend lane.
+2. **Fix `0007`'s `get_or_create`** to key on `(domain, origin, version)` rather
+   than `id`. Harmless on a fresh deploy, crashes `migrate` on any database
+   where a client rule was approved through the UI. Backend lane.
+3. **Verify the two thresholds against PP 55/2012's Lampiran.** Human only.
+4. **`backend/api-contract.md`** is a stale tracked duplicate of the root file.
 
 ### Shipped 2026-08-13 (`3955310`..`56a9f3f`)
 
@@ -177,8 +182,13 @@ check the `applies_to.axle_config` values against `AXLE_CONFIGS`.**
 
 ## Housekeeping
 
-`GEMINI_API_KEY` is in gitignored `backend/.env` and appears in zero commits, but
-it passed through a chat transcript. **Rotate it after the event.**
+`GEMINI_API_KEY` passed through a chat transcript. It is no longer used
+(migrated to OpenAI in `9ffd8b5`) but **revoke it after the event** rather than
+leaving a live unused key around.
+
+`OPENAI_API_KEY` is currently set nowhere. It belongs in Render's dashboard and
+in a local gitignored `backend/.env` — **never in a `VITE_` variable**, since
+those are baked into the public client bundle.
 
 The audit log was cleared on 2026-08-12 and regenerated through the live API, so
 every stored directive is Indonesian. The DB is local SQLite
