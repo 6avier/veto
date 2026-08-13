@@ -53,8 +53,7 @@ import json
 import os
 import fitz
 from django.conf import settings
-from google import genai
-from google.genai import types
+import openai
 import time
 from datetime import datetime, timezone
 from django.utils import timezone as django_timezone
@@ -147,8 +146,8 @@ class DocumentExtractView(APIView):
         used_fallback = False
         fallback_reason = None
         try:
-            if settings.GEMINI_API_KEY:
-                client = genai.Client(api_key=settings.GEMINI_API_KEY)
+            if settings.OPENAI_API_KEY:
+                client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
                 prompt = f"""
                 You are a logistics compliance officer. Read the following SOP document text.
                 Extract any rules related to vehicle payload limits (Gross Weight, Axle Load, Dimensions).
@@ -167,15 +166,13 @@ class DocumentExtractView(APIView):
                 {pdf_text[:10000]} # Limit text to avoid token limits in MVP
                 """
                 
-                response = client.models.generate_content(
-                    model=settings.GEMINI_MODEL,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        temperature=0.1,
-                    )
+                response = client.chat.completions.create(
+                    model=settings.OPENAI_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1,
                 )
                 
-                raw_json = response.text.strip()
+                raw_json = response.choices[0].message.content.strip()
                 if raw_json.startswith('```json'):
                     raw_json = raw_json[7:-3]
                 elif raw_json.startswith('```'):
@@ -221,7 +218,7 @@ class DocumentExtractView(APIView):
                 source_reference=doc.filename,
                 source_text_excerpt=cdata.get("source_text_excerpt", ""),
                 source_page=cdata.get("source_page", 1),
-                tags=cdata.get("tags") or ["gemini-extracted"],
+                tags=cdata.get("tags") or ["openai-extracted"],
                 status=CandidateStatus.PENDING
             )
             created_candidates.append({

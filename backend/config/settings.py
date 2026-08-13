@@ -144,12 +144,9 @@ MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_BYTES
 FILE_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_BYTES
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-# Rule Studio only, never the dispatch path. Kept configurable because Google
-# retires model ids from under existing keys: gemini-2.5-flash is still listed
-# by models.list() but refuses generateContent for keys created after its
-# cutoff. "latest" aliases keep working.
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+# Rule Studio only, never the dispatch path.
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)
