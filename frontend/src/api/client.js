@@ -13,7 +13,7 @@ export const http = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-export const USE_MOCKS = false // import.meta.env.VITE_USE_MOCKS === 'true'
+export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
 
 /**
  * Normalises an axios failure into the contract's error envelope.
