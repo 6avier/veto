@@ -47,8 +47,14 @@ export default function VerdictPanel({ decision, error, pending, settled }) {
 
         {decision && (
           <div>
+            {/* Both verdicts carry a marker and neither is written in colour.
+                Green for PASS reverses DESIGN.md §4 knowingly — recorded there
+                and in the dispatch flow spec, along with what it costs. */}
             <div className="flex items-baseline gap-2.5">
-              {held && <span aria-hidden className="h-3 w-3 shrink-0 self-center bg-hold" />}
+              <span
+                aria-hidden
+                className={`h-3 w-3 shrink-0 self-center ${held ? 'bg-hold' : 'bg-pass'}`}
+              />
               <p className="text-display text-ink-900">{held ? 'TAHAN' : 'LOLOS'}</p>
             </div>
             <p className="mt-1 font-mono text-mono-xs text-ink-400">

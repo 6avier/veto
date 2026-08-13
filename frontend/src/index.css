@@ -48,9 +48,15 @@
   --color-ink-50: #f4f6f7;
   --color-paper: #f7f8f8;
 
-  /* The only accent. HOLD and nothing else. PASS has no colour. */
+  /* The alert accent. HOLD and nothing else. */
   --color-hold: #f2a93b;
   --color-hold-ink: #8a5200;
+
+  /* PASS. Same green the TruckEnvelope already uses for "fits within the legal
+     envelope", so one hue carries one meaning across the surface. A marker
+     only — 4.07:1 on white clears the 3:1 a graphical object needs and misses
+     the 4.5:1 text needs, exactly as --color-hold does. DESIGN.md §4. */
+  --color-pass: #2f8f4e;
 
   --text-display: 32px;
   --text-display--line-height: 36px;

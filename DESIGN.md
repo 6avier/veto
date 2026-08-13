@@ -54,8 +54,10 @@ and logistics consoles actually take, and it buys back two horizontal bars of
 vertical space on the surface where the dispatch form and the load envelope both
 live. This is not a return to the retired coding above: that rule is about never
 distinguishing *VETO from the host* by hue, and this is the host's own green
-relocated within its own surface. VETO's side of the app gains no rail and no
-green.
+relocated within its own surface. VETO's side of the app gains no rail, and no
+green beyond the verdict marker permitted in §4 — the host's green is a
+*surface*, VETO's is a 12px square. If they ever start reading as the same
+thing, the square is what moves.
 
 The rail's items are **inert**. There is no Beranda or Laporan to route to, so
 they are `span`s with the default cursor, never links to dead ends. They lift on
@@ -247,23 +249,49 @@ Measured contrast:
 
 `--hold` on a light ground is **1.9:1**. It fails. On the register surface, amber is `--hold-ink` or it is not text.
 
-### PASS has no colour
+### PASS is a marker, not a celebration
 
-This is the load-bearing decision of the palette.
+**Revised 2026-08-13 by the product owner.** This section previously read "PASS
+has no colour" and refused green in three places. It was overruled deliberately,
+not overlooked, and the original reasoning is kept below because it is still the
+reason the new rule is drawn as narrowly as it is.
 
-Amber means HOLD and nothing else. PASS is not celebrated — it resolves. No green tick, no green panel, no badge. Real safety systems do not congratulate you for normal operation; they scream when something is wrong. Amber stays meaningful because it is rare.
+**The rule now:** PASS carries `--color-pass` `#2f8f4e` as a **marker only** —
+the 12px square beside `LOLOS` in `VerdictPanel`, and the same square in
+`PassDialog`. It behaves exactly as `--hold` does: 4.07:1 on white, which clears
+the 3:1 a graphical object needs and misses the 4.5:1 text needs, so the verdict
+word itself stays `--ink-900`. No green tick, no green panel, no green text, no
+badge. The green is the one the `TruckEnvelope` already uses for "fits within
+the legal envelope," so one hue carries one meaning across the whole surface.
 
-**PASS is signalled by the gate opening.** `Cetak Surat Jalan` is disabled until the engine says yes. When it does, the button becomes live and prominent. The state change is functional, not decorative — and that is more legible at 1.5 m than any colour, because the thing the operator wants is suddenly available.
+**What was given up, recorded once.** Green in this product belongs to the host
+ERP — its 64px rail and its `#2d613b` submit button. An Impeccable critique
+measured VETO and the host as separated by 0.07 of border contrast; they are
+already hard to read as two systems. A green VETO verdict has VETO speaking the
+host's colour at the moment it should read most clearly as a separate
+instrument. The owner weighed that and chose the legibility of the verdict.
 
-### Exception: TruckEnvelope
+**The original argument, preserved:** amber means HOLD and nothing else; PASS is
+not celebrated, it resolves; real safety systems do not congratulate you for
+normal operation, they scream when something is wrong, and amber stays
+meaningful because it is rare.
+
+**PASS is still signalled by the gate opening.** `Cetak Surat Jalan` is disabled
+until the engine says yes. That functional change remains the primary signal —
+but it sits about 1,180px from where the operator is looking after a submit, so
+since 2026-08-13 the verdict also announces itself in `PassDialog`, mirroring
+how a HOLD announces itself in `ViolationDialog`.
+
+Full decision record:
+[docs/superpowers/specs/2026-08-13-dispatch-flow-design.md](docs/superpowers/specs/2026-08-13-dispatch-flow-design.md) §6.
+
+### TruckEnvelope
 
 `frontend/src/components/dispatch/TruckEnvelope.jsx`'s truck-outline widget uses
-`#2f8f4e` (green) for "fits within the legal envelope," alongside the existing
-`#a02a1f` for "exceeds it." This is a deliberate, scoped override of the two rules
-above, confirmed by the product owner after the conflict was raised explicitly.
-It does not license green anywhere else — `PASS has no colour` and `VETO never
-uses green` still govern every other surface, including `VerdictPanel` a few
-lines away in the same page.
+`#2f8f4e` (green) for "fits within the legal envelope," alongside `#a02a1f` for
+"exceeds it." This was the first green in the product and, until the revision
+above, the only one. It is now the source of `--color-pass` rather than an
+exception to a rule forbidding it.
 
 ### The logo is the brand artwork, and it keeps its blue
 
@@ -371,8 +399,10 @@ Only `transform` and `opacity`. No `window.addEventListener('scroll')`.
 
 From `CLAUDE.md` §7, plus what this system specifically rejects:
 
-- Green tick / green success state. PASS is quiet.
-- A second accent colour, anywhere.
+- Green tick / green success state / green panel / green verdict text. PASS is
+  quiet. The one permitted green is `--color-pass` as a marker square beside the
+  verdict word — see §4, "PASS is a marker, not a celebration."
+- A third accent colour, anywhere.
 - Purple or blue gradients.
 - Cards inside cards. Generic dashboard card grids.
 - Glassmorphism.

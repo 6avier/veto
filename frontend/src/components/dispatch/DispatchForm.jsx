@@ -83,11 +83,10 @@ export default function DispatchForm({
 
   const axleSum = value.axleLoads.reduce((total, load) => total + (Number(load) || 0), 0)
   const gross = Number(value.grossWeight) || 0
-  const mismatch = gross > 0 && axleSum > 0 && Math.abs(axleSum - gross) > 500
 
   // Balance Check (Proportional Distribution)
   let balanceWarning = null
-  if (!mismatch && gross > 0 && value.axleLoads.length > 1) {
+  if (gross > 0 && value.axleLoads.length > 1) {
     const count = value.axleLoads.length
     const axleLimits = []
     let totalLimit = 0
@@ -169,6 +168,13 @@ export default function DispatchForm({
       </Section>
 
       <Section title="2. Data Muatan">
+        {/*
+          Derived, not typed. A vehicle's gross weight *is* what its axles
+          carry, so the field reports the axle sum instead of inviting a second,
+          contradictable version of the same number. It stays an <input> rather
+          than becoming text so the form's rhythm and the violation and excess
+          affordances it already carries keep working.
+        */}
         <Field
           label="Berat Kotor"
           unit="kg"
@@ -176,12 +182,9 @@ export default function DispatchForm({
           violation={violations.grossWeight}
           limit={limits.grossWeight}
           current={value.grossWeight}
+          note="Dihitung dari jumlah beban sumbu."
         >
-          <NumberInput
-            value={value.grossWeight}
-            onChange={(e) => set({ grossWeight: e.target.value })}
-            maxDigits={MAX_DIGITS.weight}
-          />
+          <NumberInput value={value.grossWeight} readOnly maxDigits={MAX_DIGITS.weight} />
         </Field>
         {value.axleLoads.map((load, index) => (
           <Field
@@ -232,11 +235,6 @@ export default function DispatchForm({
           <span className="tnum text-data font-medium text-[#1f2933]">{formatKg(axleSum)}</span>
           <span className="text-[#8b949d]"> · {formatTonnes(axleSum)}</span>
         </p>
-        {mismatch && (
-          <p className="text-label text-[#8a5200]">
-            Selisih {formatKg(Math.abs(axleSum - gross))} dari berat kotor. Periksa kembali.
-          </p>
-        )}
         {balanceWarning && (
           <p className="text-label text-[#8a5200]">
             Peringatan Keseimbangan: {balanceWarning}
@@ -244,7 +242,7 @@ export default function DispatchForm({
         )}
         <button
           type="submit"
-          disabled={pending || mismatch}
+          disabled={pending}
           className="ml-auto rounded-veto bg-[#2d613b] px-4 py-2 text-label text-white transition-colors hover:bg-[#244f30] focus-visible:outline-offset-2 disabled:opacity-50"
         >
           {pending ? 'Memvalidasi…' : 'Validasi ke VETO'}
@@ -279,9 +277,12 @@ function Section({ title, children }) {
 /**
  * Label, input, then at most one line beneath it: a validation error, or the
  * violation directive pinned to the field that caused it (PRODUCT.md F2), or
- * the excess over the ceiling. Nothing when the value is fine.
+ * the excess over the ceiling, or a standing note. Nothing when the value is
+ * fine and there is nothing to explain.
+ *
+ * The note sits last because it is the only one of the four that is never news.
  */
-function Field({ label, unit, error, violation, limit, current, children }) {
+function Field({ label, unit, error, violation, limit, current, note, children }) {
   const gap = deltaFromLimit(current, limit)
 
   return (
@@ -309,19 +310,32 @@ function Field({ label, unit, error, violation, limit, current, children }) {
           +{formatNumber(gap.delta)} {gap.unit}
           <span className="text-[#98a0a9]"> melebihi batas</span>
         </span>
+      ) : note ? (
+        <span className="text-label text-[#6b757f]">{note}</span>
       ) : null}
     </label>
   )
 }
 
-const inputClass =
-  'w-full rounded-veto border border-[#a9b1b9] bg-white px-2.5 py-1.5 text-data text-[#1f2933] transition-colors hover:border-[#8b949d] focus:border-[#2d613b]'
+/**
+ * Two complete strings rather than a base plus overrides. Tailwind resolves
+ * competing utilities by their order in the generated stylesheet, not by their
+ * order in the class attribute, so appending `bg-[#eef1f2]` after `bg-white`
+ * silently lost — the locked field rendered white and looked editable. Whole
+ * strings cannot conflict with each other.
+ */
+const inputBase =
+  'w-full rounded-veto border px-2.5 py-1.5 text-data transition-colors'
+
+const inputClass = `${inputBase} border-[#a9b1b9] bg-white text-[#1f2933] hover:border-[#8b949d] focus:border-[#2d613b]`
+
+const inputLockedClass = `${inputBase} cursor-not-allowed border-[#c9ced4] bg-[#eef1f2] text-[#4a545e]`
 
 function TextInput({ className = '', ...props }) {
   return <input type="text" {...props} className={`${inputClass} ${className}`} />
 }
 
-function NumberInput({ onChange, maxDigits, ...props }) {
+function NumberInput({ onChange, maxDigits, readOnly, ...props }) {
   const limitDigits = (event) => {
     const raw = event.target.value
     // type=number ignores maxLength, so the digit cap is enforced here. An
@@ -335,9 +349,15 @@ function NumberInput({ onChange, maxDigits, ...props }) {
       inputMode="numeric"
       min="1"
       step="1"
-      onChange={limitDigits}
+      readOnly={readOnly}
+      // readOnly, not disabled: a disabled field is skipped by Tab and ignored
+      // by screen readers, and this one carries a figure the operator needs to
+      // read. The steppers go with it, since there is nothing to step.
+      onChange={readOnly ? undefined : limitDigits}
       {...props}
-      className={`${inputClass} tnum`}
+      className={`${readOnly ? inputLockedClass : inputClass} tnum ${
+        readOnly ? '[&::-webkit-inner-spin-button]:appearance-none' : ''
+      }`}
     />
   )
 }

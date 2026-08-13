@@ -5,6 +5,8 @@ import DispatchForm from '@/components/dispatch/DispatchForm'
 import TruckEnvelope from '@/components/dispatch/TruckEnvelope'
 import VerdictPanel from '@/components/dispatch/VerdictPanel'
 import ViolationDialog from '@/components/dispatch/ViolationDialog'
+import PassDialog from '@/components/dispatch/PassDialog'
+import WaybillDialog from '@/components/dispatch/WaybillDialog'
 import PrintableWaybill from '@/components/dispatch/PrintableWaybill'
 import { axleCountFor } from '@/lib/format'
 import { limitsFromRules } from '@/lib/limits'
@@ -78,7 +80,10 @@ function validate(form) {
     raw !== '' && Number.isInteger(Number(raw)) && Number(raw) > 0
   const REQUIRED = 'Isi bilangan bulat lebih dari nol.'
 
-  if (!positive(form.grossWeight)) errors.grossWeight = REQUIRED
+  // grossWeight is not checked here. It is the sum of the axle loads and no
+  // longer typed, so a positive axle set makes it positive by construction —
+  // and a "wajib diisi" message under a field the operator cannot type into
+  // reads as a broken form rather than an instruction. The axle errors carry it.
   if (!positive(form.tareWeight)) errors.tareWeight = REQUIRED
   for (const key of ['length', 'width', 'height']) {
     if (!positive(form[key])) errors[key] = REQUIRED
@@ -121,6 +126,12 @@ export default function Dispatch() {
   const [errors, setErrors] = useState({})
   const [pending, setPending] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [passOpen, setPassOpen] = useState(false)
+  const [waybillOpen, setWaybillOpen] = useState(false)
+  // Whether Kembali should hand the operator back to the verdict they came
+  // from, or simply close. The waybill has two entrances and the word has to
+  // mean the same thing at both.
+  const [waybillFromPass, setWaybillFromPass] = useState(false)
   const [rules, setRules] = useState([])
 
   // The form reads its ceilings from the active rule base rather than
@@ -147,6 +158,9 @@ export default function Dispatch() {
     setForm(next)
     if (decision) setDecision(null)
     if (error) setError(null)
+    // A verdict dialog must not outlive the verdict that opened it.
+    setPassOpen(false)
+    setWaybillOpen(false)
   }
 
   async function handleSubmit(event) {
@@ -161,7 +175,11 @@ export default function Dispatch() {
     try {
       const result = await validateDispatch(toPayload(form))
       setDecision(result)
+      // Both verdicts announce themselves the same way. The PASS gate sits far
+      // enough from the submit button that a background swap on it was not a
+      // signal anyone reliably saw.
       if (result.outcome === 'HOLD') setDialogOpen(true)
+      else setPassOpen(true)
     } catch (caught) {
       setError(caught instanceof ApiError ? caught : ApiError.from(caught))
     } finally {
@@ -186,10 +204,14 @@ export default function Dispatch() {
               Surat jalan terkunci sampai VETO meloloskan muatan.
             </p>
           )}
+          {/* The way back in, once the PASS dialog has been dismissed. */}
           <button
             type="button"
             disabled={!passed}
-            onClick={() => window.print()}
+            onClick={() => {
+              setWaybillFromPass(false)
+              setWaybillOpen(true)
+            }}
             className={[
               'rounded-veto px-4 py-2 text-label transition-colors',
               passed
@@ -217,7 +239,7 @@ export default function Dispatch() {
           decision={decision}
           error={error}
           pending={pending}
-          settled={Boolean(decision) && !dialogOpen}
+          settled={Boolean(decision) && !dialogOpen && !passOpen && !waybillOpen}
         />
       </div>
 
@@ -233,8 +255,40 @@ export default function Dispatch() {
         Data masukan yang keliru tetap dapat lolos.
       </p>
 
+      {/*
+        One dialog at a time. Stacking two would mean two scrims, two focus
+        traps and two Escape handlers competing, so moving between them is a
+        swap rather than a push.
+      */}
       {dialogOpen && (
         <ViolationDialog decision={decision} onClose={() => setDialogOpen(false)} />
+      )}
+
+      {passOpen && passed && !waybillOpen && (
+        <PassDialog
+          decision={decision}
+          form={form}
+          limits={limits}
+          onClose={() => setPassOpen(false)}
+          onPrint={() => {
+            setWaybillFromPass(true)
+            setWaybillOpen(true)
+          }}
+        />
+      )}
+
+      {waybillOpen && passed && (
+        <WaybillDialog
+          form={form}
+          // Kembali, Escape and the backdrop all do the same thing, because
+          // three ways out that land in different places is how a dialog
+          // starts feeling untrustworthy.
+          onClose={() => {
+            setWaybillOpen(false)
+            setPassOpen(waybillFromPass)
+            setWaybillFromPass(false)
+          }}
+        />
       )}
     </div>
     {/*
