@@ -141,11 +141,18 @@ class DocumentExtractView(APIView):
         except Exception:
             return Response({"error": {"code": "INTERNAL_ERROR", "message": "Failed to read PDF text"}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-        # Call Gemini API
+        # Call the model
         candidates_data = []
         used_fallback = False
         fallback_reason = None
         try:
+            # An unset key used to leave candidates_data empty and used_fallback
+            # false, so the UI reported "no payload clauses in this document"
+            # for a document nothing had read. Route it through the fallback
+            # path instead, which says plainly that extraction was unavailable.
+            if not settings.OPENAI_API_KEY:
+                raise RuntimeError("OPENAI_API_KEY is not configured")
+
             if settings.OPENAI_API_KEY:
                 client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
                 prompt = f"""

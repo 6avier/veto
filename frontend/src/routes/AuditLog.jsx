@@ -126,15 +126,18 @@ export default function AuditLog() {
       )}
 
       {!loading && !error && rows.length > 0 && (
-        <table className="mt-2 w-full border-collapse">
+        <div className="mt-2 overflow-x-auto">
+        <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-ink-200 text-left">
               <Th>Waktu</Th>
               <Th>Surat Jalan</Th>
               <Th>Hasil</Th>
               <Th align="right">Pelanggaran</Th>
-              <Th>Override</Th>
-              <Th align="right">Latensi</Th>
+              <Th secondary>Override</Th>
+              <Th align="right" secondary>
+                Latensi
+              </Th>
               <Th />
             </tr>
           </thead>
@@ -151,6 +154,7 @@ export default function AuditLog() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   )
@@ -188,10 +192,10 @@ function DecisionRow({ row, expanded, onToggle }) {
         <Td align="right" className="tnum text-data">
           {formatNumber(row.violation_count)}
         </Td>
-        <Td className="text-label text-ink-500">
+        <Td secondary className="text-label text-ink-500">
           {row.override ? row.override.overridden_by : ''}
         </Td>
-        <Td align="right" className="tnum text-data text-ink-500">
+        <Td align="right" secondary className="tnum text-data text-ink-500">
           {formatNumber(row.latency_ms)} ms
         </Td>
         <Td align="right">
@@ -372,20 +376,38 @@ function DateInput(props) {
   )
 }
 
-function Th({ children, align = 'left' }) {
+/**
+ * Seven columns need about 460px to stay comfortable, and phones start at 375.
+ * Override and Latensi are the two a narrow screen can lose without losing the
+ * record: one is empty until somebody overrides, the other repeats single-digit
+ * milliseconds. They come back at `md`. The wrapper scrolls as a safety net so
+ * nothing is ever unreachable, rather than clipped off the edge.
+ */
+function Th({ children, align = 'left', secondary = false }) {
   return (
     <th
       scope="col"
-      className={`py-2 pr-3 text-label font-medium text-ink-500 ${align === 'right' ? 'text-right' : ''}`}
+      className={[
+        'py-2 pr-3 text-label font-medium text-ink-500',
+        align === 'right' ? 'text-right' : '',
+        secondary ? 'hidden md:table-cell' : '',
+      ].join(' ')}
     >
       {children}
     </th>
   )
 }
 
-function Td({ children, align = 'left', className = '' }) {
+function Td({ children, align = 'left', className = '', secondary = false }) {
   return (
-    <td className={`py-2.5 pr-3 ${align === 'right' ? 'text-right' : ''} ${className}`}>
+    <td
+      className={[
+        'py-2.5 pr-3',
+        align === 'right' ? 'text-right' : '',
+        secondary ? 'hidden md:table-cell' : '',
+        className,
+      ].join(' ')}
+    >
       {children}
     </td>
   )

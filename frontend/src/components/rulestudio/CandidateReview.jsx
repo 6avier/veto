@@ -32,6 +32,20 @@ export default function CandidateReview({
 }) {
   const [note, setNote] = useState('')
   const [rejecting, setRejecting] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const [acknowledged, setAcknowledged] = useState(false)
+
+  /**
+   * A fallback candidate carries a placeholder threshold, not a figure read out
+   * of the document. One was approved into the live rule base once, where it
+   * then rendered with the document's filename as its source and was
+   * indistinguishable from a real extraction. A tag in a metadata list was not
+   * enough, so the panel itself changes and approval needs a deliberate
+   * acknowledgement rather than the same single click.
+   */
+  const unverified = Boolean(
+    candidate?.tags?.some((tag) => tag === 'cadangan' || tag === 'belum-diverifikasi'),
+  )
 
   if (result) {
     const approved = result.status === 'APPROVED'
@@ -99,6 +113,15 @@ export default function CandidateReview({
           </p>
           <p className="tnum mt-0.5 text-display text-ink-900">{value}</p>
 
+          {unverified && (
+            /* The figure above is a placeholder. Amber as a marker and a rule,
+               never as text: DESIGN.md §4 puts --hold at 1.9:1 on light ground,
+               so the wording carries in ink and the colour only locates it. */
+            <p className="mt-2 border-l-2 border-hold py-0.5 pl-2.5 text-label text-ink-900">
+              Angka cadangan, bukan hasil baca dokumen. Belum diverifikasi.
+            </p>
+          )}
+
           <dl className="mt-4 space-y-2 border-t border-ink-100 pt-3">
             <Meta label="Dimensi" value={candidate.dimension} mono />
             {candidate.applies_to?.axle_config && (
@@ -116,11 +139,11 @@ export default function CandidateReview({
       </div>
 
       <div className="border-t border-ink-200 px-5 py-4">
-        {!rejecting ? (
+        {!rejecting && !confirming && (
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={onApprove}
+              onClick={() => setConfirming(true)}
               disabled={busy}
               className="rounded-veto bg-ink-900 px-4 py-2 text-label text-white disabled:opacity-50"
             >
@@ -138,7 +161,65 @@ export default function CandidateReview({
               Hanya aturan yang disetujui yang memengaruhi keputusan pengiriman.
             </p>
           </div>
-        ) : (
+        )}
+
+        {confirming && (
+          /* Approving writes straight into the live rule base, so the step
+             restates the threshold and where it came from. Same two-step shape
+             as rejection, which already worked. */
+          <div>
+            <p className="max-w-[62ch] text-body text-ink-900">
+              Setujui{' '}
+              <span className="tnum font-medium">
+                {DIMENSION_LABELS[candidate.dimension] ?? candidate.dimension}{' '}
+                {OPERATOR_LABELS[candidate.operator] ?? candidate.operator} {value}
+              </span>{' '}
+              dari {candidate.source_reference}?
+            </p>
+            <p className="mt-1 max-w-[62ch] text-label text-ink-500">
+              Aturan ini langsung memengaruhi keputusan pengiriman berikutnya. Aturan yang
+              sudah disetujui tidak dapat dibatalkan dari layar ini.
+            </p>
+
+            {unverified && (
+              <label className="mt-3 flex max-w-[62ch] items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  checked={acknowledged}
+                  onChange={(event) => setAcknowledged(event.target.checked)}
+                  className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-[#8a5200]"
+                />
+                <span className="text-label text-ink-900">
+                  Saya paham angka ini adalah contoh cadangan, bukan hasil baca dokumen, dan
+                  belum diverifikasi.
+                </span>
+              </label>
+            )}
+
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={onApprove}
+                disabled={busy || (unverified && !acknowledged)}
+                className="rounded-veto bg-ink-900 px-4 py-2 text-label text-white disabled:opacity-50"
+              >
+                Konfirmasi persetujuan
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirming(false)
+                  setAcknowledged(false)
+                }}
+                className="text-label text-ink-500 underline underline-offset-4 hover:text-ink-900"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        )}
+
+        {rejecting && (
           <div>
             <label className="flex flex-col gap-1">
               <span className="text-label text-ink-500">Alasan penolakan</span>
