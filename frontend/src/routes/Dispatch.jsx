@@ -237,9 +237,17 @@ export default function Dispatch() {
         <ViolationDialog decision={decision} onClose={() => setDialogOpen(false)} />
       )}
     </div>
-    <div className="hidden print:block">
-      <PrintableWaybill form={form} />
-    </div>
+    {/*
+      Gated on the verdict, not just on the button. Disabling the button locks
+      the click; it does not lock Cmd/Ctrl+P, and without this condition the
+      browser's own print shortcut renders a valid-looking surat jalan for a
+      load VETO just held — the exact thing the gate exists to prevent.
+    */}
+    {passed && (
+      <div className="hidden print:block">
+        <PrintableWaybill form={form} />
+      </div>
+    )}
     </>
   )
 }
