@@ -47,6 +47,8 @@ export default function RuleStudio() {
   // Only the candidate being submitted is disabled. A single global flag would
   // freeze all 32 cards while one of them was in flight.
   const [submittingId, setSubmittingId] = useState(null)
+  // { id, message } for the one decision that failed, shown on its own card.
+  const [submitError, setSubmitError] = useState(null)
   const [usedFallback, setUsedFallback] = useState(false)
   const [error, setError] = useState(null)
   const [page, setPage] = useState(null)
@@ -75,6 +77,7 @@ export default function RuleStudio() {
     setActiveId(null)
     setOutcomes({})
     setSubmittingId(null)
+    setSubmitError(null)
     setUsedFallback(false)
     setError(null)
     setPage(null)
@@ -236,31 +239,29 @@ export default function RuleStudio() {
     else cardNodes.current.delete(id)
   }
 
-  async function handleApprove(id) {
+  /**
+   * A failed decision reports inside the card that failed, not in the page's
+   * error slot. That slot sits under the list, and with ten candidates on
+   * screen it landed 269px below the fold: the reviewer pressed confirm, saw
+   * the card sit there unchanged, and had no reason to think anything had
+   * happened. Only one decision is ever in flight, so one slot is enough.
+   */
+  async function submitDecision(id, send) {
     setSubmittingId(id)
-    setError(null)
+    setSubmitError(null)
     try {
-      const outcome = await approveCandidate(id, REVIEWER)
+      const outcome = await send()
       setOutcomes((prev) => ({ ...prev, [id]: outcome }))
     } catch (caught) {
-      fail(caught)
+      const apiError = caught instanceof ApiError ? caught : ApiError.from(caught)
+      setSubmitError({ id, message: apiError.message })
     } finally {
       setSubmittingId(null)
     }
   }
 
-  async function handleReject(id, note) {
-    setSubmittingId(id)
-    setError(null)
-    try {
-      const outcome = await rejectCandidate(id, REVIEWER, note)
-      setOutcomes((prev) => ({ ...prev, [id]: outcome }))
-    } catch (caught) {
-      fail(caught)
-    } finally {
-      setSubmittingId(null)
-    }
-  }
+  const handleApprove = (id) => submitDecision(id, () => approveCandidate(id, REVIEWER))
+  const handleReject = (id, note) => submitDecision(id, () => rejectCandidate(id, REVIEWER, note))
 
   const busy = stage === 'uploading' || stage === 'extracting' || Boolean(submittingId)
   // Mocks have no PDF to render and the fallback candidate quotes no document,
@@ -374,6 +375,9 @@ export default function RuleStudio() {
                       onApprove={() => handleApprove(item.candidate_id)}
                       onReject={(note) => handleReject(item.candidate_id, note)}
                       busy={submittingId === item.candidate_id}
+                      error={
+                        submitError?.id === item.candidate_id ? submitError.message : null
+                      }
                       result={outcomes[item.candidate_id] ?? null}
                       position={index + 1}
                       total={candidates.length}

@@ -26,6 +26,7 @@ export default function CandidateReview({
   onApprove,
   onReject,
   busy,
+  error,
   result,
   position = 1,
   total = 1,
@@ -137,6 +138,18 @@ export default function CandidateReview({
       </div>
 
       <div className="border-t border-ink-200 px-5 py-4">
+        {/* Reported here rather than in the page's error slot, which sits below
+            the whole list and is off screen for any card but the last. The
+            controls stay as they are, so the same button retries. */}
+        {error && (
+          <p
+            role="alert"
+            className="mb-3 border-l-2 border-hold-ink py-0.5 pl-2.5 text-label text-ink-900"
+          >
+            {error} Aturan ini belum tersimpan — coba lagi.
+          </p>
+        )}
+
         {!rejecting && !confirming && (
           <div className="flex flex-wrap items-center gap-3">
             <button
