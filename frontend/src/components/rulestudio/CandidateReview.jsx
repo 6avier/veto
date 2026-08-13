@@ -47,37 +47,35 @@ export default function CandidateReview({
     candidate?.tags?.some((tag) => tag === 'cadangan' || tag === 'belum-diverifikasi'),
   )
 
+  const unit = candidate.unit
+  const value = `${formatNumber(candidate.threshold)} ${unit}`
+
+  /**
+   * A decided candidate keeps its place in the list but stops taking a card's
+   * worth of room. The full panel existed to support a judgement that has
+   * already been made; what is left to say is the outcome, the figure it
+   * settled, and where it landed. One ruled row says all three, and the list
+   * shortens as the reviewer works down it.
+   */
   if (result) {
     const approved = result.status === 'APPROVED'
     return (
-      <section className="border border-ink-200 bg-white px-5 py-5">
-        <div className="flex items-baseline gap-3">
-          {approved && <span aria-hidden className="h-3 w-3 self-center bg-ink-900" />}
-          <h2 className="text-h2">{approved ? 'Aturan disetujui' : 'Usulan ditolak'}</h2>
-        </div>
-        {approved ? (
-          <>
-            <p className="mt-2 max-w-[65ch] text-body text-ink-700">
-              Aturan ini kini aktif dan ikut dievaluasi pada setiap pengiriman berikutnya.
-              Versi lama tidak ditimpa, melainkan disimpan sebagai riwayat.
-            </p>
-            <dl className="mt-4 flex flex-wrap gap-x-10 gap-y-2">
-              <Meta label="Rule pack" value={`v${result.rule_pack_version}`} />
-              <Meta label="Ditinjau oleh" value={result.reviewed_by} />
-              <Meta label="ID aturan" value={result.rule_id} mono />
-            </dl>
-          </>
-        ) : (
-          <p className="mt-2 max-w-[65ch] text-body text-ink-700">
-            Usulan ini tidak pernah mencapai mesin validasi. Penolakan ikut tercatat.
-          </p>
-        )}
+      <section className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-ink-200 py-3">
+        <span className="flex items-baseline gap-2 text-label text-ink-900">
+          {approved && <span aria-hidden className="h-2 w-2 self-center bg-ink-900" />}
+          {approved ? 'Disetujui' : 'Ditolak'}
+        </span>
+        <span className="tnum text-label text-ink-700">
+          {DIMENSION_LABELS[candidate.dimension] ?? candidate.dimension}{' '}
+          {OPERATOR_LABELS[candidate.operator] ?? candidate.operator} {value}
+        </span>
+        <span className="tnum ml-auto font-mono text-mono-xs text-ink-400">
+          {approved ? `rule pack v${result.rule_pack_version} · ` : ''}
+          halaman {candidate.source_page}
+        </span>
       </section>
     )
   }
-
-  const unit = candidate.unit
-  const value = `${formatNumber(candidate.threshold)} ${unit}`
 
   return (
     <section className="border border-ink-200 bg-white">

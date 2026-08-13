@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import {
   ApiError,
@@ -23,7 +23,7 @@ import TriageResult from '@/components/rulestudio/TriageResult'
  * centrally by VETO and are never uploaded here (PRODUCT.md §4), which is why
  * a government regulation is a rejection at triage rather than a happy path.
  *
- * Flow: idle -> uploading -> triaged -> extracting -> reviewing -> reviewed
+ * Flow: idle -> uploading -> triaged -> extracting -> reviewing
  */
 
 const REVIEWER = 'Sari Wulandari'
@@ -32,14 +32,21 @@ export default function RuleStudio() {
   const [stage, setStage] = useState('idle')
   const [document, setDocument] = useState(null)
   // Extraction returns every clause it found, not one. A live 26-page SOP
-  // yielded 32 candidates across three pages, so the reviewer steps through
-  // them and the source plate follows whichever one is under review.
+  // yielded 32 candidates across three pages, and all of them are laid out at
+  // once: stepping through with prev/next reduced that haul to a "1 / 32"
+  // counter, which hid both the scale of what was read and any candidate the
+  // reviewer might otherwise have skipped straight to.
   const [candidates, setCandidates] = useState([])
-  const [activeIndex, setActiveIndex] = useState(0)
+  // Which candidate the source plate is showing. It follows the list rather
+  // than a selection, so it tracks whatever the reviewer has scrolled to.
+  const [activeId, setActiveId] = useState(null)
   // candidate_id -> approve/reject response. Per candidate, because each is
-  // decided separately and a decided one must keep showing its outcome when
-  // the reviewer navigates back to it.
+  // decided separately and every decided one stays on screen showing its
+  // outcome while the reviewer works down the rest of the list.
   const [outcomes, setOutcomes] = useState({})
+  // Only the candidate being submitted is disabled. A single global flag would
+  // freeze all 32 cards while one of them was in flight.
+  const [submittingId, setSubmittingId] = useState(null)
   const [usedFallback, setUsedFallback] = useState(false)
   const [error, setError] = useState(null)
   const [page, setPage] = useState(null)
@@ -49,9 +56,13 @@ export default function RuleStudio() {
   // cited page 1. Re-fetching a full-page PNG on every step would make the
   // plate flicker through a skeleton it does not need.
   const pageCache = useRef(new Map())
-
-  const candidate = candidates[activeIndex] ?? null
-  const reviewResult = candidate ? (outcomes[candidate.candidate_id] ?? null) : null
+  // candidate_id -> the card's element, registered by callback ref so the
+  // observer can be pointed at cards that mount and unmount with the list.
+  const cardNodes = useRef(new Map())
+  const visibleIds = useRef(new Set())
+  // The observer callback needs the current active id without re-subscribing
+  // every time it changes.
+  const activeIdRef = useRef(null)
 
   const reducedMotion =
     typeof window !== 'undefined' &&
@@ -61,14 +72,18 @@ export default function RuleStudio() {
     setStage('idle')
     setDocument(null)
     setCandidates([])
-    setActiveIndex(0)
+    setActiveId(null)
     setOutcomes({})
+    setSubmittingId(null)
     setUsedFallback(false)
     setError(null)
     setPage(null)
     setPageLoading(false)
     setPageError(false)
     pageCache.current.clear()
+    cardNodes.current.clear()
+    visibleIds.current.clear()
+    activeIdRef.current = null
   }
 
   const fail = (caught) => setError(caught instanceof ApiError ? caught : ApiError.from(caught))
@@ -94,8 +109,10 @@ export default function RuleStudio() {
       setUsedFallback(Boolean(result.used_fallback))
       const found = result.candidates ?? []
       setCandidates(found)
-      setActiveIndex(0)
       setOutcomes({})
+      setActiveId(found[0]?.candidate_id ?? null)
+      activeIdRef.current = found[0]?.candidate_id ?? null
+      visibleIds.current.clear()
       setStage('reviewing')
       // The page is fetched after the verdict is on screen, not before. It is
       // the evidence for a rule that already exists, and a slow render must
@@ -133,50 +150,76 @@ export default function RuleStudio() {
   }
 
   /**
-   * Move to another candidate. The plate follows it, so the reviewer is always
-   * looking at the page the rule in front of them was read from, and the stage
-   * follows whether that candidate has already been decided so its approve and
-   * reject controls come back only when they are still available.
+   * The plate follows the list rather than a selection. Every card is on screen
+   * at once, so the rule the reviewer is reading is the topmost one in view,
+   * and the observer names it. DESIGN.md §8 rules out a scroll listener, and
+   * this needs no measuring anyway.
+   *
+   * The band is the upper third of the viewport, not the whole of it: with
+   * three cards visible, the one being read is the one at the top.
    */
-  function goToCandidate(index) {
-    if (index < 0 || index >= candidates.length) return
-    setActiveIndex(index)
+  useEffect(() => {
+    if (stage !== 'reviewing' || candidates.length === 0) return undefined
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const id = entry.target.dataset.candidateId
+          if (entry.isIntersecting) visibleIds.current.add(id)
+          else visibleIds.current.delete(id)
+        }
+        const first = candidates.find((item) => visibleIds.current.has(item.candidate_id))
+        // No card in the band mid-flick: hold the last one rather than blanking
+        // the plate, so it never flashes empty between two cards.
+        if (!first || first.candidate_id === activeIdRef.current) return
+        activeIdRef.current = first.candidate_id
+        setActiveId(first.candidate_id)
+        if (first.source_page && !usedFallback) {
+          loadPage(document.document_id, first.source_page)
+        }
+      },
+      { rootMargin: '-10% 0px -55% 0px' },
+    )
+
+    for (const node of cardNodes.current.values()) observer.observe(node)
+    return () => {
+      observer.disconnect()
+      visibleIds.current.clear()
+    }
+  }, [candidates, stage, usedFallback, document])
+
+  const registerCard = (id) => (node) => {
+    if (node) cardNodes.current.set(id, node)
+    else cardNodes.current.delete(id)
+  }
+
+  async function handleApprove(id) {
+    setSubmittingId(id)
     setError(null)
-    const next = candidates[index]
-    setStage(outcomes[next.candidate_id] ? 'reviewed' : 'reviewing')
-    if (next?.source_page && !usedFallback) {
-      loadPage(document.document_id, next.source_page)
-    }
-  }
-
-  function recordOutcome(id, outcome) {
-    setOutcomes((prev) => ({ ...prev, [id]: outcome }))
-    setStage('reviewed')
-  }
-
-  async function handleApprove() {
-    const id = candidate.candidate_id
-    setStage('submitting')
     try {
-      recordOutcome(id, await approveCandidate(id, REVIEWER))
+      const outcome = await approveCandidate(id, REVIEWER)
+      setOutcomes((prev) => ({ ...prev, [id]: outcome }))
     } catch (caught) {
       fail(caught)
-      setStage('reviewing')
+    } finally {
+      setSubmittingId(null)
     }
   }
 
-  async function handleReject(note) {
-    const id = candidate.candidate_id
-    setStage('submitting')
+  async function handleReject(id, note) {
+    setSubmittingId(id)
+    setError(null)
     try {
-      recordOutcome(id, await rejectCandidate(id, REVIEWER, note))
+      const outcome = await rejectCandidate(id, REVIEWER, note)
+      setOutcomes((prev) => ({ ...prev, [id]: outcome }))
     } catch (caught) {
       fail(caught)
-      setStage('reviewing')
+    } finally {
+      setSubmittingId(null)
     }
   }
 
-  const busy = stage === 'uploading' || stage === 'extracting' || stage === 'submitting'
+  const busy = stage === 'uploading' || stage === 'extracting' || Boolean(submittingId)
   // Mocks have no PDF to render and the fallback candidate quotes no document,
   // so in both cases the review stays single-column rather than reserving a
   // gap for a plate that is never coming.
@@ -230,7 +273,7 @@ export default function RuleStudio() {
           />
         )}
 
-        {(stage === 'extracting' || stage === 'reviewing' || stage === 'submitting' || stage === 'reviewed') &&
+        {(stage === 'extracting' || stage === 'reviewing') &&
           document?.accepted !== false && (
             <ExtractionStages
               done={stage !== 'extracting'}
@@ -249,43 +292,54 @@ export default function RuleStudio() {
           </p>
         )}
 
-        {candidate && (stage === 'reviewing' || stage === 'submitting' || stage === 'reviewed') && (
-          <>
-            {candidates.length > 1 && (
-              <CandidateNav
-                index={activeIndex}
-                total={candidates.length}
-                decided={Object.keys(outcomes).length}
-                page={candidate.source_page}
-                busy={stage === 'submitting'}
-                onGo={goToCandidate}
-              />
-            )}
-            <div
-              className={[
-                'grid gap-4 lg:items-start',
-                showPlate ? 'lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]' : '',
-              ].join(' ')}
-            >
-              {showPlate && (
+        {candidates.length > 0 && stage === 'reviewing' && (
+          <div
+            className={[
+              'grid gap-4 lg:items-start',
+              showPlate ? 'lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]' : '',
+            ].join(' ')}
+          >
+            {showPlate && (
+              /* Sticky only from lg up. On a narrow screen the plate stacks
+                 above the list and pinning it there would eat the viewport the
+                 cards need. */
+              <div className="lg:sticky lg:top-4 lg:self-start">
                 <SourcePlate
                   page={page}
                   loading={pageLoading}
                   error={pageError}
-                  activeCandidateId={candidate.candidate_id}
+                  activeCandidateId={activeId}
                 />
-              )}
-              <CandidateReview
-                candidate={candidate}
-                onApprove={handleApprove}
-                onReject={handleReject}
-                busy={stage === 'submitting'}
-                result={reviewResult}
-                position={activeIndex + 1}
+              </div>
+            )}
+
+            <div>
+              <CandidateSummary
                 total={candidates.length}
+                decided={Object.keys(outcomes).length}
               />
+              <ol>
+                {candidates.map((item, index) => (
+                  <li
+                    key={item.candidate_id}
+                    ref={registerCard(item.candidate_id)}
+                    data-candidate-id={item.candidate_id}
+                    className="mt-4 scroll-mt-4 first:mt-0"
+                  >
+                    <CandidateReview
+                      candidate={item}
+                      onApprove={() => handleApprove(item.candidate_id)}
+                      onReject={(note) => handleReject(item.candidate_id, note)}
+                      busy={submittingId === item.candidate_id}
+                      result={outcomes[item.candidate_id] ?? null}
+                      position={index + 1}
+                      total={candidates.length}
+                    />
+                  </li>
+                ))}
+              </ol>
             </div>
-          </>
+          </div>
         )}
 
         {stage === 'reviewing' && candidates.length === 0 && (
@@ -314,63 +368,22 @@ export default function RuleStudio() {
 }
 
 /**
- * Steps through the extracted candidates. Extraction is one call that returns
- * every clause it found, so this is the only way to reach any rule past the
- * first, and the only way to reach the pages those rules came from.
+ * The scale of the haul, stated once and kept in view. A 26-page SOP yields
+ * candidates in the dozens, and the count is the point: it says how much of the
+ * document the extractor actually read.
  *
- * DESIGN.md §3 and §8: a ruled strip, not a card and not a pill. The counter is
- * mono because it is a position in a machine-generated list, and it carries the
- * source page so the reviewer can tell that moving the selection also moved the
- * plate beside it.
+ * DESIGN.md §3 and §8: a ruled strip, not a card and not a pill. The counts are
+ * mono and tabular because they are positions in a machine-generated list, and
+ * because the reviewed figure changes under the reader as they work.
  */
-function CandidateNav({ index, total, decided, page, busy, onGo }) {
+function CandidateSummary({ total, decided }) {
   return (
-    <nav
-      aria-label="Navigasi usulan aturan"
-      className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-ink-200 pb-3"
-    >
+    <div className="sticky top-0 z-10 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-ink-200 bg-paper pb-3 pt-4">
       <span className="font-mono text-mono-xs tracking-[0.12em] text-ink-500">USULAN</span>
-      <span className="tnum font-mono text-mono-xs text-ink-700">
-        {index + 1} / {total}
-      </span>
-      {page ? (
-        <span className="tnum font-mono text-mono-xs text-ink-500">halaman {page}</span>
-      ) : null}
-
-      <span className="tnum ml-auto text-label text-ink-500">
+      <span className="tnum font-mono text-mono-xs text-ink-700">{total}</span>
+      <span aria-live="polite" className="tnum ml-auto text-label text-ink-500">
         {decided} dari {total} sudah ditinjau
       </span>
-
-      <span className="flex gap-2">
-        <NavStep
-          onClick={() => onGo(index - 1)}
-          disabled={busy || index === 0}
-          label="Usulan sebelumnya"
-        >
-          Sebelumnya
-        </NavStep>
-        <NavStep
-          onClick={() => onGo(index + 1)}
-          disabled={busy || index >= total - 1}
-          label="Usulan berikutnya"
-        >
-          Berikutnya
-        </NavStep>
-      </span>
-    </nav>
-  )
-}
-
-function NavStep({ onClick, disabled, label, children }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      className="rounded-veto border border-ink-300 px-2.5 py-1 text-label text-ink-700 transition-colors hover:border-ink-500 hover:text-ink-900 disabled:cursor-not-allowed disabled:border-ink-200 disabled:text-ink-300"
-    >
-      {children}
-    </button>
+    </div>
   )
 }
