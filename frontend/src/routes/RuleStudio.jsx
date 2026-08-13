@@ -11,6 +11,7 @@ import {
 import CandidateReview from '@/components/rulestudio/CandidateReview'
 import DropZone from '@/components/rulestudio/DropZone'
 import ExtractionStages from '@/components/rulestudio/ExtractionStages'
+import RuleRegister from '@/components/rulestudio/RuleRegister'
 import SourcePlate from '@/components/rulestudio/SourcePlate'
 import TriageResult from '@/components/rulestudio/TriageResult'
 
@@ -231,12 +232,16 @@ export default function RuleStudio() {
 
         {(stage === 'extracting' || stage === 'reviewing' || stage === 'submitting' || stage === 'reviewed') &&
           document?.accepted !== false && (
-            <ExtractionStages done={stage !== 'extracting'} reducedMotion={reducedMotion} />
+            <ExtractionStages
+              done={stage !== 'extracting'}
+              reducedMotion={reducedMotion}
+              document={document}
+            />
           )}
 
         {usedFallback && stage !== 'extracting' && (
           <p className="text-label text-ink-500">
-            <span className="font-mono text-mono-xs tracking-[0.1em] text-ink-400">
+            <span className="font-mono text-mono-xs tracking-[0.1em] text-ink-500">
               HASIL PRA-PROSES ·{' '}
             </span>
             Layanan model tidak dapat dihubungi, jadi hasil ekstraksi yang tersimpan
@@ -298,6 +303,12 @@ export default function RuleStudio() {
           </div>
         )}
       </div>
+
+      {/* The page's floor. It is mounted in every stage, not only at rest,
+          because the useful moment to see the thresholds already in force is
+          while judging a proposed one. `key` remounts it after a review so a
+          newly approved rule appears in the register that follows it. */}
+      <RuleRegister key={Object.keys(outcomes).length} />
     </div>
   )
 }
@@ -318,12 +329,12 @@ function CandidateNav({ index, total, decided, page, busy, onGo }) {
       aria-label="Navigasi usulan aturan"
       className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-ink-200 pb-3"
     >
-      <span className="font-mono text-mono-xs tracking-[0.12em] text-ink-400">USULAN</span>
+      <span className="font-mono text-mono-xs tracking-[0.12em] text-ink-500">USULAN</span>
       <span className="tnum font-mono text-mono-xs text-ink-700">
         {index + 1} / {total}
       </span>
       {page ? (
-        <span className="tnum font-mono text-mono-xs text-ink-400">halaman {page}</span>
+        <span className="tnum font-mono text-mono-xs text-ink-500">halaman {page}</span>
       ) : null}
 
       <span className="tnum ml-auto text-label text-ink-500">

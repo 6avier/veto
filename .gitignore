@@ -48,3 +48,6 @@ pnpm-debug.log*
 ._*
 .Spotlight-V100
 .Trashes
+
+# Impeccable critique snapshots. Local design notes, not shipped.
+.impeccable/

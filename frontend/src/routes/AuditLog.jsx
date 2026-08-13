@@ -59,11 +59,7 @@ export default function AuditLog() {
             berlaku saat itu. Catatan tidak dapat diubah maupun dihapus.
           </p>
         </div>
-        {data && (
-          <p className="tnum text-data text-ink-500">
-            {formatNumber(data.total)} keputusan
-          </p>
-        )}
+        <Readout />
       </div>
 
       <div className="mt-5 flex flex-wrap items-end gap-4 border-y border-ink-200 py-3">
@@ -99,7 +95,7 @@ export default function AuditLog() {
             Bersihkan filter
           </button>
         )}
-        <p className="ml-auto pb-1.5 font-mono text-mono-xs text-ink-400">
+        <p className="ml-auto pb-1.5 font-mono text-mono-xs text-ink-500">
           HANYA-BACA · TIDAK DAPAT DIUBAH
         </p>
       </div>
@@ -123,7 +119,7 @@ export default function AuditLog() {
       {!loading && !error && rows.length === 0 && (
         <div className="mt-6 border border-dashed border-ink-300 px-4 py-10 text-center">
           <p className="text-body text-ink-500">Belum ada keputusan yang tercatat.</p>
-          <p className="mt-1 text-label text-ink-400">
+          <p className="mt-1 text-label text-ink-500">
             Jalankan validasi di Client ERP, lalu catatannya muncul di sini.
           </p>
         </div>
@@ -283,6 +279,69 @@ function DecisionRow({ row, expanded, onToggle }) {
   )
 }
 
+/**
+ * The trail's headline figures.
+ *
+ * The page had one small count and no focal point, so at booth distance it was
+ * a grey grid. These three answer the only questions anyone asks of an audit
+ * trail: how many decisions, how many were held, and how many were overridden.
+ *
+ * Not a stat-card row. Hairline-separated figures on one ruled line, sitting
+ * where the lone count already sat, so it reads as an instrument readout rather
+ * than a dashboard. DESIGN.md §8 bans dashboard card grids.
+ *
+ * Every figure is a `total` from a real filtered response. `limit=1` because
+ * only the count is wanted; nothing here is computed on the client except PASS,
+ * which is the difference of two server totals.
+ */
+function Readout() {
+  const [counts, setCounts] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([
+      listDecisions({ limit: 1 }),
+      listDecisions({ outcome: 'HOLD', limit: 1 }),
+      listDecisions({ has_override: true, limit: 1 }),
+    ])
+      .then(([all, held, overridden]) => {
+        if (cancelled) return
+        setCounts({
+          total: all.total,
+          held: held.total,
+          overridden: overridden.total,
+        })
+      })
+      .catch(() => {
+        // The trail itself still renders. A missing readout is a quiet
+        // degradation, not an error worth a banner.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (!counts) return null
+
+  return (
+    <dl className="flex items-baseline divide-x divide-ink-200">
+      <Figure label="keputusan" value={counts.total} />
+      <Figure label="ditahan" value={counts.held} marked={counts.held > 0} />
+      <Figure label="override" value={counts.overridden} />
+    </dl>
+  )
+}
+
+function Figure({ label, value, marked = false }) {
+  return (
+    <div className="flex items-baseline gap-2 px-4 first:pl-0 last:pr-0">
+      {marked && <span aria-hidden className="h-2 w-2 self-center bg-hold" />}
+      <dd className="tnum text-data-lg text-ink-900">{formatNumber(value)}</dd>
+      <dt className="text-label text-ink-500">{label}</dt>
+    </div>
+  )
+}
+
 function Meta({ label, value, mono }) {
   return (
     <div>
@@ -317,7 +376,7 @@ function Th({ children, align = 'left' }) {
   return (
     <th
       scope="col"
-      className={`py-2 pr-3 text-label font-medium text-ink-400 ${align === 'right' ? 'text-right' : ''}`}
+      className={`py-2 pr-3 text-label font-medium text-ink-500 ${align === 'right' ? 'text-right' : ''}`}
     >
       {children}
     </th>
