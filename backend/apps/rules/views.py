@@ -200,7 +200,7 @@ class DocumentExtractView(APIView):
                 - threshold: integer (convert to raw number, e.g. 24 ton -> 24000)
                 - unit: string (must be "kg" or "mm")
                 - applies_to: object (e.g. {{"axle_config": ["1.2"]}} or null)
-                - source_text_excerpt: string (the exact sentence from the text)
+                - source_text_excerpt: string (the exact text snippet or table row from the document)
                 - source_page: integer (guess the page number based on '--- Page N ---' markers)
                 
                 Document Text:

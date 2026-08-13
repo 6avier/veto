@@ -6,11 +6,11 @@ def seed_client_rules(apps, schema_editor):
     Rule = apps.get_model('rules', 'Rule')
 
     client_pack, created = RulePack.objects.get_or_create(
-        id="c0a80101-0000-4000-8000-000000000002",
+        domain="ODOL",
+        version=1,
+        origin="CLIENT",
         defaults={
-            "domain": "ODOL",
-            "version": 1,
-            "origin": "CLIENT"
+            "id": "c0a80101-0000-4000-8000-000000000002"
         }
     )
 
