@@ -1,0 +1,14 @@
+# Vercel builds from the repo root rather than from frontend/, because the
+# frontend imports ten fixtures from contract/ and a build scoped to frontend/
+# cannot see them. Everything the frontend build does not need is excluded here
+# so the upload stays small.
+#
+# Do not add contract/ to this list. The build reads it.
+
+backend/
+data/
+docs/
+PROPOSAL+REGULATIONS/
+.impeccable/
+*.md
+!frontend/**/*.md
