@@ -157,6 +157,17 @@ export default function RuleStudio() {
    *
    * The band is the upper third of the viewport, not the whole of it: with
    * three cards visible, the one being read is the one at the top.
+   *
+   * Decided cards are skipped. A decided one collapses to a single row but
+   * stays in the list and stays observed, so it went on winning this selection
+   * from the top of the band: approving the first candidate left the plate on
+   * its page while the card actually filling the screen cited another. The
+   * reviewer is only ever on a rule that is still open, so only those count.
+   *
+   * `outcomes` is a dependency for the same reason. Deciding a card collapses
+   * it, which moves everything below it, and the observer has to be re-asked
+   * which card the reviewer landed on. Re-observing replays each target's
+   * current state, so `visibleIds` refills on its own.
    */
   useEffect(() => {
     if (stage !== 'reviewing' || candidates.length === 0) return undefined
@@ -168,9 +179,11 @@ export default function RuleStudio() {
           if (entry.isIntersecting) visibleIds.current.add(id)
           else visibleIds.current.delete(id)
         }
-        const first = candidates.find((item) => visibleIds.current.has(item.candidate_id))
-        // No card in the band mid-flick: hold the last one rather than blanking
-        // the plate, so it never flashes empty between two cards.
+        const first = candidates.find(
+          (item) => visibleIds.current.has(item.candidate_id) && !outcomes[item.candidate_id],
+        )
+        // Nothing open in the band — mid-flick, or the whole page is decided.
+        // Hold the last one rather than blanking the plate.
         if (!first || first.candidate_id === activeIdRef.current) return
         activeIdRef.current = first.candidate_id
         setActiveId(first.candidate_id)
@@ -186,7 +199,7 @@ export default function RuleStudio() {
       observer.disconnect()
       visibleIds.current.clear()
     }
-  }, [candidates, stage, usedFallback, document])
+  }, [candidates, stage, usedFallback, document, outcomes])
 
   const registerCard = (id) => (node) => {
     if (node) cardNodes.current.set(id, node)
