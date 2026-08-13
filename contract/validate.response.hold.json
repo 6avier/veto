@@ -18,29 +18,17 @@
     {
       "dimension": "GROSS_WEIGHT",
       "actual_value": 24500,
-      "limit_value": 22000,
-      "excess_value": 2500,
+      "limit_value": 24000,
+      "excess_value": 500,
       "unit": "kg",
       "severity": "BLOCKING",
-      "rule_origin": "CLIENT",
-      "legal_citation": "SOP Internal Gudang Cikarang v2 \u00a73.1",
-      "directive": "Kurangi muatan total 2.500 kg. Batas maksimal SOP Klien adalah 22.000 kg Saran proporsional: Turunkan 658 kg dari sumbu depan, dan 1.184 kg dari sumbu tengah, dan 658 kg dari sumbu belakang agar keseimbangan terjaga."
-    },
-    {
-      "dimension": "DIMENSION_HEIGHT",
-      "actual_value": 4100,
-      "limit_value": 4000,
-      "excess_value": 100,
-      "unit": "mm",
-      "severity": "BLOCKING",
-      "rule_origin": "CLIENT",
-      "legal_citation": "SOP Internal Gudang Cikarang v2 \u00a73.1",
-      "directive": "Kurangi tinggi muatan 100 mm. Batas maksimal SOP Klien adalah 4.000 mm"
+      "rule_origin": "CENTRAL",
+      "legal_citation": "PP 55/2012 Lampiran II (Konfigurasi 1.2.2)",
+      "directive": "Kurangi muatan total 500 kg Saran proporsional: Turunkan 132 kg dari sumbu depan, dan 237 kg dari sumbu tengah, dan 132 kg dari sumbu belakang agar keseimbangan terjaga."
     }
   ],
   "rule_packs_applied": [
-    { "id": "c0a80101-0000-4000-8000-000000000001", "domain": "ODOL", "version": 3, "origin": "CENTRAL" },
-    { "id": "c0a80101-0000-4000-8000-000000000002", "domain": "ODOL", "version": 1, "origin": "CLIENT" }
+    { "id": "c0a80101-0000-4000-8000-000000000001", "domain": "ODOL", "version": 3, "origin": "CENTRAL" }
   ],
   "latency_ms": 58,
   "evaluated_at": "2026-08-11T14:32:10+07:00"
