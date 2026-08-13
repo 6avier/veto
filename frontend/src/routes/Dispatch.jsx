@@ -18,15 +18,33 @@ import { limitsFromRules } from '@/lib/limits'
  * that have since changed is not a verdict.
  */
 
+/** Today's date, so a slip never opens showing a stale one at the booth. */
+function todayDispatchRef() {
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `DO-${now.getFullYear()}-${month}-${day}-0001`
+}
+
+/**
+ * Only the document number is pre-filled. Every figure starts empty so the
+ * numbers on screen are the ones the operator just typed — a form that opens
+ * already holding a weight reads as a rigged demo, and it hides the one thing
+ * worth watching: the verdict changing because the input changed.
+ *
+ * `axleConfig` keeps a value because it is a select, and because
+ * `axleLoads.length` has to match `axleCountFor(axleConfig)` for validate() to
+ * agree with the form it is checking.
+ */
 const DEFAULTS = {
-  dispatchRef: 'DO-2026-08-11-0043',
+  dispatchRef: todayDispatchRef(),
   axleConfig: '1.2',
-  tareWeight: '8500',
-  grossWeight: '22400',
-  axleLoads: ['6800', '15600'],
-  length: '12000',
-  width: '2500',
-  height: '4100',
+  tareWeight: '',
+  grossWeight: '',
+  axleLoads: ['', ''],
+  length: '',
+  width: '',
+  height: '',
 }
 
 /** Which form field each violation belongs under. PRODUCT.md F2. */
