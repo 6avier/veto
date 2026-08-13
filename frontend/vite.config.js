@@ -3,15 +3,11 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-// @contract resolves to the repo-root /contract directory. Those JSON files are
-// the single source of truth shared with the backend — the frontend mocks import
-// them rather than keeping a second copy that can silently drift.
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '@contract': fileURLToPath(new URL('../contract', import.meta.url)),
     },
   },
   server: {

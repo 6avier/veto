@@ -1,5 +1,4 @@
-import { ApiError, delay, http, USE_MOCKS } from './client'
-import { mocks } from '@/mocks'
+import { ApiError, http } from './client'
 
 /**
  * POST /validate — api-contract.md §1.
@@ -12,11 +11,6 @@ import { mocks } from '@/mocks'
  * @throws {ApiError} only for genuine failures — bad payload, network, server.
  */
 export async function validateDispatch(payload) {
-  if (USE_MOCKS) {
-    await delay()
-    return mocks.validate(payload)
-  }
-
   try {
     const { data } = await http.post('/validate', payload)
     return data
@@ -31,11 +25,6 @@ export async function validateDispatch(payload) {
 
 /** POST /decisions/{id}/override — api-contract.md §2. */
 export async function overrideDecision(decisionId, { reason, overriddenBy }) {
-  if (USE_MOCKS) {
-    await delay()
-    return mocks.override()
-  }
-
   try {
     const { data } = await http.post(`/decisions/${decisionId}/override`, {
       reason,

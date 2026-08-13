@@ -1,4 +1,4 @@
-export { ApiError, USE_MOCKS, http } from './client'
+export { ApiError, http } from './client'
 export { validateDispatch, overrideDecision } from './validation'
 export { listDecisions, getDecision } from './audit'
 export {

@@ -1,12 +1,7 @@
-import { ApiError, delay, http, USE_MOCKS } from './client'
-import { mocks } from '@/mocks'
+import { ApiError, http } from './client'
 
 /** POST /documents — multipart upload plus triage. api-contract.md §4. */
 export async function uploadDocument(file) {
-  if (USE_MOCKS) {
-    await delay(900)
-    return mocks.uploadDocument(file)
-  }
   const form = new FormData()
   form.append('file', file)
   try {
@@ -21,10 +16,6 @@ export async function uploadDocument(file) {
 
 /** POST /documents/{id}/extract — the slow one. Show discrete stages, not a spinner. */
 export async function extractRules(documentId, { force = false } = {}) {
-  if (USE_MOCKS) {
-    await delay(2500)
-    return mocks.extract()
-  }
   try {
     const { data } = await http.post(`/documents/${documentId}/extract`, { force }, { timeout: 60000 })
     return data
@@ -38,14 +29,9 @@ export async function extractRules(documentId, { force = false } = {}) {
  *
  * Returns the page as an inline PNG plus the rectangles each candidate clause
  * occupies, given as percentages of the page box so the overlay stays aligned
- * at any rendered width. Mocks have no PDF to render, so they return null and
- * the plate simply does not appear.
+ * at any rendered width.
  */
 export async function getDocumentPage(documentId, pageNumber) {
-  if (USE_MOCKS) {
-    await delay(400)
-    return mocks.documentPage?.(pageNumber) ?? null
-  }
   try {
     const { data } = await http.get(`/documents/${documentId}/pages/${pageNumber}`, {
       timeout: 30000,
@@ -58,10 +44,6 @@ export async function getDocumentPage(documentId, pageNumber) {
 
 /** GET /rule-candidates — the human-in-the-loop staging queue. */
 export async function listRuleCandidates(status = 'PENDING') {
-  if (USE_MOCKS) {
-    await delay()
-    return mocks.ruleCandidates()
-  }
   try {
     const { data } = await http.get('/rule-candidates', { params: { status } })
     return data
@@ -71,10 +53,6 @@ export async function listRuleCandidates(status = 'PENDING') {
 }
 
 export async function approveCandidate(candidateId, reviewedBy) {
-  if (USE_MOCKS) {
-    await delay()
-    return mocks.approveCandidate()
-  }
   try {
     const { data } = await http.post(`/rule-candidates/${candidateId}/approve`, {
       reviewed_by: reviewedBy,
@@ -86,10 +64,6 @@ export async function approveCandidate(candidateId, reviewedBy) {
 }
 
 export async function rejectCandidate(candidateId, reviewedBy, note) {
-  if (USE_MOCKS) {
-    await delay()
-    return mocks.rejectCandidate()
-  }
   try {
     const { data } = await http.post(`/rule-candidates/${candidateId}/reject`, {
       reviewed_by: reviewedBy,
@@ -101,12 +75,8 @@ export async function rejectCandidate(candidateId, reviewedBy, note) {
   }
 }
 
-/** GET /rules — read-only in MVP. api-contract.md §5. */
+/** GET /rules — api-contract.md §5. */
 export async function listRules(params = {}) {
-  if (USE_MOCKS) {
-    await delay()
-    return mocks.rules()
-  }
   try {
     const { data } = await http.get('/rules', { params })
     return data
@@ -121,10 +91,6 @@ export async function listRules(params = {}) {
  * alone; that pack is what makes the dispatch screen return HOLD.
  */
 export async function resetClientRules() {
-  if (USE_MOCKS) {
-    await delay(400)
-    return { rules_removed: 0, rule_packs_removed: 0, central_rules_retained: 0 }
-  }
   try {
     const { data } = await http.post('/rules/reset-client')
     return data

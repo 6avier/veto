@@ -13,8 +13,6 @@ export const http = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true'
-
 /**
  * Normalises an axios failure into the contract's error envelope.
  * See api-contract.md §0.
@@ -56,6 +54,3 @@ export class ApiError extends Error {
     })
   }
 }
-
-/** Simulates network latency so mocked loading states look real. */
-export const delay = (ms = 350) => new Promise((resolve) => setTimeout(resolve, ms))

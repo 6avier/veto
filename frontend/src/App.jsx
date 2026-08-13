@@ -1,7 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
-import { USE_MOCKS } from '@/api'
-
 /**
  * The shell. Two products share it: the client's ERP and VETO.
  *
@@ -31,15 +29,6 @@ export default function App() {
             VETO
           </SystemTab>
         </div>
-
-        {USE_MOCKS && (
-          <span
-            className="ml-auto rounded-veto border border-ink-700 px-1.5 py-0.5 font-mono text-mono-xs text-ink-400"
-            title="Berjalan dengan data contoh, tanpa backend"
-          >
-            MOCKS
-          </span>
-        )}
       </header>
 
       <Outlet />
