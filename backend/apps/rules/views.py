@@ -228,14 +228,14 @@ class DocumentExtractView(APIView):
             # sitting under SUMBER looking like a quotation.
             #
             # CLAUDE.md §5: the threshold below is a placeholder, not a figure
-            # taken from any regulation or document. TODO: verify.
+            # taken from any regulation or document.
             used_fallback = True
             fallback_reason = str(e)
             candidates_data = [
                 {
                     "dimension": "GROSS_WEIGHT",
                     "operator": "LTE",
-                    "threshold": 25000,
+                    "threshold": 24000,
                     "unit": "kg",
                     "applies_to": None,
                     "source_text_excerpt": (
