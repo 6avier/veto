@@ -179,19 +179,49 @@ export default function RuleStudio() {
           if (entry.isIntersecting) visibleIds.current.add(id)
           else visibleIds.current.delete(id)
         }
-        const first = candidates.find(
+
+        const open = candidates.filter(
           (item) => visibleIds.current.has(item.candidate_id) && !outcomes[item.candidate_id],
         )
-        // Nothing open in the band — mid-flick, or the whole page is decided.
+        // Nothing open on screen — mid-flick, or every visible rule is decided.
         // Hold the last one rather than blanking the plate.
-        if (!first || first.candidate_id === activeIdRef.current) return
+        if (open.length === 0) return
+
+        // Whichever open card fills most of the reading band, not merely the
+        // first to touch it: the tail of the card above reaches perhaps 30px
+        // past the band's top edge, and taking the first match handed the plate
+        // to that sliver instead of the card covering the rest of the band.
+        //
+        // The band is a preference, not a requirement. Everything above the
+        // list — heading, triage panel, extraction stages, summary strip — runs
+        // to roughly 570px, so at the top of the page nothing reaches the band
+        // at all. There, the topmost card on screen is the one being read.
+        const bandTop = window.innerHeight * 0.1
+        const bandBottom = window.innerHeight * 0.45
+        let best = null
+        let bestOverlap = 0
+        for (const item of open) {
+          const node = cardNodes.current.get(item.candidate_id)
+          if (!node) continue
+          const rect = node.getBoundingClientRect()
+          const overlap = Math.min(rect.bottom, bandBottom) - Math.max(rect.top, bandTop)
+          if (overlap > bestOverlap) {
+            bestOverlap = overlap
+            best = item
+          }
+        }
+
+        const first = best ?? open[0]
+        if (first.candidate_id === activeIdRef.current) return
         activeIdRef.current = first.candidate_id
         setActiveId(first.candidate_id)
         if (first.source_page && !usedFallback) {
           loadPage(document.document_id, first.source_page)
         }
       },
-      { rootMargin: '-10% 0px -55% 0px' },
+      // Visibility only. The reading band is applied above, against live rects,
+      // because it has to be able to find nothing and say so.
+      { rootMargin: '0px' },
     )
 
     for (const node of cardNodes.current.values()) observer.observe(node)
