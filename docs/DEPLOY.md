@@ -1,253 +1,151 @@
 # VETO — Deployment
 
-Status as of **2026-08-13, mid-afternoon**. Deadline is **23:55 WIB the same day**.
+**Both halves are live and verified end to end.** Updated 2026-08-13, late
+afternoon. Demo and booth are 2026-08-14.
 
-**Where this stands in one line: every config file is written, committed and
-verified locally. Nothing has been deployed yet.**
-
-Frontend → Vercel. Backend → Render. Both repos are already connected to
-GitHub by the owner; neither has had a successful deploy.
-
----
-
-## 1. What is already done
-
-| Artifact | State |
+| | URL |
 |---|---|
-| `render.yaml` | Committed. Blueprint documenting the service; the service itself is made in the dashboard. |
-| `backend/render-build.sh` | Committed, executable (`chmod +x` is in the tree). |
-| `vercel.json` | Committed **at the repo root**, not in `frontend/`. See §4. |
-| `.vercelignore` | Committed. Keeps the upload lean. |
-| `backend/.env.example` | Updated: records the deployed variable set, and no longer says GEMINI. |
+| Frontend (Vercel) | **https://veto-gold.vercel.app** |
+| Backend (Render) | **https://veto-api-cgek.onrender.com** |
 
-`settings.py` needed **no changes**. `DEBUG`, `ALLOWED_HOSTS`,
-`CSRF_TRUSTED_ORIGINS`, `CORS_ALLOWED_ORIGINS` and `DATABASE_URL` were already
-env-driven, whitenoise was already in the middleware, and
-`SECURE_PROXY_SSL_HEADER` was already set for a proxied host.
-
-### Verified locally, under production settings
-
-- `manage.py check --deploy` — clean apart from two ignorable warnings (a short
-  test key, and HSTS preload which does not apply to an `onrender.com` subdomain)
-- `collectstatic` — 157 files copied, 453 post-processed
-- `config.wsgi:application` imports
-- Vercel's exact commands from the repo root: `npm --prefix frontend ci` then
-  `npm --prefix frontend run build` → 924 KB in `frontend/dist`, and the bundle
-  contains a string that exists only in `contract/rules.list.json`, which proves
-  the fixtures resolved
-
-Relevant commits: `91c544a` (Render + first Vercel config), `3aaab16` (move
-Vercel config to root).
+**Demo from the deployed URL, not from a laptop.** This is not a preference —
+see §5.
 
 ---
 
-## 2. What has NOT happened
+## 1. What is live
 
-- No Render Postgres instance created
-- No Render web service deployed
-- No Vercel project deployed
-- No environment variables set anywhere
+Verified by request against production, not inferred from a dashboard:
 
----
-
-## 3. Decisions already made — do not relitigate
-
-**Postgres, not SQLite.** Render's disk is ephemeral: SQLite would reset the
-audit trail on every deploy and every wake from sleep, taking the approved
-client rules with it. Owner chose Postgres.
-
-**Free tier, spin-down accepted.** Render free sleeps after ~15 minutes idle and
-takes ~50 s to wake. Owner chose to warm it manually rather than add a cron
-pinger or pay. **Open `/health/` 2–3 minutes before the demo, and again before
-the booth opens.**
-
-**Backend stays on Render. It cannot go on Vercel.** The owner asked; the
-answer is grounded in the code, not preference. Rule Studio touches disk across
-three separate requests:
-
-| Request | File | Line | Action |
-|---|---|---|---|
-| Upload | `apps/rules/views.py` | 79 | writes the PDF into `MEDIA_ROOT` |
-| Extract | `apps/rules/views.py` | 138 | reads `doc.file_path` |
-| Source plate | `apps/rules/views.py` | 385 | checks the file exists, renders the page |
-
-Vercel Python is serverless: each request can land on a different instance and
-`/tmp` is not shared between invocations. Upload would succeed, then extraction
-would fail with `"Failed to read PDF text"` and the source plate would 404 with
-`"Document file is no longer on disk"`. The dispatch path (`/validate`,
-`/audit`, `/rules`) is pure DB and would be fine — it is only the AI
-differentiator that breaks. Dependencies are also 188 MB against Vercel Hobby's
-250 MB unzipped limit, with PyMuPDF alone at 58 MB.
-
-A version that works exists — store uploaded PDFs as bytes in the database
-instead of on disk — but that is a schema change plus a migration touching the
-backend lane, which is not a same-day move.
-
----
-
-## 4. Why `vercel.json` sits at the repo root
-
-The frontend build reads **ten fixtures from `contract/`**, which is outside
-`frontend/`:
-
-```
-frontend/src/mocks/index.js:11-20   import … from '@contract/…json'
-```
-
-Those imports are static, so Vite resolves them at build time **even when mocks
-are off**. A build scoped to `frontend/` cannot see them and fails on
-unresolved `@contract` imports.
-
-Vercel's "include source files outside of the Root Directory" toggle **does not
-appear** on the project-creation screen in the owner's account, so the build
-runs from the repo root instead: `installCommand` and `buildCommand` reach into
-`frontend/` with `--prefix`, and `outputDirectory` is `frontend/dist`.
-
-**Do not "fix" this by copying `contract/` into `frontend/`.** That creates two
-copies of the same fact, which this repo has already been bitten by twice.
-
-`frontend/vercel.json` was deleted, not left beside the root one, so there is no
-ignored config lying in the tree to mislead the next reader.
-
----
-
-## 5. Steps remaining, in order
-
-Backend first — the frontend needs its URL.
-
-### 5.1 Render Postgres
-
-**New → Postgres**, plan **Free**, name `veto-db`. Wait for *available*, then
-copy the **Internal Database URL**.
-
-Render's free Postgres expires ~30 days after creation. That outlasts the event.
-
-### 5.2 Render web service
-
-Settings:
-
-| Field | Value |
+| Check | Result |
 |---|---|
-| Root Directory | `backend` |
-| Runtime | Python |
-| Build Command | `./render-build.sh` |
-| Start Command | `uv run gunicorn config.wsgi:application --bind 0.0.0.0:$PORT` |
-| Health Check Path | `/health/` |
+| `/health/` | `{"status":"ok","service":"veto-api"}` |
+| Rule base | 13 `CENTRAL`, 0 `CLIENT` (see §4) |
+| Corrected thresholds | tandem 18.000, zero `Asumsi` citations |
+| A dispatch | PASS 200 / HOLD 403, latency 4–90 ms against a 300 ms target |
+| Audit trail | populated, `/decisions` returns records |
+| CORS from the browser | `access-control-allow-origin: https://veto-gold.vercel.app` |
+| Frontend bundle | carries the Render URL with `/api/v1`, mocks off |
 
-Environment:
+---
+
+## 2. The one thing still unset
+
+**`OPENAI_API_KEY` is empty on Render.**
+
+This is now the critical path, not a nice-to-have, because the client SOP rules
+were deliberately unseeded (§4). With no key, Rule Studio extraction falls back
+to a placeholder and the closing beat never appears.
+
+Set it under **Render → `veto-api` → Environment**. Render redeploys on save.
+Never put it in a `VITE_` variable — those are baked into the public bundle.
+
+---
+
+## 3. Configuration as deployed
+
+Created through Render's **Blueprint** from the committed [`render.yaml`](../render.yaml),
+which built the Postgres instance and the web service together and wired
+`DATABASE_URL` and `DJANGO_SECRET_KEY` on its own.
+
+Render environment:
 
 ```
 PYTHON_VERSION=3.12
 DJANGO_DEBUG=False
-DJANGO_SECRET_KEY=<generate, see below>
-DATABASE_URL=<Internal Database URL from 5.1>
-DJANGO_ALLOWED_HOSTS=<service>.onrender.com
-OPENAI_API_KEY=<real key>
+DJANGO_SECRET_KEY=<generated by Render>
+DATABASE_URL=<wired from veto-db>
+DJANGO_ALLOWED_HOSTS=veto-api-cgek.onrender.com     # no scheme, no slash
+CORS_ALLOWED_ORIGINS=https://veto-gold.vercel.app    # scheme required
+DJANGO_CSRF_TRUSTED_ORIGINS=https://veto-gold.vercel.app
+OPENAI_API_KEY=<UNSET — see §2>
 ```
 
-Generate the secret key with:
-
-```bash
-uv run --directory backend python -c "from django.core.management.utils import get_random_secret_key as k; print(k())"
-```
-
-`DJANGO_SECRET_KEY` is not optional. `settings.py` deliberately refuses to boot
-when `DEBUG=False` and the key is still the dev value, so a missing key fails
-the deploy loudly instead of shipping something insecure and quiet.
-
-Confirm with `https://<service>.onrender.com/health/` →
-`{"status":"ok","service":"veto-api"}`.
-
-### 5.3 Vercel
-
-| Field | Value |
-|---|---|
-| Application Preset | **not** `Services` — a single-framework preset |
-| Root Directory | `./` (repo root, leave as-is) |
-| Build / Output / Install Command | leave blank; the root `vercel.json` declares all three |
-
-Environment Variables — add the first, click **+ Add More**, add the second:
+Vercel: preset **Vite**, Root Directory `./`, all three commands left blank
+because the root [`vercel.json`](../vercel.json) declares them.
 
 ```
-VITE_API_BASE_URL = https://<service>.onrender.com/api/v1
-VITE_USE_MOCKS    = false
+VITE_API_BASE_URL=https://veto-api-cgek.onrender.com/api/v1
+VITE_USE_MOCKS=false
 ```
 
-Leave `Environments` on **Production and Preview**. Leave the sensitive/lock
-toggle **off**: `VITE_` values are baked into the client bundle and are
-therefore public. **Never put a secret in a `VITE_` variable.**
+---
 
-### 5.4 Back to Render — CORS
+## 4. Decisions that shape the deployment
 
-Once the Vercel domain exists, add these and redeploy:
+**Postgres, not SQLite.** Render's disk is ephemeral; SQLite would reset the
+audit trail on every deploy and every wake.
 
-```
-CORS_ALLOWED_ORIGINS=https://<project>.vercel.app
-DJANGO_CSRF_TRUSTED_ORIGINS=https://<project>.vercel.app
-```
+**Free tier, spin-down accepted.** Sleeps after ~15 minutes idle, ~50 s to wake.
+**Open `/health/` 2–3 minutes before the demo, and again before the booth opens.**
 
-CORS was invisible in development because the Vite proxy made everything
-same-origin. In production the two hosts differ and CORS becomes load-bearing.
-**Symptom if skipped: `curl` against the API succeeds while every request from
-the browser fails.**
+**The backend cannot move to Vercel.** Rule Studio touches disk across three
+separate requests (`apps/rules/views.py:79`, `:138`, `:385`) and Vercel Python is
+serverless, so upload would succeed and extraction would then fail. Dependencies
+are also 188 MB against a 250 MB limit.
+
+**The client SOP rules are deliberately absent.** Migration `0008` removes what
+`0007` seeded, so the demo has to earn them: upload the SOP in Rule Studio,
+approve it, then the same dispatch flips to HOLD. This removed a safety net on
+purpose — which is why §2 matters.
+
+---
+
+## 5. Why the deployed instance is cleaner than a laptop
+
+A fresh database runs every migration from scratch, so production carries the
+**corrected** thresholds. This machine's local SQLite still holds the stale rows,
+because `d9e4a12` corrected an already-applied migration and Django never re-runs
+one.
+
+Observed directly today: the same rule renders **18.000 kg** in production and
+**16.000 kg** locally, and local citations still read `Asumsi`.
 
 ---
 
 ## 6. Traps, each one already paid for
 
-**`VITE_API_BASE_URL` replaces the whole base path, it does not extend it.**
+**Render's health check failed with `400` on the first deploy.** Django's
+`DisallowedHost`. The blueprint's self-referencing `fromService … property: host`
+did not resolve, leaving `DJANGO_ALLOWED_HOSTS` empty. Setting the hostname by
+hand fixed it — **but only after a real redeploy**. Changing an environment
+variable and reading the old process's logs looks identical to the fix not
+working. Wait for a new `Booting worker` line before judging anything.
 
-```js
-// frontend/src/api/client.js:11
-baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1'
-```
+**`DJANGO_ALLOWED_HOSTS` takes no scheme. `CORS_ALLOWED_ORIGINS` requires one.**
+Adjacent settings, opposite rules.
 
-Setting it to `https://…onrender.com` without `/api/v1` sends every request to
-`/decisions` instead of `/api/v1/decisions`, and everything 404s. **The value
-must end in `/api/v1`.**
+**CORS is invisible until production.** The Vite proxy makes everything
+same-origin in development. Symptom if unset: `curl` succeeds while every request
+from a browser fails.
+
+**`VITE_API_BASE_URL` replaces the base path, it does not extend it.** It must
+end in `/api/v1` or every request 404s.
 
 **Vite bakes env vars at build time.** Changing one in the Vercel dashboard does
-nothing until a redeploy. Restarting is not enough.
+nothing until a redeploy.
 
-**Vercel offers a multi-service preset** because it detects `backend/` as
-Django. Reject it, and do not copy the `vercel.json` it shows on screen — it
-would try to build Django on Vercel and override the root config.
+**Vercel offers a multi-service preset** because it detects `backend/` as Django.
+The detection tree still showed both services after choosing the Vite preset;
+that turned out to be cosmetic — the root `vercel.json` won, and `.vercelignore`
+excludes `backend/` from the upload anyway. The build log is the thing to check:
+if `pip` appears, abort.
 
-**Uploaded PDFs do not survive a redeploy or a wake from sleep.** Render's disk
-is ephemeral. A document uploaded before a redeploy will have no source page to
-render afterwards. **Upload during the demo, not before it.**
+**Uploaded PDFs do not survive a redeploy or a wake.** Ephemeral disk.
+**Upload during the demo, not before it.**
 
-**The audit trail starts empty** on a fresh Postgres. Run a few dispatches to
-populate it before a judge sees `/audit`, or it renders its empty state.
-
----
-
-## 7. One thing that works in your favour
-
-A fresh Postgres is migrated from scratch, so the deployed instance gets the
-**corrected** thresholds: tandem at 18000, and no `Asumsi` in any citation.
-
-This machine's local database still holds the stale row, because `d9e4a12`
-corrected an already-applied migration and nothing rewrites existing data.
-
-**So the deployed demo is cleaner than a demo from this laptop.** Prefer the
-deployed URL on the day.
-
-`0007_seed_client_rules` also runs on that first deploy, so the client rules
-(22.000 kg, 4.000 mm) are seeded automatically and the closing beat works with
-no manual setup.
-
-Note on `0007`: its `get_or_create` keys on `id` while the unique constraint is
-`(domain, origin, version)`, so it crashes on a database where somebody already
-approved a client rule through the UI. **On a fresh deploy it is harmless** —
-it runs before anyone can approve anything. It still needs fixing for existing
-databases; that is a backend-lane task, not a release blocker.
+**Only the production Vercel domain is in CORS.** Per-deploy preview URLs are
+not. Demo from `veto-gold.vercel.app`, never a preview link.
 
 ---
 
-## 8. Worth doing if there is time
+## 7. Worth doing if there is time
 
-A **second Vercel deployment with `VITE_USE_MOCKS=true`** as a standby URL. If
-Render sleeps or dies mid-booth, that URL keeps working with no backend at all.
-Vite locks env vars at build time, so this cannot be switched live — the standby
-has to be built ahead of time.
+A **second Vercel deployment with `VITE_USE_MOCKS=true`** as a standby. If Render
+dies mid-booth that URL keeps working with no backend. Vite locks env vars at
+build time, so it has to be built ahead.
+
+Note its limit: the mocks HOLD fixture now carries two `CENTRAL` violations and
+no `[ SOP KLIEN ]` marker, because `contract/validate.response.hold.json` was
+resynced when the client rules were unseeded. The standby demonstrates the gate,
+not the client-SOP beat.

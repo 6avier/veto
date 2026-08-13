@@ -4,10 +4,13 @@ Short version for a cold session. Full detail: [HANDOFF.md](HANDOFF.md).
 
 **Deadline: 2026-08-13 23:55 WIB.** Demo and booth 2026-08-14.
 
-> **If you are picking this up to deploy, go straight to [DEPLOY.md](DEPLOY.md).**
-> Every config file is written, committed and verified locally. Nothing has been
-> deployed yet. That document has the current state, the decisions already made,
-> the remaining steps in order, and the traps.
+> **Both halves are deployed and verified.**
+> Frontend **https://veto-gold.vercel.app** · backend **https://veto-api-cgek.onrender.com**.
+> [DEPLOY.md](DEPLOY.md) has the configuration as deployed, the traps already
+> paid for, and the operational notes for demo day.
+>
+> **One thing is unset and it is now the critical path: `OPENAI_API_KEY` on
+> Render.** See "What blocks the demo" below.
 
 ---
 
@@ -50,12 +53,18 @@ same origin and the backend's CORS pin on 5173 never applies in dev.
 
 | Surface | State |
 |---|---|
-| `/dispatch` | Built, **verified live**. Added yellow frontend warnings for unbalanced payloads (Smart Balance Warnings) with shifting weight calculations. |
-| `/audit` | Built, **verified live** |
-| `/rule-studio` | Built, **verified live** — upload, triage, extract, source plate |
-| Backend | All endpoints respond. 38/38 tests passing as of 2026-08-13. Added **Smart Directives** to `engine.py` (proportional overload reduction & shifting recommendations). Added Gross Weight vs Axle integrity check. |
+| `/dispatch` | Built, **verified in production**. Opens with an empty form — only the DO number, carrying today's date. Client-side balance warnings kept deliberately (see [IMPECCABLE.md](IMPECCABLE.md)). |
+| `/audit` | Built, **verified in production**. Closes with an honest `Menampilkan N dari M`. |
+| `/rule-studio` | Built, **verified in production** — upload, triage, extract, source plate, rule register |
+| Backend | All endpoints respond in production. **31 of 38 tests pass; 7 Rule Studio tests error and did so before any of today's work.** `engine.py` carries Smart Directives and the gross-vs-axle integrity check. |
 
-Frontend is feature-complete. Nothing blocking is frontend work.
+**The "38/38 passing" claim in earlier revisions of this document was wrong.**
+Verified by stashing the newest migration and re-running: the seven
+`apps.rules.tests.test_rule_studio` errors are pre-existing and unrelated to
+anything shipped today.
+
+Frontend is feature-complete for the demo. The next piece of frontend work is
+designed but not built — see "Next task".
 
 ## Read this before touching Rule Studio
 
@@ -87,44 +96,89 @@ placeholder. **Do not make it invent a figure again** (`CLAUDE.md` §5).
    "restore VITE_USE_MOCKS env variable toggle"). Verified working: with the
    flag on, the MOCKS badge shows and no request reaches the API.
 
-1. ~~No CLIENT rule pack is seeded~~ **Done 2026-08-13** (Iqbal, `65bc380`).
-   **Verified end to end** on this machine: 23.000 kg on a `1.2.2` is legal
-   nationally (24.000) but HOLDs against the client SOP (22.000) and reads
-   `[ SOP KLIEN ]`. The closing beat works.
+1. **The CLIENT rule pack is now deliberately ABSENT.** `65bc380` seeded it;
+   migration `0008` (`e6f59b4`) removes it again, on the owner's instruction, so
+   the demo has to earn it: upload the SOP in Rule Studio, approve it, and only
+   then does 23.000 kg on a `1.2.2` flip from PASS to HOLD reading `[ SOP KLIEN ]`.
+   Verified in production: 23.000 kg currently **passes**.
 
-2. **The `Asumsi` thresholds are corrected in the migrations but NOT in this
-   machine's database.** Iqbal removed the word (`a908ef7`) and corrected the
-   numbers (`d9e4a12`, tandem 16000 → 18000, gross 25000 → 24000). Both edited
-   `0002`, which was already applied, and **Django never re-runs an applied
-   migration**, so the local DB still shows 16000 and still renders `Asumsi` on
-   screen. A fresh database gets the corrected values. Needs an `0008` data
-   migration for existing databases. Whether 18000 is right under PP 55/2012 is
-   still unverified against the Lampiran — human task, an agent must not pick
-   values.
+   This deleted the safety net that made the closing beat work with no setup.
+   **That is why `OPENAI_API_KEY` is now blocking rather than optional** — without
+   it, extraction falls back to a placeholder and the beat never lands.
 
-3. ~~Gemini quota~~ **Moot.** Iqbal migrated to OpenAI (`9ffd8b5`). But
-   **`OPENAI_API_KEY` is not set anywhere**, so extraction currently always
-   falls back. See "Read this before touching Rule Studio".
+   `contract/validate.response.hold.json` moved with it: its two `CLIENT`
+   violations became one `CENTRAL` one, because the fixture described a database
+   that no longer exists and the backend contract tests caught the drift.
 
-4. **Nothing is deployed** — but all the config now exists and is verified.
-   **See [DEPLOY.md](DEPLOY.md) for exactly where that stands and what is left.**
+2. **The `Asumsi` thresholds are correct in production and still wrong on this
+   laptop.** Iqbal removed the word (`a908ef7`) and corrected the numbers
+   (`d9e4a12`, tandem 16000 → 18000). Both edited `0002`, which was already
+   applied, and **Django never re-runs an applied migration**. Production was
+   migrated from scratch and therefore has the corrected values; this machine's
+   SQLite does not.
+
+   Observed side by side today: the same rule renders **18.000 kg** in
+   production and **16.000 kg** locally. **This is the concrete reason to demo
+   from the deployed URL.** No longer blocking; an `0009` data migration would
+   still be needed if any existing database ever mattered.
+
+   Whether 18000 is right under PP 55/2012 remains unverified against the
+   Lampiran — human task, an agent must not pick values.
+
+3. **`OPENAI_API_KEY` is still set nowhere, and it is now blocking.** Iqbal
+   migrated extraction to OpenAI (`9ffd8b5`), so the old Gemini quota is moot.
+   But with no key, extraction always falls back to a placeholder — and since
+   the client SOP rules were removed (item 1), that fallback is now the only
+   thing standing between the demo and its closing beat. It belongs in Render's
+   dashboard and in a gitignored `backend/.env`. **Never in a `VITE_` variable.**
+
+4. ~~Nothing is deployed~~ **Done 2026-08-13.** Both halves live and verified by
+   request against production. See [DEPLOY.md](DEPLOY.md).
 
 ## Next task
 
-**Deploy. That is the whole list.** No frontend work is outstanding, and
-[DEPLOY.md](DEPLOY.md) has the step-by-step.
+**1. Set `OPENAI_API_KEY` on Render, then rehearse the full loop once on the
+deployed URL** — upload the SOP, approve it, return to `/dispatch`, enter
+23.000 kg, confirm it flips to HOLD. This is the only way to know extraction
+actually reads 22.000 kg out of the document. Everything else is secondary.
 
-After that, in priority order:
+**2. Build the dispatch flow redesign.** Designed and approved with the owner,
+not yet written: gross weight becomes derived and locked, a shared `Dialog`
+shell fixes the focus defects once, a `PassDialog` mirrors the HOLD dialog, and
+`Cetak Surat Jalan` becomes a preview dialog. Full spec, including the
+`DESIGN.md` reversal it requires:
+**[docs/superpowers/specs/2026-08-13-dispatch-flow-design.md](superpowers/specs/2026-08-13-dispatch-flow-design.md)**
 
-1. **`0008` data migration** so existing databases get the corrected thresholds
-   (item 2 above). Backend lane.
-2. **Fix `0007`'s `get_or_create`** to key on `(domain, origin, version)` rather
-   than `id`. Harmless on a fresh deploy, crashes `migrate` on any database
-   where a client rule was approved through the UI. Backend lane.
-3. **Verify the two thresholds against PP 55/2012's Lampiran.** Human only.
-4. **`backend/api-contract.md`** is a stale tracked duplicate of the root file.
+Then, in priority order:
 
-### Shipped 2026-08-13 (`3955310`..`56a9f3f`)
+3. **The seven failing Rule Studio tests.** Pre-existing, never green today.
+   Backend lane.
+4. **Fix `0007`'s `get_or_create`** to key on `(domain, origin, version)` rather
+   than `id`. Harmless on a fresh deploy, crashes `migrate` on any database where
+   a client rule was approved through the UI. Backend lane.
+5. **Design findings still open** — accessibility, touch targets, and the fact
+   that no surface records *who* approved a rule. See [IMPECCABLE.md](IMPECCABLE.md).
+6. **Verify the two thresholds against PP 55/2012's Lampiran.** Human only.
+7. **`backend/api-contract.md`** is a stale tracked duplicate of the root file.
+
+### Shipped 2026-08-13, afternoon (`6590130`..`8698e95`)
+
+- **Deployed.** Render Blueprint for the API and Postgres, Vercel for the
+  frontend, CORS wired. [DEPLOY.md](DEPLOY.md).
+- **The dispatch form opens empty** — only the DO number, carrying today's date.
+  A form that opens holding a weight reads as a rigged demo.
+- **The client SOP pack is unseeded** via migration `0008`, with the contract
+  fixture resynced to match.
+- **`Ctrl+P` no longer prints a waybill for a held load.** The printable block
+  rendered under print media unconditionally, so disabling the button locked the
+  click and nothing else. Found by an Impeccable critique of the deployed app,
+  verified against production before and after.
+- **The rule register no longer clips its thresholds on a phone**, and the audit
+  trail no longer renders 50 of 56 records in silence.
+
+Design review state, scores and what remains open: **[IMPECCABLE.md](IMPECCABLE.md)**.
+
+### Shipped 2026-08-13, morning (`3955310`..`56a9f3f`)
 
 - **Illustrated truck envelope** on `/dispatch`: cab, wheels, panel lines, door seam, a cargo deck, whole-vehicle green/red. Both cabs live in the box's own millimetre space; the top-view wheels are static at the legal envelope's rear.
 - **ERP chrome is a left icon rail** — the green strip and the white tab row are gone. Inert icons that lift on hover with a label flyout.

@@ -85,7 +85,7 @@ Compliance middleware for Indonesian freight logistics. A deterministic rule eng
 | Error format | Custom DRF exception handler producing the contract's error envelope | `backend/config/exceptions.py` |
 | Auth | **None.** No login, no API key check, no permission classes. | — |
 | Validation | Hand-rolled type/range checks inside the view | `backend/apps/validation/views.py` |
-| Tests | Django `TestCase`, **38 passing** | `backend/apps/*/tests/` |
+| Tests | Django `TestCase`, **31 of 38 passing** — 7 Rule Studio errors, pre-existing | `backend/apps/*/tests/` |
 
 ### Deployment — see [DEPLOY.md](DEPLOY.md)
 
@@ -504,14 +504,14 @@ smart payload directives and balance warnings`) → `14bf445` red.
 expected `AXLE_LOAD`.
 
 Fixed by `2098dd2` (`fix(contract): sync wording with smart directives`), which
-moved the fixture and `api-contract.md` to match the engine. **38/38 green,
-re-verified 2026-08-13.** Kept as a record because this is the §17 drift alarm
+moved the fixture and `api-contract.md` to match the engine. **Green when written; as of 2026-08-13 afternoon the suite is 31/38,
+with 7 pre-existing Rule Studio errors unrelated to this fixture.** Kept as a record because this is the §17 drift alarm
 doing its job: the fixture and the engine moved apart, and the test caught it
 within the hour.
 
-**P0-4 · Nothing is deployed, but the config now exists.** `render.yaml`, `backend/render-build.sh`, a root `vercel.json` and `.vercelignore` are committed and verified locally (`check --deploy` clean, collectstatic 157 files, WSGI imports, Vercel's own commands produce a 924 KB bundle with the `contract/` fixtures resolved). `settings.py` needed no changes — it was already env-driven.
+**P0-4 · DEPLOYED 2026-08-13.** ~~Nothing is deployed, but the config now exists.~~ `render.yaml`, `backend/render-build.sh`, a root `vercel.json` and `.vercelignore` are committed and verified locally (`check --deploy` clean, collectstatic 157 files, WSGI imports, Vercel's own commands produce a 924 KB bundle with the `contract/` fixtures resolved). `settings.py` needed no changes — it was already env-driven.
 
-**Nothing has actually been deployed:** no Render Postgres, no web service, no Vercel project, no environment variables set.
+**Both halves are now live** — https://veto-gold.vercel.app and https://veto-api-cgek.onrender.com — and verified by request against production. See [DEPLOY.md](DEPLOY.md). One variable remains unset and is now the critical path: `OPENAI_API_KEY`.
 
 **[DEPLOY.md](DEPLOY.md) is the authoritative record** — current state, the decisions already made (Postgres over SQLite; spin-down accepted; backend cannot go on Vercel, with the code-level reason), the remaining steps in order, and six traps already paid for.
 
@@ -531,9 +531,11 @@ Dead template assets (`hero.png`, `vite.svg`, `public/icons.svg`); `@types/react
 
 **No frontend work is outstanding.** Everything below is backend, ops, or a human decision. Ordered by what actually threatens 2026-08-14.
 
-### 1 · Deploy (P0-4)
+### 1 · Set `OPENAI_API_KEY`, then rehearse the loop once
 
-**The config is written and verified; nothing is deployed.** Target settled: frontend on Vercel, backend on Render with a free Postgres. Follow **[DEPLOY.md](DEPLOY.md)** — it carries the step-by-step, the decisions already made, and the traps. This is still the single biggest risk left.
+~~Deploy~~ **done 2026-08-13.** What replaced it as the biggest risk: the client SOP rules were deliberately unseeded, so the closing beat now depends on live extraction, which depends on a key that is set nowhere. Set it on Render, then run the full loop once on the deployed URL — upload, approve, dispatch, confirm the HOLD. See [DEPLOY.md](DEPLOY.md) §2.
+
+**Frontend work is no longer absent:** the dispatch flow redesign is designed and approved but unbuilt — [docs/superpowers/specs/2026-08-13-dispatch-flow-design.md](superpowers/specs/2026-08-13-dispatch-flow-design.md).
 
 ### 2 · ~~Restore the mocks fallback~~ DONE
 
@@ -554,7 +556,7 @@ Mobile below `lg` is verified for the ERP rail and the dispatch surface but not 
 ### Verification for any of it
 
 ```bash
-uv run --directory backend python manage.py test apps      # 38 tests, must stay green
+uv run --directory backend python manage.py test apps      # 38 tests, 7 pre-existing errors
 npm --prefix frontend run lint
 npm --prefix frontend run build
 ```
@@ -579,7 +581,7 @@ Codex must not silently decide these.
 
 - **`api-contract.md` response shapes** without also updating `contract/*.json` and telling both lanes. The backend tests and the frontend mocks both consume those fixtures; that is the drift alarm.
 - **`contract/*.json`** as a private copy. Both sides read the same files.
-- **The 10 tests in `backend/apps/validation/tests/test_contract.py`.** They exist to survive the stub's replacement.
+- **The 11 tests in `backend/apps/validation/tests/test_contract.py`.** They exist to survive the stub's replacement, and they earned it on 2026-08-13: unseeding the client rules broke two of them within the minute, because the fixture still described a database that no longer existed.
 - **HTTP 403 for HOLD** and the `_veto_is_hold` exemption in `backend/config/exceptions.py`. A HOLD is a successful evaluation.
 - **The gate behaviour** in `Dispatch.jsx`: editing any field invalidates the decision and re-locks *Cetak Surat Jalan*.
 - **PASS has no colour.** Do not add a green success state; the unlocking button is the signal.
@@ -636,13 +638,13 @@ Conventional commits (`feat`, `docs`, `chore`, `test`) with an optional scope: `
 Only these commands exist in this repository.
 
 ```bash
-uv run --directory backend python manage.py test apps      # 10 tests, must stay green
+uv run --directory backend python manage.py test apps      # 38 tests, 7 pre-existing errors
 uv run --directory backend python manage.py check
 npm --prefix frontend run lint                             # oxlint
 npm --prefix frontend run build                            # vite build
 ```
 
-There is no design-linter checked into this repository. A local Impeccable detector was used during development from outside the repo; do not depend on it.
+There is no design-linter checked into this repository. A local Impeccable detector was used during development from outside the repo; do not depend on it. Its findings, scores and what remains open are recorded in [IMPECCABLE.md](IMPECCABLE.md), because `.impeccable/` is gitignored and does not travel with the repo.
 
 There is **no** `typecheck`, **no** frontend test command, and **no** backend linter. Do not invent them.
 
