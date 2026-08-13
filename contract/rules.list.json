@@ -1,20 +1,7 @@
 {
   "results": [
     {
-      "rule_id": "b4a8f696-14da-4a39-99c5-81c4ee021167",
-      "dimension": "GROSS_WEIGHT",
-      "operator": "LTE",
-      "threshold": 25000,
-      "unit": "kg",
-      "applies_to": null,
-      "legal_citation": "PP 55/2012 Lampiran JBI (Asumsi Kelas I)",
-      "origin": "CENTRAL",
-      "rule_pack_version": 3,
-      "status": "ACTIVE",
-      "effective_from": "2026-08-11T12:34:22.262055+00:00"
-    },
-    {
-      "rule_id": "a0a50c44-202f-4e7c-990e-94e81d224d1e",
+      "rule_id": "86a0a25c-d05f-4418-9d5a-944639ddfca1",
       "dimension": "AXLE_LOAD",
       "operator": "LTE",
       "threshold": 10000,
@@ -26,25 +13,25 @@
       "origin": "CENTRAL",
       "rule_pack_version": 3,
       "status": "ACTIVE",
-      "effective_from": "2026-08-11T12:34:22.262055+00:00"
+      "effective_from": "2026-08-13T07:35:18.496912+00:00"
     },
     {
-      "rule_id": "020ae1f3-a841-4889-8c2b-2864697d980b",
+      "rule_id": "543f409a-3bf5-4288-8697-f1cc607ebc69",
       "dimension": "AXLE_LOAD",
       "operator": "LTE",
-      "threshold": 16000,
+      "threshold": 18000,
       "unit": "kg",
       "applies_to": {
         "axle_index": 1
       },
-      "legal_citation": "PP 55/2012 Lampiran (Asumsi Sumbu Ganda/Tandem)",
+      "legal_citation": "PP 55/2012 Lampiran (Sumbu Ganda/Tandem)",
       "origin": "CENTRAL",
       "rule_pack_version": 3,
       "status": "ACTIVE",
-      "effective_from": "2026-08-11T12:34:22.262055+00:00"
+      "effective_from": "2026-08-13T07:35:18.496912+00:00"
     },
     {
-      "rule_id": "10feba5e-76fc-42c5-b4e4-71e82c61c60e",
+      "rule_id": "c3d78af3-6eeb-4e6b-bd65-d3eacc9de1a1",
       "dimension": "DIMENSION_LENGTH",
       "operator": "LTE",
       "threshold": 18000,
@@ -54,10 +41,10 @@
       "origin": "CENTRAL",
       "rule_pack_version": 3,
       "status": "ACTIVE",
-      "effective_from": "2026-08-11T12:34:22.262055+00:00"
+      "effective_from": "2026-08-13T07:35:18.496912+00:00"
     },
     {
-      "rule_id": "5b375178-a8d2-4131-9a44-fb8042a07b02",
+      "rule_id": "91b40d4a-c9eb-44f9-89bf-48d3df00c770",
       "dimension": "DIMENSION_WIDTH",
       "operator": "LTE",
       "threshold": 2500,
@@ -67,10 +54,10 @@
       "origin": "CENTRAL",
       "rule_pack_version": 3,
       "status": "ACTIVE",
-      "effective_from": "2026-08-11T12:34:22.262055+00:00"
+      "effective_from": "2026-08-13T07:35:18.496912+00:00"
     },
     {
-      "rule_id": "f60e0ec4-41de-46af-83b6-411fdeee518b",
+      "rule_id": "0108ea1f-06e8-4ed8-bb23-43506873f9cb",
       "dimension": "DIMENSION_HEIGHT",
       "operator": "LTE",
       "threshold": 4200,
@@ -80,8 +67,152 @@
       "origin": "CENTRAL",
       "rule_pack_version": 3,
       "status": "ACTIVE",
-      "effective_from": "2026-08-11T12:34:22.262055+00:00"
+      "effective_from": "2026-08-13T07:35:18.496912+00:00"
+    },
+    {
+      "rule_id": "31e9653d-f04e-4c2b-89ef-95041de466cb",
+      "dimension": "GROSS_WEIGHT",
+      "operator": "LTE",
+      "threshold": 12000,
+      "unit": "kg",
+      "applies_to": {
+        "axle_config": "1.1"
+      },
+      "legal_citation": "PP 55/2012 Lampiran II (Konfigurasi 1.1)",
+      "origin": "CENTRAL",
+      "rule_pack_version": 3,
+      "status": "ACTIVE",
+      "effective_from": "2026-08-13T07:35:18.496912+00:00"
+    },
+    {
+      "rule_id": "17136bbd-b3a2-43b7-b9d6-278bf5284665",
+      "dimension": "GROSS_WEIGHT",
+      "operator": "LTE",
+      "threshold": 16000,
+      "unit": "kg",
+      "applies_to": {
+        "axle_config": "1.2"
+      },
+      "legal_citation": "PP 55/2012 Lampiran II (Konfigurasi 1.2)",
+      "origin": "CENTRAL",
+      "rule_pack_version": 3,
+      "status": "ACTIVE",
+      "effective_from": "2026-08-13T07:35:18.496912+00:00"
+    },
+    {
+      "rule_id": "340ce74e-543a-4b33-ab70-3233561468e8",
+      "dimension": "GROSS_WEIGHT",
+      "operator": "LTE",
+      "threshold": 24000,
+      "unit": "kg",
+      "applies_to": {
+        "axle_config": "1.2.2"
+      },
+      "legal_citation": "PP 55/2012 Lampiran II (Konfigurasi 1.2.2)",
+      "origin": "CENTRAL",
+      "rule_pack_version": 3,
+      "status": "ACTIVE",
+      "effective_from": "2026-08-13T07:35:18.496912+00:00"
+    },
+    {
+      "rule_id": "09ecfe22-5a46-4ee1-989a-6483cdf2b3aa",
+      "dimension": "GROSS_WEIGHT",
+      "operator": "LTE",
+      "threshold": 30000,
+      "unit": "kg",
+      "applies_to": {
+        "axle_config": "1.1-2.2"
+      },
+      "legal_citation": "PP 55/2012 Lampiran II (Konfigurasi 1.1-2.2)",
+      "origin": "CENTRAL",
+      "rule_pack_version": 3,
+      "status": "ACTIVE",
+      "effective_from": "2026-08-13T07:35:18.496912+00:00"
+    },
+    {
+      "rule_id": "bca6e180-2030-4a39-ae6f-12a7eb8a11ec",
+      "dimension": "GROSS_WEIGHT",
+      "operator": "LTE",
+      "threshold": 34000,
+      "unit": "kg",
+      "applies_to": {
+        "axle_config": "1.2-2.2"
+      },
+      "legal_citation": "PP 55/2012 Lampiran II (Konfigurasi 1.2-2.2)",
+      "origin": "CENTRAL",
+      "rule_pack_version": 3,
+      "status": "ACTIVE",
+      "effective_from": "2026-08-13T07:35:18.496912+00:00"
+    },
+    {
+      "rule_id": "e4e3b3bb-4aaf-4937-8700-4dbc2c213346",
+      "dimension": "GROSS_WEIGHT",
+      "operator": "LTE",
+      "threshold": 40000,
+      "unit": "kg",
+      "applies_to": {
+        "axle_config": "1.2.2-2.2"
+      },
+      "legal_citation": "PP 55/2012 Lampiran II (Konfigurasi 1.2.2-2.2)",
+      "origin": "CENTRAL",
+      "rule_pack_version": 3,
+      "status": "ACTIVE",
+      "effective_from": "2026-08-13T07:35:18.496912+00:00"
+    },
+    {
+      "rule_id": "7a482a83-56f2-4ed9-8795-2d6a570024c6",
+      "dimension": "GROSS_WEIGHT",
+      "operator": "LTE",
+      "threshold": 43000,
+      "unit": "kg",
+      "applies_to": {
+        "axle_config": "1.2.2-2.2.2"
+      },
+      "legal_citation": "PP 55/2012 Lampiran II (Konfigurasi 1.2.2-2.2.2)",
+      "origin": "CENTRAL",
+      "rule_pack_version": 3,
+      "status": "ACTIVE",
+      "effective_from": "2026-08-13T07:35:18.496912+00:00"
+    },
+    {
+      "rule_id": "a901ca5d-51f1-4d9b-b3e6-cfe49f42c745",
+      "dimension": "AXLE_LOAD",
+      "operator": "LTE",
+      "threshold": 10000,
+      "unit": "kg",
+      "applies_to": null,
+      "legal_citation": "PP 55/2012 (Batas Sumbu Tunggal Universal)",
+      "origin": "CENTRAL",
+      "rule_pack_version": 3,
+      "status": "ACTIVE",
+      "effective_from": "2026-08-13T07:35:18.496912+00:00"
+    },
+    {
+      "rule_id": "f6dde9c1-bc1d-44ab-b370-0f7d579e484c",
+      "dimension": "GROSS_WEIGHT",
+      "operator": "LTE",
+      "threshold": 22000,
+      "unit": "kg",
+      "applies_to": null,
+      "legal_citation": "SOP Internal Gudang Cikarang v2 §3.1",
+      "origin": "CLIENT",
+      "rule_pack_version": 1,
+      "status": "ACTIVE",
+      "effective_from": "2026-08-13T07:35:18.506004+00:00"
+    },
+    {
+      "rule_id": "d43f0e0d-144e-453d-90d8-ca48917c91f7",
+      "dimension": "DIMENSION_HEIGHT",
+      "operator": "LTE",
+      "threshold": 4000,
+      "unit": "mm",
+      "applies_to": null,
+      "legal_citation": "SOP Internal Gudang Cikarang v2 §3.1",
+      "origin": "CLIENT",
+      "rule_pack_version": 1,
+      "status": "ACTIVE",
+      "effective_from": "2026-08-13T07:35:18.506004+00:00"
     }
   ],
-  "total": 6
+  "total": 15
 }
