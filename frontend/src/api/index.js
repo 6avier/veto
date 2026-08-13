@@ -9,4 +9,5 @@ export {
   approveCandidate,
   rejectCandidate,
   listRules,
+  resetClientRules,
 } from './ruleStudio'

@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import (
     RuleListView,
+    RuleClientResetView,
     DocumentUploadView,
     DocumentExtractView,
     DocumentPageView,
@@ -11,6 +12,7 @@ from .views import (
 
 urlpatterns = [
     path('rules', RuleListView.as_view(), name='rule_list'),
+    path('rules/reset-client', RuleClientResetView.as_view(), name='rule_client_reset'),
     path('documents', DocumentUploadView.as_view(), name='document_upload'),
     path('documents/<uuid:document_id>/extract', DocumentExtractView.as_view(), name='document_extract'),
     path('documents/<uuid:document_id>/pages/<int:page_number>', DocumentPageView.as_view(), name='document_page'),

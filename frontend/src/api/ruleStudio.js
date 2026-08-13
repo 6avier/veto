@@ -114,3 +114,21 @@ export async function listRules(params = {}) {
     throw ApiError.from(error)
   }
 }
+
+/**
+ * POST /rules/reset-client — drops rules approved out of uploaded documents so
+ * the Rule Studio walkthrough can be run again. Leaves the central ODOL pack
+ * alone; that pack is what makes the dispatch screen return HOLD.
+ */
+export async function resetClientRules() {
+  if (USE_MOCKS) {
+    await delay(400)
+    return { rules_removed: 0, rule_packs_removed: 0, central_rules_retained: 0 }
+  }
+  try {
+    const { data } = await http.post('/rules/reset-client')
+    return data
+  } catch (error) {
+    throw ApiError.from(error)
+  }
+}

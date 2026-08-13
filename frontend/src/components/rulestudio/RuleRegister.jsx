@@ -1,7 +1,7 @@
 import { CaretRightIcon } from '@phosphor-icons/react'
 import { useEffect, useState } from 'react'
 
-import { listRules } from '@/api'
+import { listRules, resetClientRules } from '@/api'
 import { axleCountFor, formatNumber } from '@/lib/format'
 
 /**
@@ -110,6 +110,7 @@ function groupRules(rules) {
 export default function RuleRegister() {
   const [rules, setRules] = useState(null)
   const [failed, setFailed] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -119,7 +120,7 @@ export default function RuleRegister() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [reloadKey])
 
   if (failed) return null
 
@@ -164,6 +165,11 @@ export default function RuleRegister() {
             version={packVersion(client)}
             rules={client}
             client
+            action={
+              client.length > 0 && (
+                <ResetClient count={client.length} onDone={() => setReloadKey((n) => n + 1)} />
+              )
+            }
           />
         </div>
       )}
@@ -178,7 +184,7 @@ export default function RuleRegister() {
  * clipped the threshold column off the right edge, and because the overflow was
  * on a grid item rather than a scroll container it could not be scrolled back.
  */
-function Group({ title, note, version, rules, client = false }) {
+function Group({ title, note, version, rules, client = false, action = null }) {
   return (
     <div className="min-w-0">
       <div className="flex items-baseline gap-2 border-b border-ink-200 pb-1.5">
@@ -190,7 +196,10 @@ function Group({ title, note, version, rules, client = false }) {
           {formatNumber(rules.length)}
         </span>
       </div>
-      <p className="mt-1.5 text-label text-ink-500">{note}</p>
+      <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <p className="text-label text-ink-500">{note}</p>
+        {action}
+      </div>
 
       {rules.length === 0 ? (
         <p className="mt-3 text-label text-ink-500">
@@ -203,6 +212,77 @@ function Group({ title, note, version, rules, client = false }) {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+/**
+ * Puts the client half of the register back to empty so the Rule Studio
+ * walkthrough can be run again at the booth.
+ *
+ * Two steps, because it deletes approved rules and the register sits at the
+ * foot of a page people scroll through — a single click here would be one
+ * mis-aimed tap away from wiping the demo mid-session. The confirmation names
+ * the count and says plainly what survives, since the honest worry on seeing a
+ * reset control next to a compliance rule base is what else it takes with it.
+ */
+function ResetClient({ count, onDone }) {
+  const [confirming, setConfirming] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
+
+  async function run() {
+    setBusy(true)
+    setFailed(false)
+    try {
+      await resetClientRules()
+      setConfirming(false)
+      onDone()
+    } catch {
+      setFailed(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (!confirming) {
+    return (
+      <button
+        type="button"
+        onClick={() => setConfirming(true)}
+        className="text-label text-ink-500 underline underline-offset-4 hover:text-ink-900"
+      >
+        Reset aturan klien
+      </button>
+    )
+  }
+
+  return (
+    <div className="w-full">
+      <p className="max-w-[58ch] text-label text-ink-900">
+        Hapus {formatNumber(count)} aturan klien? Aturan pusat tetap berlaku, jadi layar
+        pengiriman tetap bisa menahan muatan berlebih.
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={run}
+          disabled={busy}
+          className="rounded-veto bg-ink-900 px-3 py-1.5 text-label text-white disabled:opacity-50"
+        >
+          {busy ? 'Menghapus…' : 'Konfirmasi reset'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setConfirming(false)}
+          className="text-label text-ink-500 underline underline-offset-4 hover:text-ink-900"
+        >
+          Batal
+        </button>
+        {failed && (
+          <span className="text-label text-hold-ink">Gagal menghapus. Coba lagi.</span>
+        )}
+      </div>
     </div>
   )
 }

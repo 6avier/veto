@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Rule, RuleOrigin, RuleDimension, RuleStatus
+from .models import Rule, RulePack, RuleOrigin, RuleDimension, RuleStatus
 
 class RuleListView(APIView):
     def get(self, request):
@@ -46,6 +46,40 @@ class RuleListView(APIView):
         return Response({
             "results": results,
             "total": len(results)
+        })
+
+
+class RuleClientResetView(APIView):
+    """Clears rules approved out of uploaded client documents.
+
+    A demo runs Rule Studio end to end, which leaves its approved rules in the
+    live base. Running it again stacks another set on top, and by the third pass
+    the register is a pile of duplicates. This puts the base back to what the
+    seed migration created.
+
+    Deliberately scoped to CLIENT origin. The CENTRAL ODOL pack is what makes
+    the ERP screen return HOLD at all, so wiping it would leave the dispatch
+    demo passing everything — the failure would surface on the wrong stage.
+    """
+
+    def post(self, request):
+        rules = Rule.objects.filter(rule_pack__origin=RuleOrigin.CLIENT)
+        removed = rules.count()
+        rules.delete()
+
+        # The packs those rules hung off are meaningless once empty, and leaving
+        # them behind makes the next approval open at v4 of a pack with nothing
+        # in it.
+        packs = RulePack.objects.filter(origin=RuleOrigin.CLIENT, rules__isnull=True)
+        packs_removed = packs.count()
+        packs.delete()
+
+        return Response({
+            "rules_removed": removed,
+            "rule_packs_removed": packs_removed,
+            "central_rules_retained": Rule.objects.filter(
+                rule_pack__origin=RuleOrigin.CENTRAL
+            ).count(),
         })
 
 import base64
@@ -373,6 +407,80 @@ class DocumentPageView(APIView):
     DPI = 110
     MAX_DPI_PIXELS = 4000
 
+    @staticmethod
+    def _row_label(candidate):
+        """The table row a candidate came from, when it came from a table.
+
+        Payload limits in these documents live in tables, not sentences, so
+        applies_to often carries the row's own label ("Light Truck"). An axle
+        configuration ("1.2") is not a label — searching a PDF for it matches
+        decimals anywhere on the page — so a label has to contain letters.
+        """
+        applies = candidate.applies_to or {}
+        for key in ("vehicle_class", "axle_config"):
+            value = applies.get(key)
+            if isinstance(value, list):
+                value = value[0] if value else None
+            if isinstance(value, str) and len(value.strip()) >= 3 and any(
+                ch.isalpha() for ch in value
+            ):
+                return value.strip()
+        return None
+
+    @staticmethod
+    def _threshold_variants(candidate):
+        """How the threshold might be written on the page, most specific first."""
+        grouped = f"{candidate.threshold:,}"
+        unit = candidate.unit or ""
+        return [
+            f"{grouped} {unit}".strip(),
+            f"{grouped.replace(',', '.')} {unit}".strip(),
+            grouped,
+            grouped.replace(",", "."),
+            str(candidate.threshold),
+        ]
+
+    def _locate(self, page, candidate):
+        """Where on the page this candidate's clause actually sits.
+
+        The extractor is asked for the exact sentence behind a rule, but a rule
+        read out of a table has no sentence. It answers either by joining the
+        row's cells with newlines or by gluing a column header to a cell, and
+        neither string exists on the page as one run of text: the first matched
+        every identical figure in the table (a 6,000 kg cell appears five times
+        on one page), the second matched nothing at all.
+
+        So a tabular candidate is located the way a person reads a table. Find
+        the row by its label, then look for the figure only within that row's
+        band. Prose keeps the old verbatim search, which is exact and right for
+        it.
+        """
+        label = self._row_label(candidate)
+        if label:
+            label_hits = page.search_for(label)
+            if label_hits:
+                row = label_hits[0]
+                # A hair over half the line's height each way: enough to survive
+                # cells whose baselines sit a point or two apart, tight enough
+                # not to reach the rows above and below.
+                pad = (row.y1 - row.y0) * 0.6
+                band = fitz.Rect(0, row.y0 - pad, page.rect.width, row.y1 + pad)
+                for variant in self._threshold_variants(candidate):
+                    value_hits = page.search_for(variant, clip=band)
+                    if value_hits:
+                        return [row] + value_hits
+                # The row is real even when the figure is written some way this
+                # does not predict. Marking it alone still points somewhere true.
+                return [row]
+
+        hits = []
+        for line in (candidate.source_text_excerpt or "").split("\n"):
+            line = line.strip()
+            if len(line) < 3:
+                continue
+            hits.extend(page.search_for(line))
+        return hits
+
     def get(self, request, document_id, page_number):
         try:
             doc = Document.objects.get(document_id=document_id)
@@ -407,26 +515,21 @@ class DocumentPageView(APIView):
                 pixmap = page.get_pixmap(dpi=self.DPI)
                 image_b64 = base64.b64encode(pixmap.tobytes("png")).decode("ascii")
 
-                # Candidates that cite this page. search_for gives the clause its
-                # coordinates back; a excerpt the extractor paraphrased simply
-                # returns nothing, which degrades to an un-highlighted page
-                # rather than a wrong highlight.
+                # Candidates that cite this page. A clause the extractor
+                # paraphrased beyond recognition still returns nothing, which
+                # degrades to an un-highlighted page rather than a wrong
+                # highlight.
                 regions = []
                 for c in RuleCandidate.objects.filter(document=doc, source_page=page_number):
-                    rects = []
-                    for line in (c.source_text_excerpt or "").split("\n"):
-                        line = line.strip()
-                        if len(line) < 3:
-                            continue
-                        for hit in page.search_for(line):
-                            rects.append(
-                                {
-                                    "x": round(hit.x0 / box.width * 100, 3),
-                                    "y": round(hit.y0 / box.height * 100, 3),
-                                    "w": round((hit.x1 - hit.x0) / box.width * 100, 3),
-                                    "h": round((hit.y1 - hit.y0) / box.height * 100, 3),
-                                }
-                            )
+                    rects = [
+                        {
+                            "x": round(hit.x0 / box.width * 100, 3),
+                            "y": round(hit.y0 / box.height * 100, 3),
+                            "w": round((hit.x1 - hit.x0) / box.width * 100, 3),
+                            "h": round((hit.y1 - hit.y0) / box.height * 100, 3),
+                        }
+                        for hit in self._locate(page, c)
+                    ]
                     regions.append(
                         {
                             "candidate_id": str(c.candidate_id),

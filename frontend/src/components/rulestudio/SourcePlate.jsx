@@ -133,13 +133,14 @@ export default function SourcePlate({ page, loading, error, activeCandidateId })
           ))}
         </div>
 
-        {/* Deliberately does not claim every mark is the source. The clause is
-            located by text search, so a figure that also appears elsewhere on
-            the page is marked too. Saying "kemunculan" keeps that true. */}
+        {/* Deliberately does not claim a mark is the clause itself. A rule read
+            out of a table is located by its row label and its figure, a rule
+            read out of prose by the sentence text, and a figure repeated within
+            a row is marked twice. "Bagian halaman" is true of all three. */}
         <p className="mt-3 text-label text-ink-500">
           {rects.length > 0
-            ? `${rects.length} kemunculan teks klausa sumber ditandai pada halaman ini.`
-            : 'Kalimat sumber tidak ditemukan persis di halaman ini, jadi tidak ada bagian yang ditandai.'}
+            ? `${rects.length} bagian halaman yang menjadi dasar aturan ini ditandai.`
+            : 'Klausa sumber tidak dapat ditemukan pada halaman ini, jadi tidak ada bagian yang ditandai.'}
         </p>
       </div>
     </figure>

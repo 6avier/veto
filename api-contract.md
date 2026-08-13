@@ -438,7 +438,28 @@ Query params: `origin` (`CENTRAL` | `CLIENT`), `dimension`, `status` (`ACTIVE` d
 }
 ```
 
-Read-only in MVP. Rules are created through the candidate approval flow or seeded.
+Rules are created through the candidate approval flow or seeded. The only write
+is the reset below.
+
+### `POST /rules/reset-client`
+
+No body. Drops every rule whose pack origin is `CLIENT`, plus the packs left
+empty by that. The `CENTRAL` ODOL pack is never touched — it is what makes
+`POST /validate` return HOLD, so clearing it would leave the dispatch screen
+passing everything.
+
+```json
+{
+  "rules_removed": 4,
+  "rule_packs_removed": 1,
+  "central_rules_retained": 13
+}
+```
+
+Exists so the Rule Studio walkthrough can be run repeatedly at the booth without
+re-seeding the database. Approved candidates keep their `APPROVED` status and
+their `rule_id` stops resolving; a repeat run uploads a fresh document and
+produces fresh candidates, so nothing reads those dangling ids.
 
 ---
 
