@@ -25,7 +25,7 @@ Verified by request against production, not inferred from a dashboard:
 | A dispatch | PASS 200 / HOLD 403, latency 4–90 ms against a 300 ms target |
 | Audit trail | populated, `/decisions` returns records |
 | CORS from the browser | `access-control-allow-origin: https://veto-gold.vercel.app` |
-| Frontend bundle | carries the Render URL with `/api/v1`, mocks off |
+| Frontend bundle | carries the Render URL with `/api/v1` |
 
 ---
 
@@ -66,7 +66,6 @@ because the root [`vercel.json`](../vercel.json) declares them.
 
 ```
 VITE_API_BASE_URL=https://veto-api-cgek.onrender.com/api/v1
-VITE_USE_MOCKS=false
 ```
 
 ---
@@ -141,11 +140,14 @@ not. Demo from `veto-gold.vercel.app`, never a preview link.
 
 ## 7. Worth doing if there is time
 
-A **second Vercel deployment with `VITE_USE_MOCKS=true`** as a standby. If Render
-dies mid-booth that URL keeps working with no backend. Vite locks env vars at
-build time, so it has to be built ahead.
+~~A **second Vercel deployment with `VITE_USE_MOCKS=true`** as a standby.~~
+**Gone as of `c5a03b4`.** Mock mode was removed: it was never a whole fallback
+(Rule Studio's source plate had no mock behind it), and the problem it covered —
+Render's free plan sleeping after ~15 minutes — is now handled by an external
+cron holding the service awake. A cold start was measured at 41.7s before the
+cron and 0.26s after. **Do not try to build a mock standby; the flag no longer
+exists.**
 
-Note its limit: the mocks HOLD fixture now carries two `CENTRAL` violations and
-no `[ SOP KLIEN ]` marker, because `contract/validate.response.hold.json` was
-resynced when the client rules were unseeded. The standby demonstrates the gate,
-not the client-SOP beat.
+Keep the cron running for the whole event. It is the only thing standing between
+the booth and a 41-second wait.
+

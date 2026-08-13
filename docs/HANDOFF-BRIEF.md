@@ -39,11 +39,11 @@ Verify with `manage.py test apps`, `npm --prefix frontend run lint`, and
 `npm --prefix frontend run build`. **There is no typecheck** — the frontend is
 plain JavaScript.
 
-`VITE_USE_MOCKS=true` runs the whole frontend with no backend, and **works
-again** as of `e15ea75`. Verified: MOCKS badge appears, the rule register still
-renders its 15 rules from `contract/rules.list.json`, no request leaves the
-page. Mocks are the booth fallback; keep them working. `frontend/.env.local` is
-currently `false`.
+**Mock mode is gone** as of `c5a03b4`. The frontend talks to the API only, and
+there is no offline path. It was never a whole fallback — Rule Studio's source
+plate had no mock behind it — and the sleeping backend it existed for is now
+handled by an external cron holding the Render service awake. Keep that cron
+running for the whole event.
 
 The dev server takes an assigned port when 5173 is busy. Safe because the
 frontend calls `/api/v1` relative through the Vite proxy, so the browser sees

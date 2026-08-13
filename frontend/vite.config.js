@@ -14,8 +14,11 @@ export default defineConfig({
     // 5173 by default so the documented dev URL stays true; PORT lets a harness
     // or a busy machine place the server elsewhere without editing this file.
     port: Number(process.env.PORT) || 5173,
-    // Allows the dev server to read /contract, which sits outside the Vite root.
-    fs: { allow: ['..'] },
+    // No fs.allow escape hatch. It existed so the dev server could read
+    // /contract for the mocks; nothing outside the Vite root is imported any
+    // more, and while it was set, `vite --host` served the whole repo over the
+    // LAN — backend/db.sqlite3 and settings.py answered 200. (.env was never
+    // exposed; Vite denies it regardless.)
     // Same-origin in dev, so no CORS preflight while developing.
     proxy: {
       '/api': {

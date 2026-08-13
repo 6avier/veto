@@ -1,9 +1,11 @@
-# Vercel builds from the repo root rather than from frontend/, because the
-# frontend imports ten fixtures from contract/ and a build scoped to frontend/
-# cannot see them. Everything the frontend build does not need is excluded here
-# so the upload stays small.
+# Vercel builds from the repo root, configured that way in vercel.json.
+# Everything the frontend build does not need is excluded here so the upload
+# stays small.
 #
-# Do not add contract/ to this list. The build reads it.
+# The build no longer reads contract/ — that was the mocks, which are gone. The
+# root-level build is now only a deployment setting, not a dependency. Leave it
+# as it is until after the event; retargeting the build is not a thing to try
+# on a day the site has to stay up.
 
 backend/
 data/

@@ -136,7 +136,6 @@ frontend/src/
 ├── components/dispatch/
 │   └── DispatchForm.jsx   Controlled form
 ├── api/                   axios layer, one module per contract section
-├── mocks/index.js         Imports /contract fixtures
 ├── lib/format.js          kg/mm → Indonesian display formatting
 └── index.css              Tailwind v4 @theme — ALL design tokens
 ```
@@ -159,9 +158,11 @@ frontend/src/
 
 - **`/rule-studio`** — **now verified live** (2026-08-12). Upload, triage, live Gemini extraction, source-page plate, split-screen review. Two things had to be fixed to get there, both in §14: extraction had never actually run, and the free-tier quota is 20 calls per day.
 
-### Working on mocks only
+### Mock mode
 
-Nothing. Every surface has been exercised against the live backend.
+Removed in `c5a03b4`. The frontend talks to the API only, and every surface
+has been exercised against the live backend. Sections below that describe
+`VITE_USE_MOCKS` are a record of what happened, not current instructions.
 
 ### Built 2026-08-13 (this session), frontend
 
@@ -381,7 +382,6 @@ GEMINI_API_KEY=optional today, required for Rule Studio
 **Frontend** (`frontend/.env.local`, template at `frontend/.env.example`):
 
 ```
-VITE_USE_MOCKS=required ("true" runs with no backend)
 VITE_API_BASE_URL=optional, defaults to /api/v1
 VITE_PROXY_TARGET=optional, defaults to http://127.0.0.1:8000
 ```

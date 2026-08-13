@@ -42,7 +42,7 @@ Each lane owns its directories outright. Nobody edits another lane's tree, so me
 | Lane | Owns | Blocked by |
 |---|---|---|
 | **Backend** | `backend/apps/validation`, `backend/apps/audit`, `backend/config` | nothing |
-| **Frontend** | `frontend/src/routes/Dispatch.jsx`, `AuditLog.jsx`, `frontend/src/components`, styling | nothing — mocks cover it |
+| **Frontend** | `frontend/src/routes/Dispatch.jsx`, `AuditLog.jsx`, `frontend/src/components`, styling | a running backend |
 | **Rule Studio** | `frontend/src/routes/RuleStudio.jsx` **and** `backend/apps/rules` — full stack, one owner | the contract only |
 
 Rule Studio spans both trees deliberately. Its upload → triage → extract → approve flow has too much shared state to split across two people.
@@ -51,18 +51,15 @@ Shared files that need a heads-up before changing: `api-contract.md`, `contract/
 
 ## The contract is the seam
 
-[api-contract.md](api-contract.md) is binding. `contract/*.json` holds the canonical request and response fixtures, and **both sides consume them**:
+[api-contract.md](api-contract.md) is binding. `contract/*.json` holds the canonical request and response fixtures, and the backend's tests assert its live responses against them.
 
-- the frontend's mocks import them directly (`@contract/...`)
-- the backend's tests assert its live responses against them
+**Change the fixture and `api-contract.md` first, tell the other lane, then change code.**
 
-So if one side changes a shape, the other side's build or tests break the same day. That is the whole point. **Change the fixture and `api-contract.md` first, tell the other lane, then change code.**
+## Running the frontend
 
-## Working without the backend
+The frontend talks to the API only — mock mode was removed in `c5a03b4`. Start Django on `:8000`, then `npm --prefix frontend run dev`; the Vite proxy forwards `/api` to it. Point somewhere else with `VITE_PROXY_TARGET`.
 
-`frontend/.env.local` ships with `VITE_USE_MOCKS=true`. Every endpoint in the contract returns its fixture, with a simulated delay so loading states look real. A `MOCKS ON` badge shows in the nav.
-
-Set it to `false` and restart Vite to hit the live API. Flip per-endpoint by deleting the `USE_MOCKS` branch in that function in `frontend/src/api/`.
+There is no offline path. Against the deployed backend, Render's free plan sleeps after ~15 minutes and takes ~40 seconds to wake, so an external cron keeps it awake during the event — see [docs/DEPLOY.md](docs/DEPLOY.md) §7.
 
 ### One gotcha, already handled
 
