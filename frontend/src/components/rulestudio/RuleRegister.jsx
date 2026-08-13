@@ -108,9 +108,16 @@ export default function RuleRegister() {
   )
 }
 
+/**
+ * `min-w-0` is load-bearing. As a grid item this defaults to `min-width: auto`,
+ * so the truncated citation below — which is `white-space: nowrap` — sets its
+ * own min-content width as the floor and pushes it to ~432px. On a phone that
+ * clipped the threshold column off the right edge, and because the overflow was
+ * on a grid item rather than a scroll container it could not be scrolled back.
+ */
 function Group({ title, note, version, rules, client = false }) {
   return (
-    <div>
+    <div className="min-w-0">
       <div className="flex items-baseline gap-2 border-b border-ink-200 pb-1.5">
         <h3 className="text-label text-ink-900">{title}</h3>
         {version !== undefined && (

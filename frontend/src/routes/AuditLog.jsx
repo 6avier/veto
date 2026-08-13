@@ -31,7 +31,10 @@ export default function AuditLog() {
     setLoading(true)
     setError(null)
     try {
-      const params = {}
+      // The server defaults to 50 and caps at 100. At the default the trail
+      // silently rendered 50 of 56 records with nothing on screen admitting it,
+      // which is the one thing an append-only log cannot do.
+      const params = { limit: 100 }
       if (outcome) params.outcome = outcome
       if (from) params.from = from
       if (to) params.to = to
@@ -155,6 +158,18 @@ export default function AuditLog() {
           </tbody>
         </table>
         </div>
+      )}
+
+      {/*
+        A closing boundary, and an honest one. The cap is 100 server-side, so a
+        long enough trail still truncates — when it does this says so rather
+        than letting the rows just stop.
+      */}
+      {!loading && !error && rows.length > 0 && (
+        <p className="mt-3 border-t border-ink-200 pt-2 text-label text-ink-500">
+          Menampilkan {formatNumber(rows.length)} dari {formatNumber(data.total)} keputusan
+          {rows.length < data.total && ' · persempit rentang tanggal untuk melihat sisanya'}.
+        </p>
       )}
     </div>
   )
