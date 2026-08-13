@@ -1,0 +1,64 @@
+# Render Blueprint for the VETO API.
+#
+# The service was first wired up through the dashboard, so this file is not
+# what created it. It is here so the deployment is readable in the repo and
+# reproducible if the service is ever rebuilt: every value below has a matching
+# field in the dashboard.
+#
+# The frontend deploys separately on Vercel, from frontend/vercel.json.
+
+databases:
+  - name: veto-db
+    databaseName: veto
+    plan: free
+    # Render's free Postgres expires roughly 30 days after creation. That
+    # outlasts the event; it is not a long-term store.
+
+services:
+  - type: web
+    name: veto-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: "./render-build.sh"
+    startCommand: "uv run gunicorn config.wsgi:application --bind 0.0.0.0:$PORT"
+    # Also the endpoint to hit a few minutes before the demo: the free plan
+    # sleeps after about 15 minutes idle and takes ~50s to wake.
+    healthCheckPath: /health/
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+
+      - key: DJANGO_DEBUG
+        value: "False"
+
+      # settings.py refuses to boot with the dev key while DEBUG is off, so
+      # this must be a real generated value.
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+
+      # dj_database_url reads this. Nothing in the code changes for Postgres.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: veto-db
+          property: connectionString
+
+      # Render injects the service's own hostname here.
+      - key: DJANGO_ALLOWED_HOSTS
+        fromService:
+          type: web
+          name: veto-api
+          property: host
+
+      # Set these two by hand once the Vercel domain exists. Both are
+      # comma-separated and both need the scheme.
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        sync: false
+
+      # Rule Studio only. The dispatch path never calls a model.
+      # Without it, extraction returns the honest "unavailable" fallback
+      # rather than pretending the document held no rules.
+      - key: OPENAI_API_KEY
+        sync: false

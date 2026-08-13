@@ -51,3 +51,6 @@ pnpm-debug.log*
 
 # Impeccable critique snapshots. Local design notes, not shipped.
 .impeccable/
+
+# Collected by manage.py collectstatic at build time. Never committed.
+backend/staticfiles/
