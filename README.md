@@ -234,7 +234,6 @@ docs/              Engineering context, deployment, handoff, design plans
 | [api-contract.md](api-contract.md) | The binding frontend/backend contract |
 | [docs/ENGINEERING.md](docs/ENGINEERING.md) | Constraints, locked decisions, domain reference |
 | [docs/DEPLOY.md](docs/DEPLOY.md) | How the two halves are deployed |
-| [docs/HANDOFF.md](docs/HANDOFF.md) | Full engineering handoff, written at the end of the build |
 
 ## Team
 

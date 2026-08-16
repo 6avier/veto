@@ -53,6 +53,17 @@ docs/IMPECCABLE.md
 docs/superpowers/
 PROPOSAL+REGULATIONS/
 
+# Internal working documents from the competition build. They were accurate on
+# 2026-08-13 and are not accurate now — the handoffs describe an undeployed API
+# and a failing test suite, both since fixed. Kept locally as a record; a public
+# reader should get README.md, PRODUCT.md, DESIGN.md and docs/ENGINEERING.md,
+# which are maintained.
+VETO-OVERVIEW.md
+DEMO-SCRIPT.md
+docs/HANDOFF.md
+docs/HANDOFF-BRIEF.md
+docs/plans/
+
 # --- macOS ---
 .DS_Store
 .DS_Store?
