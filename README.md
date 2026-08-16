@@ -243,10 +243,22 @@ Code contributors: [@6avier](https://github.com/6avier) — frontend, design
 system, Rule Studio · [@iqbalvirdiansyah-commits](https://github.com/iqbalvirdiansyah-commits)
 — backend, validation engine.
 
-## Credits
+## Licence
 
-The fictional host ERP surface uses **SAP 72**, from
-[SAP/theming-base-content](https://github.com/SAP/theming-base-content) under the
-Apache License 2.0 — see `frontend/src/assets/fonts/NOTICE.md`. VETO's own
-surfaces use Archivo and JetBrains Mono. NUSANTARA WMS is invented for the demo
-and is not a real product.
+Copyright © 2026 Team GabisaNgoding.
+
+VETO is licensed under the **GNU Affero General Public License v3.0** — see
+[LICENSE](LICENSE).
+
+That choice is deliberate and worth reading before you reuse any of this. AGPL is
+copyleft, and its §13 covers network use: if you run a modified version of VETO
+as a service — which is the only shape this product has — you must make the
+complete corresponding source of your version available to its users, under this
+same licence. Building on VETO means building in the open, with attribution
+intact. If those terms do not suit you, ask us rather than assume.
+
+Third-party components carry their own terms and are **not** covered by the
+above: see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). The short version is
+that the fictional host ERP surface uses SAP's **72** typeface under Apache-2.0,
+VETO's own surfaces use Archivo and JetBrains Mono, and NUSANTARA WMS is invented
+for the demo and is not a real product.
