@@ -23,7 +23,7 @@
 
 **Both lanes pushed to `main` repeatedly on 2026-08-12/13.** Fetch and rebase before starting. See §13.
 
-`AGENTS.md` is a pointer, not context. For a cold start read
+For a cold start read
 [HANDOFF-BRIEF.md](HANDOFF-BRIEF.md) first; this file is the full version.
 ## 2. What VETO is
 
@@ -68,7 +68,7 @@ Compliance middleware for Indonesian freight logistics. A deterministic rule eng
 | Lint | oxlint 1.75 | `frontend/.oxlintrc.json` |
 | Component library | **None.** All components are hand-written. | — |
 | Icons | `@phosphor-icons/react` 2.1. One family, no hand-rolled SVG, no emoji. | `layouts/ErpLayout.jsx`, `components/dispatch/ViolationDialog.jsx` |
-| Frontend tests | **None.** No test runner installed. Deliberate, per `CLAUDE.md` §4. | — |
+| Frontend tests | **None.** No test runner installed. Deliberate, per `docs/ENGINEERING.md` §4. | — |
 
 ### Backend — `backend/`
 
@@ -93,14 +93,14 @@ Config committed and locally verified as of 2026-08-13: `render.yaml`, `backend/
 
 ### Not configured
 
-**Deployment.** No `Dockerfile`, `vercel.json`, `railway.*`, `Procfile`, `render.yaml`, or `.github/workflows`. `gunicorn`, `whitenoise`, `psycopg2-binary` and `dj-database-url` are all installed and unused. `.claude/launch.json` describes local dev servers only. **This is the largest remaining risk — see §15.1.**
+**Deployment.** No `Dockerfile`, `vercel.json`, `railway.*`, `Procfile`, `render.yaml`, or `.github/workflows`. `gunicorn`, `whitenoise`, `psycopg2-binary` and `dj-database-url` are all installed and unused. Local dev servers are launched by hand. **This is the largest remaining risk — see §15.1.**
 
 ---
 
 ## 4. Repository map
 
 ```
-CLAUDE.md                  Agent instructions. Authoritative. Read first.
+docs/ENGINEERING.md                  Agent instructions. Authoritative. Read first.
 PRODUCT.md                 Product requirements, features F1-F5, demo flow.
 DESIGN.md                  The visual system. Tokens, typography, colour, motion.
 api-contract.md            BINDING frontend/backend contract. 7 sections.
@@ -332,7 +332,7 @@ From `backend/apps/rules/migrations/0002_seed_odol_central_rules.py`:
 
 `PP 55/2012 Lampiran (Asumsi Sumbu Ganda/Tandem)` and `PP 55/2012 Lampiran JBI (Asumsi Kelas I)` contain the word **Asumsi** (assumption). They are the basis for the axle and gross-weight decisions, which are the two the demo actually exercises, and they render on screen as the legal basis for a HOLD.
 
-`data/regulations/` contains a **scraped** corpus plus `MISSING_REGULATIONS.md` and `conflicts.json`. The repository owner has confirmed it is unverified reference material for humans, not a validated source. `CLAUDE.md` §5 forbids fabricating a regulation citation in code, seed data, or UI copy.
+`data/regulations/` contains a **scraped** corpus plus `MISSING_REGULATIONS.md` and `conflicts.json`. The repository owner has confirmed it is unverified reference material for humans, not a validated source. `docs/ENGINEERING.md` §5 forbids fabricating a regulation citation in code, seed data, or UI copy.
 
 **Traced 2026-08-12 — the word "Asumsi" is ours, not the regulation's.** It appears zero times across `data/` and zero times in `VETO_Regulatory_Corpus.md`. `MISSING_REGULATIONS.md` names the cause as CRITICAL GAP #1: the Lampiran of PP 55/2012, which holds the definitive JBI tables by axle configuration, was never obtained. The corpus's own vehicle records carry `"verification_required": true` and the note `"JBI PERLU VERIFIKASI dari lampiran PP 55/2012"`.
 
@@ -421,9 +421,7 @@ uv run --directory backend python manage.py check
 - **Branch:** `main`, the only branch on the remote. Everything ships straight to it. (The plain-rectangle `TruckEnvelope` shipped via a short-lived `feature/truck-envelope` branch + PR-style merge, per its own plan's process — that branch is deleted, both locally and on the remote, work is fully on `main`.)
 - **HEAD:** `6fad2c8` as of 2026-08-13. Working tree clean, pushed, in sync.
 - **Two contributors.** `6avier` and `iqbalvirdiansyah-commits`. Iqbal's commits land as `6avier <6avier@users.noreply.github.com>`.
-- **`.superpowers/`** is now gitignored (added alongside the truck-envelope illustrated-redesign brainstorm) — scratch workspace for SDD ledgers and the visual-companion brainstorming server, never meant to be committed.
-- **A stale worktree exists** at `/private/tmp/veto-dispatch-finish` on `codex/dispatch-finish`, 2 commits, superseded by `main`. Not cleaned up.
-- **`.agents/`** is a directory of vendored agent skill packs. It is gitignored on purpose. Do not commit it.
+- **Local tooling directories are gitignored on purpose** — `.agents/`, `.claude/`, `.superpowers/`, `.impeccable/`. They are per-machine scratch workspaces, never meant to be committed.
 
 ```
 6fad2c8  docs(dispatch): add the illustrated truck envelope implementation plan
@@ -519,7 +517,7 @@ within the hour.
 
 - ~~Directives are English~~ **Fixed 2026-08-12** (`2fc63ba`). Indonesian, id-ID separators, no em-dash, axles named to match the form labels.
 - ~~`evaluated_at` returns `+00:00`~~ **Fixed.** Now returns `+07:00`.
-- **`backend/api-contract.md` is a stale tracked duplicate** of the root `api-contract.md`, 16 lines out of date: English directives, the old `1.22` axle notation, and a different citation (`PM 111/2015 Pasal 4 ayat (2)` with 16100/1200). The root file is canonical per `CLAUDE.md` §2. Anyone reading the backend copy builds to a wrong contract. Left in place because it is the other lane's file — **needs a decision, then deletion.**
+- **`backend/api-contract.md` is a stale tracked duplicate** of the root `api-contract.md`, 16 lines out of date: English directives, the old `1.22` axle notation, and a different citation (`PM 111/2015 Pasal 4 ayat (2)` with 16100/1200). The root file is canonical per `docs/ENGINEERING.md` §2. Anyone reading the backend copy builds to a wrong contract. Left in place because it is the other lane's file — **needs a decision, then deletion.**
 - **Clause highlighting is text search.** A figure that also appears elsewhere on the page gets marked too. UI copy says *kemunculan*, not *sumber*, and must keep saying so.
 - **`GEMINI_API_KEY` was pasted into a chat transcript.** It lives only in gitignored `backend/.env` and appears in zero commits, verified with `git log --all -S`. **Rotate after the event.**
 - **`GEMINI_MODEL` matters.** `gemini-2.5-flash` returns 404 for keys created after its cutoff even though `models.list()` still advertises it. Default is now `gemini-flash-latest` via `settings.GEMINI_MODEL`.
@@ -535,7 +533,7 @@ Dead template assets (`hero.png`, `vite.svg`, `public/icons.svg`); `@types/react
 
 ~~Deploy~~ **done 2026-08-13.** What replaced it as the biggest risk: the client SOP rules were deliberately unseeded, so the closing beat now depends on live extraction, which depends on a key that is set nowhere. Set it on Render, then run the full loop once on the deployed URL — upload, approve, dispatch, confirm the HOLD. See [DEPLOY.md](DEPLOY.md) §2.
 
-**Frontend work is no longer absent:** the dispatch flow redesign is designed and approved but unbuilt — [docs/superpowers/specs/2026-08-13-dispatch-flow-design.md](superpowers/specs/2026-08-13-dispatch-flow-design.md).
+**Frontend work is no longer absent:** the dispatch flow redesign is designed and approved but unbuilt — specced 2026-08-13, summarised in `DESIGN.md` §4.
 
 ### 2 · ~~Restore the mocks fallback~~ DONE
 
@@ -561,10 +559,10 @@ npm --prefix frontend run lint
 npm --prefix frontend run build
 ```
 
-`CLAUDE.md` §6 requires verifying the rendered application, not a passing build. This session's record is the argument for it: the build was green for every bug listed in the header note above.
+`docs/ENGINEERING.md` §6 requires verifying the rendered application, not a passing build. This session's record is the argument for it: the build was green for every bug listed in the header note above.
 
 ## 16. Open decisions
-Codex must not silently decide these.
+These must not be silently decided by whoever picks the work up.
 
 **1 · Input treatment.** Three options were built and shown at `scratchpad/fonts/input-specimen.html`: **A** Fiori value-state (unit inside the field, number right-aligned, 2px green bottom edge on focus), **B** Fluent filled (grey wells, white on focus), **C** ruled data grid (no boxes, hairline rows). All three right-align numerics and move the unit into the field, which is the strongest "enterprise software" signal available. Recommended **A**. C has an affordance risk at the booth: fields do not look like fields until hover. **Owner decides.**
 
@@ -574,7 +572,7 @@ Codex must not silently decide these.
 
 **4 · Directive language. SETTLED 2026-08-12 — Indonesian.** Owner chose it. Shipped in `2fc63ba` across `engine.py`, `contract/validate.response.hold.json` and `api-contract.md` §1, with id-ID thousands separators and the em-dash replaced by a second sentence. Axles are named `sumbu depan/tengah/belakang` to match the form's own labels. Kept here as a record; not open.
 
-**5 · Regulation thresholds.** Must be verified by a human against source text. **Codex must not choose values or invent citations.**
+**5 · Regulation thresholds.** Must be verified by a human against source text. **Do not choose values or invent citations.**
 
 **6 · Deployment target.** Nothing configured. Owner decides.
 ## 17. Do not change
@@ -589,7 +587,7 @@ Codex must not silently decide these.
 - **The design tokens** in `frontend/src/index.css`. Change `DESIGN.md` first.
 - **Existing routes:** `/dispatch`, `/rule-studio`, `/audit`.
 - **Legal citation strings** — do not silently rewrite them, and do not invent new ones.
-- **Package choices:** uv + Django + DRF, Vite + React + Tailwind v4 + axios. `CLAUDE.md` §2 marks the stack locked.
+- **Package choices:** uv + Django + DRF, Vite + React + Tailwind v4 + axios. `docs/ENGINEERING.md` §2 marks the stack locked.
 - **Python pinned to 3.12** in `backend/.python-version`.
 - **Commit authorship:** `6avier` only, no AI co-author trailer.
 - **JavaScript, not TypeScript.** Do not introduce `.ts`/`.tsx` or a `tsconfig` without a decision.
@@ -644,22 +642,22 @@ npm --prefix frontend run lint                             # oxlint
 npm --prefix frontend run build                            # vite build
 ```
 
-There is no design-linter checked into this repository. A local Impeccable detector was used during development from outside the repo; do not depend on it. Its findings, scores and what remains open are recorded in [IMPECCABLE.md](IMPECCABLE.md), because `.impeccable/` is gitignored and does not travel with the repo.
+There is no design-linter checked into this repository. Design review ran from outside the repo during development; do not depend on it being available. Its findings live in the maintainer's local notes, not here.
 
 There is **no** `typecheck`, **no** frontend test command, and **no** backend linter. Do not invent them.
 
-`CLAUDE.md` §6 requires verifying the rendered application, not just a passing build, before calling frontend work complete.
+`docs/ENGINEERING.md` §6 requires verifying the rendered application, not just a passing build, before calling frontend work complete.
 
 ---
 
 ## 20. Handoff contract
 
-### Codex Instructions
+### Instructions for anyone picking this up
 
 1. Read this `HANDOFF.md` first.
 2. Inspect the repository before editing.
 3. Read the relevant files referenced in this document.
-4. There is no `AGENTS.md`; read `CLAUDE.md` and obey it. `PRODUCT.md`, `DESIGN.md`, and `api-contract.md` are also binding.
+4. Read `docs/ENGINEERING.md` and obey it. `PRODUCT.md`, `DESIGN.md`, and `api-contract.md` are also binding.
 5. Do not rewrite working code without a reason.
 6. Do not create duplicate components when an existing component can be reused — check §8 first.
 7. Do not invent missing requirements.

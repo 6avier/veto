@@ -2,7 +2,7 @@
 
 The visual system. Written before the UI so it is a decision, not a description of whatever got built.
 
-Read with `CLAUDE.md` §7 (skill stack, banned patterns) and `PRODUCT.md` (what each surface is for).
+Read with `docs/ENGINEERING.md` §7 (design direction, banned patterns) and `PRODUCT.md` (what each surface is for).
 
 ---
 
@@ -16,7 +16,7 @@ Variance is low because this is a tool, not a landing page: an operator must fin
 
 No off-the-shelf design system. Tailwind v4 tokens, defined here.
 
-> The `design-taste-frontend` skill is explicitly out of scope for dense product UI (its §13). Its anti-slop discipline applies — the AI-tell list, the em-dash ban, the colour and shape locks, the contrast checks. Its landing-page composition rules do not. Surface-level design review runs through `impeccable`.
+> Landing-page composition rules are out of scope here — this is dense product UI. What carries over from that discipline is the part that applies to any surface: the AI-tell list, the colour and shape locks, and the contrast checks. Everything visual is reviewed against the rendered app, not the code.
 
 ---
 
@@ -97,7 +97,7 @@ Rejected, with reasons on the record:
 - **Poppins** — widest of the set by 10%, and no tabular figures. A geometric display face doing a data job.
 - **Lato** — has `tnum`, but the lowest x-height *and* lowest x/cap here, which is exactly the small-size weakness this interface cannot afford. Also one of the most-used web fonts since the Bootstrap era, so it carries template baggage.
 - **IBM Plex Sans** — the institutional fit was appealing and the Plex superfamily would have covered both roles, but it ships no tabular figures. Disqualifying.
-- **Inter** — metrically fine, and discouraged as a default by `CLAUDE.md` §7 for good reason. It is the house style of every AI-generated interface.
+- **Inter** — metrically fine, and discouraged as a default by `docs/ENGINEERING.md` §7 for good reason. It is the house style of every AI-generated interface.
 
 Changing this is one CSS variable. If Archivo reads wrong at real sizes, Public Sans is the next pick.
 
@@ -169,7 +169,7 @@ Archivo   Berat Kotor · 24.500 kg · Kurangi muatan sumbu belakang · Cetak Sur
 JBMono    PM 60/2019 Pasal 3 · DO-2026-08-11-0042 · v3 · 41 ms · 14:32:10
 ```
 
-Impeccable's `typeset.md` warns against a second family without a role it alone can perform. JetBrains Mono earns it: `DO-2026-08-11-0042` and a column of pasal references only stay scannable when every character occupies the same width. Numbers alone do not need it, because Archivo's `tnum` already holds the column.
+A second type family has to earn its place with a role no other family can perform. JetBrains Mono earns it: `DO-2026-08-11-0042` and a column of pasal references only stay scannable when every character occupies the same width. Numbers alone do not need it, because Archivo's `tnum` already holds the column.
 
 Always set `font-variant-numeric: tabular-nums` on any numeric. A weight that shifts column position as it changes reads as unstable, and this product's whole claim is that it is not.
 
@@ -265,8 +265,8 @@ badge. The green is the one the `TruckEnvelope` already uses for "fits within
 the legal envelope," so one hue carries one meaning across the whole surface.
 
 **What was given up, recorded once.** Green in this product belongs to the host
-ERP — its 64px rail and its `#2d613b` submit button. An Impeccable critique
-measured VETO and the host as separated by 0.07 of border contrast; they are
+ERP — its 64px rail and its `#2d613b` submit button. A contrast audit of the
+deployed app measured VETO and the host at 0.07 of border contrast apart; they are
 already hard to read as two systems. A green VETO verdict has VETO speaking the
 host's colour at the moment it should read most clearly as a separate
 instrument. The owner weighed that and chose the legibility of the verdict.
@@ -282,8 +282,7 @@ but it sits about 1,180px from where the operator is looking after a submit, so
 since 2026-08-13 the verdict also announces itself in `PassDialog`, mirroring
 how a HOLD announces itself in `ViolationDialog`.
 
-Full decision record:
-[docs/superpowers/specs/2026-08-13-dispatch-flow-design.md](docs/superpowers/specs/2026-08-13-dispatch-flow-design.md) §6.
+Decided on 2026-08-13, in the dispatch-flow redesign.
 
 ### TruckEnvelope
 
@@ -387,7 +386,7 @@ Only `transform` and `opacity`. No `window.addEventListener('scroll')`.
 
 **Never claim what VETO cannot do.** It validates *declared* figures, not weighed ones. Say so somewhere quiet and honest on the dispatch surface. Nothing may imply guaranteed compliance, eliminated error, or reduced incidents.
 
-**Banned numbers.** These appear in the proposal deck and must not appear in the product: 94% faster verification, 22% higher compliance, 83% fewer errors, 80% fewer overloaded dispatches, 65% fewer incidents, 93% faster audit prep. The mentor asked where they came from and there is no answer. The only figures permitted are the two sanctioned sets in `CLAUDE.md` §5, labelled as what they are.
+**Banned numbers.** These appear in the proposal deck and must not appear in the product: 94% faster verification, 22% higher compliance, 83% fewer errors, 80% fewer overloaded dispatches, 65% fewer incidents, 93% faster audit prep. The mentor asked where they came from and there is no answer. The only figures permitted are the two sanctioned sets in `docs/ENGINEERING.md` §5, labelled as what they are.
 
 **No fabricated citations.** Every article reference on screen comes from a verified seeded rule.
 
@@ -397,7 +396,7 @@ Only `transform` and `opacity`. No `window.addEventListener('scroll')`.
 
 ## 8. Banned
 
-From `CLAUDE.md` §7, plus what this system specifically rejects:
+From `docs/ENGINEERING.md` §7, plus what this system specifically rejects:
 
 - Green tick / green success state / green panel / green verdict text. PASS is
   quiet. The one permitted green is `--color-pass` as a marker square beside the

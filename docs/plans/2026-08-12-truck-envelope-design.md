@@ -2,7 +2,7 @@
 
 **Status:** Design approved by 6avier 2026-08-12, pending implementation plan.
 
-**Goal:** A demo gimmick on `/dispatch` — a translucent top-down (and side) outline of the truck's maximum legal footprint, with the operator's real input drawn inside it as a second outline. When the input exceeds the legal envelope, the excess is visibly drawn poking past the boundary in a warning colour. Purpose is judge/booth "wow," not a P0/P1 requirement — `CLAUDE.md` §4 places polish/micro-interaction work at P2.
+**Goal:** A demo gimmick on `/dispatch` — a translucent top-down (and side) outline of the truck's maximum legal footprint, with the operator's real input drawn inside it as a second outline. When the input exceeds the legal envelope, the excess is visibly drawn poking past the boundary in a warning colour. Purpose is judge/booth "wow," not a P0/P1 requirement — `docs/ENGINEERING.md` §4 places polish/micro-interaction work at P2.
 
 **Why now:** Requested directly by 6avier (frontend lane owner) as the next piece of dispatch-screen work, separate from the backend-lane P0 items in `docs/HANDOFF.md` (CLIENT rule pack, citation verification).
 
@@ -61,13 +61,13 @@ Adds **Motion** (`motion`, formerly `framer-motion`) as a new frontend dependenc
 
 `motion.rect` (or `motion.g` wrapping the inner shape) animates its geometry (width/height/position, in mm-mapped SVG units) on every change to the live form value — not gated on submit or on a PASS/HOLD decision. Spring config: comparatively loose stiffness and moderate damping for a visible "rubbery" overshoot rather than a snap-to-value transition.
 
-**Explicit exception, scoped narrowly.** `DESIGN.md` §0 sets `MOTION_INTENSITY 4` and CLAUDE.md §7 warns against decorative motion with no purpose. This animation is deliberately louder than that dial, by direct instruction from 6avier, because this widget's entire purpose is the physical "wow" of watching an over-length load visibly stretch past its legal boundary — the motion *is* the demonstration, not decoration on top of one. This exception is confined to `TruckEnvelope.jsx`. It must not be read as licence to loosen motion elsewhere in the product; `VerdictPanel`, `ViolationDialog`, and the rest of `/dispatch` keep their existing restrained motion language.
+**Explicit exception, scoped narrowly.** `DESIGN.md` §0 sets `MOTION_INTENSITY 4` and docs/ENGINEERING.md §7 warns against decorative motion with no purpose. This animation is deliberately louder than that dial, by direct instruction from 6avier, because this widget's entire purpose is the physical "wow" of watching an over-length load visibly stretch past its legal boundary — the motion *is* the demonstration, not decoration on top of one. This exception is confined to `TruckEnvelope.jsx`. It must not be read as licence to loosen motion elsewhere in the product; `VerdictPanel`, `ViolationDialog`, and the rest of `/dispatch` keep their existing restrained motion language.
 
 ## 7. Weight visualization — ideas only, not built this pass
 
 Three directions to pick from in a follow-up brainstorming pass, once dimensions are shipped and demo-tested:
 
-1. **Per-axle weighbridge gauge.** A row of simple horizontal bar gauges, one per axle (count from `axleCountFor(axleConfig)`), each bar's fill = actual axle load, a marker line = the per-axle-index legal limit from `limits.axle{N}`. Ties thematically to `CLAUDE.md` §1's framing — "violations get caught at weighbridges, after the truck has left" — the product visually becomes the weighbridge the officer never has to drive onto. Fits the existing dark-graphite "instrumentation" density described in `DESIGN.md` §3 for `/dispatch`.
+1. **Per-axle weighbridge gauge.** A row of simple horizontal bar gauges, one per axle (count from `axleCountFor(axleConfig)`), each bar's fill = actual axle load, a marker line = the per-axle-index legal limit from `limits.axle{N}`. Ties thematically to `docs/ENGINEERING.md` §1's framing — "violations get caught at weighbridges, after the truck has left" — the product visually becomes the weighbridge the officer never has to drive onto. Fits the existing dark-graphite "instrumentation" density described in `DESIGN.md` §3 for `/dispatch`.
 2. **Total gross weight as a single fuel-gauge-style dial**, needle sweeping toward the axle-config-specific `GROSS_WEIGHT` limit (this is where axle config *does* legitimately matter, per §1 above), with the per-axle bars as a secondary, smaller readout beneath it.
 3. **Weight distribution as a horizontal stacked bar under the truck envelope itself** — segments positioned left-to-right roughly where each axle sits along the drawn truck length, so the top-down view and the weight readout share one visual spine instead of being two unrelated widgets. Most ambitious, most visually unified; also the most implementation risk given the extra positional mapping.
 
@@ -78,9 +78,9 @@ No recommendation locked in — revisit after this spec ships.
 ## 8. Edge cases
 
 - Empty/invalid form values (mid-edit, cleared field): inner rect does not render, or renders at zero/hidden rather than animating to `NaN`.
-- `limits` not yet loaded (network delay/failure, same silent-failure posture as `Dispatch.jsx`'s existing `useEffect`): outer rect does not render; component shows a quiet placeholder rather than a broken shape, consistent with `CLAUDE.md` §6 ("handle failure gracefully in the UI").
+- `limits` not yet loaded (network delay/failure, same silent-failure posture as `Dispatch.jsx`'s existing `useEffect`): outer rect does not render; component shows a quiet placeholder rather than a broken shape, consistent with `docs/ENGINEERING.md` §6 ("handle failure gracefully in the UI").
 - Extreme overflow (e.g., a length far beyond 120% of the limit): visual clamps at the canvas edge rather than the SVG growing unbounded; the numeric excess is still available from the existing `Field` excess text, so nothing is hidden, only the drawing is capped.
 
 ## 9. Verification
 
-No new backend surface, so `manage.py test apps` is unaffected. Frontend has no test runner (`CLAUDE.md` §4, deliberate). Verification is browser-only, per `CLAUDE.md` §6: exercise `/dispatch` with a PASS-shaped load (headroom on all axes), a HOLD-shaped load exceeding length only, one exceeding width only, and one exceeding height only, confirming the stretch animation and overflow colour on each axis independently.
+No new backend surface, so `manage.py test apps` is unaffected. Frontend has no test runner (`docs/ENGINEERING.md` §4, deliberate). Verification is browser-only, per `docs/ENGINEERING.md` §6: exercise `/dispatch` with a PASS-shaped load (headroom on all axes), a HOLD-shaped load exceeding length only, one exceeding width only, and one exceeding height only, confirming the stretch animation and overflow colour on each axis independently.

@@ -53,7 +53,7 @@ same origin and the backend's CORS pin on 5173 never applies in dev.
 
 | Surface | State |
 |---|---|
-| `/dispatch` | Built, **verified in production**. Opens with an empty form — only the DO number, carrying today's date. Client-side balance warnings kept deliberately (see [IMPECCABLE.md](IMPECCABLE.md)). |
+| `/dispatch` | Built, **verified in production**. Opens with an empty form — only the DO number, carrying today's date. Client-side balance warnings kept deliberately, after design review. |
 | `/audit` | Built, **verified in production**. Closes with an honest `Menampilkan N dari M`. |
 | `/rule-studio` | Built, **verified in production** — upload, triage, extract, source plate, rule register |
 | Backend | All endpoints respond in production. **31 of 38 tests pass; 7 Rule Studio tests error and did so before any of today's work.** `engine.py` carries Smart Directives and the gross-vs-axle integrity check. |
@@ -88,7 +88,7 @@ path instead. Set the key on Render to get real extraction.
 The fallback is deliberately honest now: tagged `cadangan` /
 `belum-diverifikasi`, never `gemini-extracted`, and its excerpt says extraction
 was unavailable instead of posing as a quotation. Its threshold is a
-placeholder. **Do not make it invent a figure again** (`CLAUDE.md` §5).
+placeholder. **Do not make it invent a figure again** (`docs/ENGINEERING.md` §5).
 
 ## What blocks the demo
 
@@ -145,9 +145,9 @@ actually reads 22.000 kg out of the document. Everything else is secondary.
 **2. Build the dispatch flow redesign.** Designed and approved with the owner,
 not yet written: gross weight becomes derived and locked, a shared `Dialog`
 shell fixes the focus defects once, a `PassDialog` mirrors the HOLD dialog, and
-`Cetak Surat Jalan` becomes a preview dialog. Full spec, including the
-`DESIGN.md` reversal it requires:
-**[docs/superpowers/specs/2026-08-13-dispatch-flow-design.md](superpowers/specs/2026-08-13-dispatch-flow-design.md)**
+`Cetak Surat Jalan` becomes a preview dialog. The spec for it, including the
+`DESIGN.md` reversal it requires, was written on 2026-08-13 and is summarised in
+`DESIGN.md` §4.
 
 Then, in priority order:
 
@@ -157,7 +157,7 @@ Then, in priority order:
    than `id`. Harmless on a fresh deploy, crashes `migrate` on any database where
    a client rule was approved through the UI. Backend lane.
 5. **Design findings still open** — accessibility, touch targets, and the fact
-   that no surface records *who* approved a rule. See [IMPECCABLE.md](IMPECCABLE.md).
+   that no surface records *who* approved a rule.
 6. **Verify the two thresholds against PP 55/2012's Lampiran.** Human only.
 7. **`backend/api-contract.md`** is a stale tracked duplicate of the root file.
 
@@ -171,12 +171,13 @@ Then, in priority order:
   fixture resynced to match.
 - **`Ctrl+P` no longer prints a waybill for a held load.** The printable block
   rendered under print media unconditionally, so disabling the button locked the
-  click and nothing else. Found by an Impeccable critique of the deployed app,
-  verified against production before and after.
+  click and nothing else. Found in a design review of the deployed app, verified
+  against production before and after.
 - **The rule register no longer clips its thresholds on a phone**, and the audit
   trail no longer renders 50 of 56 records in silence.
 
-Design review state, scores and what remains open: **[IMPECCABLE.md](IMPECCABLE.md)**.
+Design review state and what remains open is tracked in the maintainer's local
+design notes, which do not travel with the repository.
 
 ### Shipped 2026-08-13, morning (`3955310`..`56a9f3f`)
 
@@ -198,7 +199,7 @@ silently.
 **`backend/api-contract.md` is a stale tracked duplicate of the root
 `api-contract.md`** — 16 lines out of date, still carrying English directives,
 the old `1.22` axle notation, and a different citation. The root file is
-canonical per `CLAUDE.md`. Anyone reading the backend copy builds to a wrong
+canonical per `docs/ENGINEERING.md`. Anyone reading the backend copy builds to a wrong
 contract. Not deleted yet because it is the other lane's file.
 
 **Before touching the dispatch form, run `curl localhost:8000/api/v1/rules` and
@@ -219,7 +220,7 @@ check the `applies_to.axle_config` values against `AXLE_CONFIGS`.**
 - **SAP 72 is the ERP's face only.** The verdict panel and HOLD dialog pin back
   to Archivo with `font-sans` even though they render inside the ERP tree.
 - **No monospace in the ERP chrome.**
-- **Never invent a regulation citation or a statistic.** `CLAUDE.md` §5.
+- **Never invent a regulation citation or a statistic.** `docs/ENGINEERING.md` §5.
 - **Commits are authored `6avier`.** No `Co-Authored-By`, no AI attribution.
 
 ## Three traps already paid for

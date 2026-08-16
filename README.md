@@ -1,21 +1,173 @@
 # VETO
 
-Compliance gate engine for Indonesian freight logistics. Dispatch data goes in, `PASS` or `HOLD` plus an actionable directive comes out.
+**A compliance gate for Indonesian freight logistics.** Dispatch data goes in —
+truck configuration, axle loads, cargo dimensions. `PASS` or `HOLD` comes out,
+and a `HOLD` arrives with the article of law it broke and the exact correction
+that would clear it.
 
-Product spec: [PRODUCT.md](PRODUCT.md) · Engineering context: [CLAUDE.md](CLAUDE.md) · **API contract: [api-contract.md](api-contract.md)**
+> **Finalist — RISTEK Hackathon 2026.** Built by **Team GabisaNgoding**,
+> Fakultas Ilmu Komputer Universitas Indonesia, angkatan 2025.
+
+**Live demo:** [veto-gold.vercel.app](https://veto-gold.vercel.app) ·
+**API:** [veto-api-cgek.onrender.com](https://veto-api-cgek.onrender.com/health/)
+
+The API is hosted on a free tier that sleeps after ~15 minutes idle. The first
+request after a nap takes around 40 seconds to wake it; everything after that is
+immediate.
 
 ---
 
-## Prerequisites
+## The problem
 
-| Tool | Version | Notes |
+Indonesia's **Zero ODOL** (Over Dimension Over Load) enforcement deadline is
+**January 2027**. Compliance today is reactive: a truck is loaded, a delivery
+order is printed, the truck leaves, and the violation is discovered at a
+weighbridge kilometres down the road.
+
+The gap is a software gap. ERP and WMS platforms track quantity, destination and
+customer — they have no idea that PP 55/2012 caps a two-axle rigid at 16.000 kg.
+So a warehouse officer issues a delivery order for a non-compliant load because
+nothing in their screen ever told them not to.
+
+VETO moves that check to the moment before the delivery order is printed.
+
+## What it does
+
+Send it a dispatch payload — a three-axle tronton carrying 24.500 kg:
+
+```json
+POST /api/v1/validate
+{
+  "dispatch_ref": "DO-2026-08-11-0042",
+  "vehicle": { "axle_config": "1.2.2", "tare_weight_kg": 8500 },
+  "load": {
+    "gross_weight_kg": 24500,
+    "axle_loads_kg": [7200, 6000, 11300],
+    "dimensions_mm": { "length": 12500, "width": 2500, "height": 4100 }
+  },
+  "loading_point_id": "LP-CIKARANG-01"
+}
+```
+
+`PASS` is `200 OK`. `HOLD` is `403 Forbidden`, and every violation carries the
+actual value, the limit, the excess, the article it broke, and a directive
+written for the person standing at the loading dock:
+
+```json
+403 Forbidden
+{
+  "outcome": "HOLD",
+  "violations": [
+    {
+      "dimension": "GROSS_WEIGHT",
+      "actual_value": 24500, "limit_value": 24000, "excess_value": 500,
+      "legal_citation": "PP 55/2012 Lampiran II (Konfigurasi 1.2.2)",
+      "directive": "Kurangi muatan total 500 kg …"
+    },
+    {
+      "dimension": "AXLE_LOAD", "axle_index": 2,
+      "actual_value": 11300, "limit_value": 10000, "excess_value": 1300,
+      "legal_citation": "PP 55/2012 (Batas Sumbu Tunggal Universal)",
+      "directive": "Kurangi beban sumbu belakang 1.300 kg"
+    }
+  ],
+  "rule_packs_applied": [ … ],
+  "latency_ms": 4
+}
+```
+
+Note the second violation. The truck is only 500 kg over its gross limit, but its
+rear axle is 1.300 kg over — the load is both too heavy *and* badly distributed,
+and the engine says so separately, because they are two different corrections.
+The response above is a real one, taken from the deployed API.
+
+A `HOLD` is not a hard block. It is a hold plus a **logged override** — the
+operator can proceed, but the override is written to an append-only audit trail
+with their name against it. Hard blocking a loading dock is not something a
+warehouse would ever deploy; accountability is.
+
+## How it works
+
+Two flows that meet at the database and are never wired to each other.
+
+**Rule authoring — asynchronous, setup time, AI involved.**
+
+```
+regulation PDF → text extraction → LLM structuring (constrained JSON)
+              → staging queue → human approval → versioned rule pack
+```
+
+**Runtime validation — real time, zero AI.**
+
+```
+ERP dispatch payload → POST /api/v1/validate
+                     → boolean evaluation against approved rule packs
+                     → 200 PASS / 403 HOLD + directive
+                     → immutable audit log
+```
+
+**There are no LLM calls on the validation path, by design.** A model that
+hallucinates a weight limit is a legal liability, and a model that takes two
+seconds is not a gate — it is a delay an operator learns to click past. The
+engine is boolean logic against versioned thresholds, which makes every decision
+deterministic, fast, and reproducible in an audit six months later.
+
+AI earns its place upstream instead, where a human still signs off: it reads a
+regulation PDF and drafts structured rules, and **nothing it drafts goes live
+until a person approves it**.
+
+Where a national rule and a stricter internal client policy both cover the same
+dimension, **the stricter threshold wins**.
+
+## The three surfaces
+
+One React app, three routes, deliberately built to look like two different
+products sharing a window — because that is what middleware is.
+
+| Route | What it is | Who uses it |
 |---|---|---|
-| [uv](https://docs.astral.sh/uv/) | any recent | Manages Python. You do **not** need Python installed separately. |
-| Node | 20+ | |
+| `/dispatch` | The dispatch screen of a fictional host ERP ("NUSANTARA WMS"), with VETO's verdict panel embedded in it | Warehouse / dispatch officer — the primary user |
+| `/rule-studio` | Split screen: the source document on one side, the rule extracted from it on the other, Approve or Reject | Legal / compliance officer |
+| `/audit` | The append-only decision log — every PASS, HOLD and override, with citations | Compliance, auditors |
 
-## Quick start
+`/dispatch` is drawn in the host ERP's visual language, down to the typeface, so
+the demo shows what integration actually feels like: the officer never opens
+VETO, VETO appears inside the tool they already use.
 
-Two terminals.
+## Stack
+
+**Frontend** — `frontend/`
+
+| | |
+|---|---|
+| React 19 + Vite 8 | JavaScript, no TypeScript |
+| Tailwind CSS 4 | Design tokens in CSS, no `tailwind.config.js` |
+| react-router-dom 7 | Three routes, two layouts |
+| axios | Thin API client per domain |
+| Motion | Restrained; the verdict arriving, the staged extraction reveal |
+| Phosphor Icons | One icon family, no hand-rolled SVG |
+| oxlint | |
+
+No component library. Every component is hand-written, against a design system
+recorded in [DESIGN.md](DESIGN.md) before the UI was built rather than after.
+
+**Backend** — `backend/`
+
+| | |
+|---|---|
+| Python 3.12, managed with uv | `uv.lock` is the single source of dependency truth |
+| Django 6.1 + Django REST Framework 3.18 | |
+| PostgreSQL in deployment, SQLite locally | via `dj-database-url`; nothing in the code changes between them |
+| PyMuPDF | PDF text extraction for Rule Studio |
+| OpenAI API | Rule authoring only — never the validation path |
+| gunicorn + WhiteNoise | |
+
+**Deployment** — frontend on Vercel, API and Postgres on Render
+([docs/DEPLOY.md](docs/DEPLOY.md)).
+
+## Running it locally
+
+Two terminals. You do not need Python installed — `uv` handles it.
 
 ```bash
 cp backend/.env.example backend/.env && uv run --directory backend python manage.py migrate && uv run --directory backend python manage.py runserver 8000
@@ -25,67 +177,77 @@ cp backend/.env.example backend/.env && uv run --directory backend python manage
 cp frontend/.env.example frontend/.env.local && npm --prefix frontend install && npm --prefix frontend run dev
 ```
 
-Frontend on http://localhost:5173, API on http://127.0.0.1:8000. The Vite dev server proxies `/api` to Django, so there is no CORS setup in development.
+Frontend on `http://localhost:5173`, API on `http://127.0.0.1:8000`. The Vite dev
+server proxies `/api` to Django, so there is no CORS setup in development.
 
-Run the backend tests:
+The rule packs are seeded by migration, so the engine has real thresholds to
+evaluate against the moment `migrate` finishes. Rule Studio's live extraction
+additionally needs an `OPENAI_API_KEY`; without one it falls back to an honest
+"extraction unavailable" state rather than pretending the document held no rules.
+
+**Tests:**
 
 ```bash
 uv run --directory backend python manage.py test apps
 ```
 
----
+38 tests, all passing. They include contract tests that assert the live API's
+responses against the canonical fixtures in `contract/*.json`, which is what
+stops the frontend and backend drifting apart.
 
-## Lanes
+## What it does not do
 
-Each lane owns its directories outright. Nobody edits another lane's tree, so merges into `main` stay clean.
+Stated plainly, because a compliance tool that overstates itself is worse than
+none.
 
-| Lane | Owns | Blocked by |
-|---|---|---|
-| **Backend** | `backend/apps/validation`, `backend/apps/audit`, `backend/config` | nothing |
-| **Frontend** | `frontend/src/routes/Dispatch.jsx`, `AuditLog.jsx`, `frontend/src/components`, styling | a running backend |
-| **Rule Studio** | `frontend/src/routes/RuleStudio.jsx` **and** `backend/apps/rules` — full stack, one owner | the contract only |
+- **It validates *declared* weight, not weighed weight.** If the figure typed
+  into the ERP is wrong, VETO passes it. Weighbridge and IoT sensor integration
+  is a later phase. VETO does not guarantee actual compliance — it removes the
+  excuse of not knowing.
+- **Road class is not part of validation.** Legal limits vary by road class under
+  PM 18/2021. Routes are stored as profile data and are not yet evaluated.
+- **There is no authentication.** No login, no API keys, no permission classes.
+  This was a scoped decision for a four-day competition build, and it means the
+  audit trail must not be described as access-controlled.
+- **Every threshold in the repository should be re-verified against source text
+  before it is trusted operationally.** No figure and no citation in this product
+  is invented, but "not invented" is a lower bar than "verified".
 
-Rule Studio spans both trees deliberately. Its upload → triage → extract → approve flow has too much shared state to split across two people.
+## Repository
 
-Shared files that need a heads-up before changing: `api-contract.md`, `contract/*.json`, `frontend/src/api/*`, `backend/config/*`.
+```
+frontend/          Vite + React + Tailwind. One app, three routed surfaces.
+backend/
+  apps/validation  engine.py — the deterministic evaluator
+  apps/rules       Rule Studio: upload, triage, extraction, candidate approval
+  apps/audit       DispatchDecision, Violation, override
+  apps/profiles    vehicle profile CRUD
+contract/          Canonical JSON fixtures the backend tests assert against
+data/              Regulatory corpus — unverified human reference material
+docs/              Engineering context, deployment, handoff, design plans
+```
 
-## The contract is the seam
+| Document | What it holds |
+|---|---|
+| [PRODUCT.md](PRODUCT.md) | Product requirements and feature scope |
+| [DESIGN.md](DESIGN.md) | The visual system — typography, colour, motion, and what is banned |
+| [api-contract.md](api-contract.md) | The binding frontend/backend contract |
+| [docs/ENGINEERING.md](docs/ENGINEERING.md) | Constraints, locked decisions, domain reference |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | How the two halves are deployed |
+| [docs/HANDOFF.md](docs/HANDOFF.md) | Full engineering handoff, written at the end of the build |
 
-[api-contract.md](api-contract.md) is binding. `contract/*.json` holds the canonical request and response fixtures, and the backend's tests assert its live responses against them.
+## Team
 
-**Change the fixture and `api-contract.md` first, tell the other lane, then change code.**
+**GabisaNgoding** — Fakultas Ilmu Komputer, Universitas Indonesia, angkatan 2025.
 
-## Running the frontend
+Code contributors: [@6avier](https://github.com/6avier) — frontend, design
+system, Rule Studio · [@iqbalvirdiansyah-commits](https://github.com/iqbalvirdiansyah-commits)
+— backend, validation engine.
 
-The frontend talks to the API only — mock mode was removed in `c5a03b4`. Start Django on `:8000`, then `npm --prefix frontend run dev`; the Vite proxy forwards `/api` to it. Point somewhere else with `VITE_PROXY_TARGET`.
+## Credits
 
-There is no offline path. Against the deployed backend, Render's free plan sleeps after ~15 minutes and takes ~40 seconds to wake, so an external cron keeps it awake during the event — see [docs/DEPLOY.md](docs/DEPLOY.md) §7.
-
-### One gotcha, already handled
-
-A `HOLD` is HTTP 403, and **axios throws on 403**. It is not an error — it is the most important success path in the product. `validateDispatch()` in `frontend/src/api/validation.js` absorbs this and returns the decision for both `PASS` and `HOLD`; it only throws on genuine failures. Use that function rather than calling `http.post('/validate')` directly.
-
-Chrome logs `403 (Forbidden)` in the console on every HOLD. That is the browser's network log, not an application error. Ignore it.
-
-## Integration checkpoint
-
-**End of day 2.** `POST /validate` wired end to end, `PASS` and `HOLD` both rendering from the real backend. Budget two hours. Do not let the first real request happen on the final day.
-
----
-
-## Current state
-
-Scaffold only. What works today:
-
-- `POST /api/v1/validate` returns contract-exact `PASS`/`HOLD` — but from **hardcoded thresholds** in `backend/apps/validation/views.py`, with no rule pack and no persisted decision. Marked `STUB`. Replacing it is the backend lane's first task.
-- `/dispatch` is a **scaffold**, not the design. It exists to prove the seam. The frontend lane replaces it wholesale — read CLAUDE.md §7 first.
-- `/rule-studio` and `/audit` are placeholders. Their API helpers are written and mocked.
-
-Every threshold currently in the code is marked `TODO: verify`. Per CLAUDE.md §5, none of them ship as seed data until they are checked against the regulation text.
-
-## Notes
-
-- `backend/.env` and `frontend/.env.local` are gitignored. Never commit real keys.
-- Python is pinned to 3.12 in `backend/.python-version` (PyMuPDF wheels lag on newer versions).
-- Local dev uses SQLite so the backend lane is not blocked on Supabase. Set `DATABASE_URL` to the Supabase pooler URL to switch.
-- Port 5173 must be free. Stop any other Vite dev server first.
+The fictional host ERP surface uses **SAP 72**, from
+[SAP/theming-base-content](https://github.com/SAP/theming-base-content) under the
+Apache License 2.0 — see `frontend/src/assets/fonts/NOTICE.md`. VETO's own
+surfaces use Archivo and JetBrains Mono. NUSANTARA WMS is invented for the demo
+and is not a real product.

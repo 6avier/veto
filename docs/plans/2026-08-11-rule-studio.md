@@ -1,6 +1,6 @@
 # Rule Studio Implementation Plan
 
-> **For agentic workers:** Steps use checkbox (`- [ ]`) syntax for tracking. Each task ends with a commit. Do not start a task until the one before it in your own track is committed.
+> **How to work this plan:** Steps use checkbox (`- [ ]`) syntax for tracking. Each task ends with a commit. Do not start a task until the one before it in your own track is committed.
 
 **Goal:** A client uploads an internal policy document, the system judges whether it contains rules at all, extracts the thresholds it finds, a human approves them, and those approved rules then tighten live dispatch validation.
 
@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-Every task inherits these. They come from `CLAUDE.md`, `PRODUCT.md`, and `api-contract.md`.
+Every task inherits these. They come from `docs/ENGINEERING.md`, `PRODUCT.md`, and `api-contract.md`.
 
 - **Zero LLM at runtime on the dispatch path.** `POST /validate` must never call Gemini, directly or transitively. Rule Studio's AI runs only at authoring time.
 - **Units on the wire:** weight in integer kilograms, dimensions in integer millimetres. No floats, no tonnes, no metres.
@@ -24,7 +24,7 @@ Every task inherits these. They come from `CLAUDE.md`, `PRODUCT.md`, and `api-co
 - **Rule precedence:** where a client rule and a central rule cover the same dimension, the stricter threshold wins, and this is explicit in the data model rather than implicit in evaluation order.
 - **If a response shape must change**, update `api-contract.md` and `contract/*.json` and tell the other track *before* changing code.
 
-**Testing posture.** `CLAUDE.md` §4 deprioritises test coverage beyond what stops the demo breaking, so this plan does not apply uniform TDD. Track B is test-first — the logic lives there, and the contract tests are what stop the two tracks drifting. Track F verifies in the browser at each task instead of adding a JS test runner. That is a deliberate deviation.
+**Testing posture.** `docs/ENGINEERING.md` §4 deprioritises test coverage beyond what stops the demo breaking, so this plan does not apply uniform TDD. Track B is test-first — the logic lives there, and the contract tests are what stop the two tracks drifting. Track F verifies in the browser at each task instead of adding a JS test runner. That is a deliberate deviation.
 
 ---
 
@@ -500,7 +500,7 @@ Expected: `ModuleNotFoundError: No module named 'apps.rules.llm'`
 """The only module that talks to Gemini.
 
 Called at rule-authoring time only. Nothing here may ever be imported by
-apps.validation — see the zero-LLM-at-runtime constraint in CLAUDE.md §1.
+apps.validation — see the zero-LLM-at-runtime constraint in docs/ENGINEERING.md §1.
 """
 
 import json
@@ -1337,7 +1337,7 @@ Tell Xavier the backend is ready. This is the **integration checkpoint** — see
 **Interfaces:**
 - Produces: `demo/SOP-Gudang-Cikarang-v2.pdf`, the document used in demo steps 5–7.
 
-Seed data is endorsed by `CLAUDE.md` §6. This is a fictional client SOP, not a government document — so nothing here is a regulation citation, and the stricter-than-legal threshold is the client's own policy.
+Seed data is endorsed by `docs/ENGINEERING.md` §6. This is a fictional client SOP, not a government document — so nothing here is a regulation citation, and the stricter-than-legal threshold is the client's own policy.
 
 - [ ] **Step 1: Write the command**
 
@@ -1558,7 +1558,7 @@ git commit -m "feat(validation): client rules override central when stricter"
 
 Everything here runs on `VITE_USE_MOCKS=true`. You are not blocked by Iqbal at any point before the integration checkpoint.
 
-**Before you start:** read `CLAUDE.md` §7. Rule Studio is the *register* surface — light ground, editorial measure, hairline rules, citations set as legal references, the source page treated as a document plate. It should look like a different tool from `/dispatch`, because a different person uses it.
+**Before you start:** read `docs/ENGINEERING.md` §7. Rule Studio is the *register* surface — light ground, editorial measure, hairline rules, citations set as legal references, the source page treated as a document plate. It should look like a different tool from `/dispatch`, because a different person uses it.
 
 Verification for every task is the same shape: `npm --prefix frontend run dev`, open the route, exercise the flow, confirm what the step says. No JS test runner — see the testing posture note.
 
@@ -1738,4 +1738,4 @@ git commit -m "feat(rule-studio): wire frontend to live API"
 
 - `CONFIDENCE_THRESHOLD` is 0.75 on a guess. Tune it once there are five or six real documents to test with.
 - Uploaded files land on local disk. On Railway that filesystem is ephemeral, so uploads do not survive a redeploy. Fine for the demo; note it if anyone asks.
-- No auth on any of these endpoints. Anyone who can reach the API can approve a rule. Accepted for the MVP per `CLAUDE.md` §4, but do not describe Rule Studio as access-controlled.
+- No auth on any of these endpoints. Anyone who can reach the API can approve a rule. Accepted for the MVP per `docs/ENGINEERING.md` §4, but do not describe Rule Studio as access-controlled.

@@ -227,7 +227,7 @@ class DocumentExtractView(APIView):
             # tag, and an excerpt that states plainly what happened instead of
             # sitting under SUMBER looking like a quotation.
             #
-            # CLAUDE.md §5: the threshold below is a placeholder, not a figure
+            # docs/ENGINEERING.md §5: the threshold below is a placeholder, not a figure
             # taken from any regulation or document.
             used_fallback = True
             fallback_reason = str(e)
@@ -394,7 +394,7 @@ class DocumentPageView(APIView):
     """One rendered page plus the regions the extractor drew its rules from.
 
     Rule Studio is specified as split-screen, source document against extracted
-    rule (CLAUDE.md §3). Until now the frontend had the rule but no way to show
+    rule (docs/ENGINEERING.md §3). Until now the frontend had the rule but no way to show
     the document, because nothing served the PDF. This serves both halves of the
     comparison in a single request: the page as an image, and the location of
     every candidate clause on it.

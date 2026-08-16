@@ -23,12 +23,12 @@ const STAGES = [
 ]
 
 /**
- * The fields the extractor is constrained to emit (CLAUDE.md §2). Shown as the
+ * The fields the extractor is constrained to emit (docs/ENGINEERING.md §2). Shown as the
  * ticker under "Menyusun ambang batas" because they are what assembling a
  * threshold actually consists of.
  *
  * These are real payload keys, not decoration. Nothing here invents a figure or
- * a citation — CLAUDE.md §5 — which is why the ticker reads out field names it
+ * a citation — docs/ENGINEERING.md §5 — which is why the ticker reads out field names it
  * is filling rather than values it has supposedly found.
  */
 const FIELD_TOKENS = [

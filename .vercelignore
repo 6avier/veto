@@ -12,5 +12,6 @@ data/
 docs/
 PROPOSAL+REGULATIONS/
 .impeccable/
+.claude/
 *.md
 !frontend/**/*.md

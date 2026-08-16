@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 /**
- * The source half of Rule Studio's split screen (CLAUDE.md §3).
+ * The source half of Rule Studio's split screen (docs/ENGINEERING.md §3).
  *
  * DESIGN.md §3: on the register surface the source document page is treated as
  * a plate — bordered, captioned, given room. So it is a figure with a caption,

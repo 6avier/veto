@@ -1,6 +1,5 @@
 # Truck Envelope Visualization Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build `TruckEnvelope.jsx` — a translucent top-down + side-elevation outline of the truck's legal footprint on `/dispatch`, with the live form input drawn inside it, overflow highlighted, and a spring "stretch" animation on change.
 
@@ -19,7 +18,7 @@ Design reference: [`docs/plans/2026-08-12-truck-envelope-design.md`](2026-08-12-
 - **Raw hex Tailwind classes, not the `ink-*` token ramp.** This surface is ERP-side, matching the existing convention in `DispatchForm.jsx` (`text-[#5a646e]`, `border-[#c9ced4]`, etc. — see `docs/HANDOFF.md` §18: "Raw hex appears only in `ErpLayout.jsx` and the ERP-side parts of `DispatchForm.jsx`, deliberately").
 - **Display formatting goes through `frontend/src/lib/format.js`.** Use `formatMm`; never inline `toLocaleString`.
 - **Motion is a scoped exception to `DESIGN.md`'s low motion-intensity dial**, confined to this one component. Do not carry loose spring easing into `VerdictPanel.jsx`, `ViolationDialog.jsx`, or anywhere else.
-- **No frontend test runner exists** (`CLAUDE.md` §4, deliberate). Verification for every task in this plan is manual: run the dev servers and check the rendered result in a browser, per `CLAUDE.md` §6. This mirrors the deviation already recorded in `docs/plans/2026-08-11-rule-studio.md`.
+- **No frontend test runner exists** (`docs/ENGINEERING.md` §4, deliberate). Verification for every task in this plan is manual: run the dev servers and check the rendered result in a browser, per `docs/ENGINEERING.md` §6. This mirrors the deviation already recorded in `docs/plans/2026-08-11-rule-studio.md`.
 - **Component style:** default export first, local non-exported helper components/functions below it in the same file, per `docs/HANDOFF.md` §18.
 - **SVG stroke widths must use `vectorEffect="non-scaling-stroke"`.** The `viewBox` is in raw millimetres (tens of thousands of units); without this, any strokeWidth small enough to look reasonable in mm-space renders as a sub-pixel, invisible line once the browser scales the SVG down to its container width.
 
@@ -95,7 +94,7 @@ This task builds correctness first — legal boundary drawn accurately, overflow
 import { formatMm } from '@/lib/format'
 
 /**
- * A booth gimmick on /dispatch (CLAUDE.md §4, P2 polish): a translucent
+ * A booth gimmick on /dispatch (docs/ENGINEERING.md §4, P2 polish): a translucent
  * outline of the truck's legal footprint, with the live form input drawn
  * inside it, and the excess coloured when a dimension goes over.
  *

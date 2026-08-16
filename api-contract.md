@@ -333,7 +333,7 @@ Runs full extraction. Only valid when `accepted` is `true`, or when the human ov
 - `source_text_excerpt` and `source_page` drive the split-screen verification view. Both required.
 - `used_fallback` is `true` when the live LLM path failed and a fallback candidate was served. Frontend should indicate this in the UI rather than hiding it.
 - `fallback_reason` carries the underlying error when `used_fallback` is true, and is `null` otherwise. It is diagnostic text for developers — **do not render it as document content.**
-- A fallback candidate is tagged `["cadangan", "belum-diverifikasi"]`, never `gemini-extracted`, and its `source_text_excerpt` states that extraction was unavailable rather than quoting the document. Its `threshold` is a placeholder, not a figure read from any source (`CLAUDE.md` §5).
+- A fallback candidate is tagged `["cadangan", "belum-diverifikasi"]`, never `gemini-extracted`, and its `source_text_excerpt` states that extraction was unavailable rather than quoting the document. Its `threshold` is a placeholder, not a figure read from any source (`docs/ENGINEERING.md` §5).
 - Errors: 409 if the document was rejected and `force` is false. 504 on LLM timeout **only when no fallback exists**.
 
 ### `GET /documents/{document_id}/pages/{page_number}`

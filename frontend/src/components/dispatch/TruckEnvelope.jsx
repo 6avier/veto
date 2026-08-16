@@ -3,7 +3,7 @@ import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 
 import { useEffect } from 'react'
 
 /**
- * A booth gimmick on /dispatch (CLAUDE.md §4, P2 polish): a translucent
+ * A booth gimmick on /dispatch (docs/ENGINEERING.md §4, P2 polish): a translucent
  * outline of the truck's legal footprint, with the live form input drawn
  * inside it, and the excess coloured when a dimension goes over.
  *

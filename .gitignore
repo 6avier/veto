@@ -35,12 +35,23 @@ pnpm-debug.log*
 .idea/
 *.swp
 
-# --- Agent skill packs (vendored per-machine, not project source) ---
+# --- Local working notes, agent tooling and submission paperwork ---
+#
+# All of this still exists on the maintainer's machine; none of it belongs in a
+# public repository. The engineering context that the rest of the docs cite now
+# lives in docs/ENGINEERING.md.
+#
+# PROPOSAL+REGULATIONS/ holds the competition submission and the organiser's
+# guidebook. The guidebook carries committee members' personal contact details,
+# which is why it is kept out of the repository and out of its history.
 .agents/
-
-# --- Claude Code (personal, per-machine) ---
-.claude/settings.local.json
+.claude/
 .superpowers/
+AGENTS.md
+CLAUDE.md
+docs/IMPECCABLE.md
+docs/superpowers/
+PROPOSAL+REGULATIONS/
 
 # --- macOS ---
 .DS_Store

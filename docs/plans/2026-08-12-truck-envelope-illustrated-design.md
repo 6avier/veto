@@ -1,6 +1,6 @@
 # Truck Envelope — Illustrated Redesign
 
-**Status:** Design validated through iterative visual mockups (superpowers visual companion, screenshot-verified at each round) with 6avier. Ready for implementation planning.
+**Status:** Design validated through iterative visual mockups, screenshot-verified at each round, with 6avier. Ready for implementation planning.
 
 **Builds on:** [`2026-08-12-truck-envelope-design.md`](2026-08-12-truck-envelope-design.md) and [`2026-08-12-truck-envelope-implementation.md`](2026-08-12-truck-envelope-implementation.md) — both already shipped to `main`. This doc replaces only the *visual* layer (plain rectangles → illustrated truck), not the underlying geometry engine (`axisGeometry`), the data flow (`limits`, live form values, no new API), or the placement (full-width block below the form+VerdictPanel grid on `/dispatch`).
 
@@ -71,7 +71,7 @@ Both box treatments need evenly spaced vertical panel lines (cosmetic corrugatio
 
 ## 7. Verification
 
-Same posture as the original `TruckEnvelope` plan: no frontend test runner, browser-only verification (`CLAUDE.md` §6). Given how much of this round's actual bugs (floating mirrors, misaligned cab center, inconsistent wheel offsets) were only caught by an actual Playwright screenshot rather than reading the SVG source, **the implementation plan should build in a self-verification screenshot pass as part of each visual task**, not defer all visual checking to a human pass at the end. The Playwright + headless Chromium approach already used during this brainstorming session (scratchpad-installed, no new project dependency) is a reasonable model for how an implementer task can self-check before reporting done.
+Same posture as the original `TruckEnvelope` plan: no frontend test runner, browser-only verification (`docs/ENGINEERING.md` §6). Given how much of this round's actual bugs (floating mirrors, misaligned cab center, inconsistent wheel offsets) were only caught by an actual Playwright screenshot rather than reading the SVG source, **the implementation plan should build in a self-verification screenshot pass as part of each visual task**, not defer all visual checking to a human pass at the end. The Playwright + headless Chromium approach already used during this brainstorming session (scratchpad-installed, no new project dependency) is a reasonable model for how an implementer task can self-check before reporting done.
 
 ---
 

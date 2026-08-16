@@ -159,7 +159,7 @@ strict few-shot prompting constrained to emit `dimension`, `operator`,
     /profiles        vehicle profile CRUD
 /contract            JSON fixtures the backend tests assert against
 api-contract.md      the binding frontend/backend contract
-CLAUDE.md            engineering context and constraints
+docs/ENGINEERING.md  engineering context and constraints
 PRODUCT.md           product requirements
 DESIGN.md            the design system
 ```

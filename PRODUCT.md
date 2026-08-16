@@ -2,8 +2,6 @@
 
 Product requirements for the RISTEK Hackathon 2026 Grand Final build. Scope is the 4-day MVP only (10–13 Aug 2026), not the full product vision.
 
-Doubles as the `PRODUCT.md` the Impeccable skill reads.
-
 ---
 
 ## 1. Product summary

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Render build for the VETO API.
 #
-# uv is the project's package manager (CLAUDE.md §2), so uv.lock stays the one
+# uv is the project's package manager (docs/ENGINEERING.md §2), so uv.lock stays the one
 # source of dependency truth. Exporting a requirements.txt alongside it would be
 # a second file to keep in sync, and this repo has already been bitten twice by
 # two copies of the same fact drifting apart.

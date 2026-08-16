@@ -1,6 +1,6 @@
 # Validation Engine and Dispatch Implementation Plan — P0
 
-> **For agentic workers:** Steps use checkbox (`- [ ]`) syntax for tracking. Each task ends with a commit. Do not start a task until the one before it in your own track is committed.
+> **How to work this plan:** Steps use checkbox (`- [ ]`) syntax for tracking. Each task ends with a commit. Do not start a task until the one before it in your own track is committed.
 
 **Goal:** A warehouse officer enters truck and cargo figures, gets `PASS` or `HOLD` with a specific correction, fixes the load, resubmits, and passes — with every decision written to an append-only trail carrying its article citation.
 
@@ -14,7 +14,7 @@
 
 ## Global Constraints
 
-Every task inherits these. From `CLAUDE.md`, `PRODUCT.md`, and `api-contract.md`.
+Every task inherits these. From `docs/ENGINEERING.md`, `PRODUCT.md`, and `api-contract.md`.
 
 - **Zero LLM calls at runtime.** Verifiable by inspection: nothing under `apps/validation/` may import `apps.rules.llm`. Importing `apps.rules.models` is fine.
 - **Validation latency p95 under 300 ms** on seeded data.
@@ -28,7 +28,7 @@ Every task inherits these. From `CLAUDE.md`, `PRODUCT.md`, and `api-contract.md`
 - **No overclaiming.** VETO validates *declared* data. Do not imply guaranteed compliance, error elimination, or incident reduction anywhere in the UI.
 - **If a response shape must change**, update `api-contract.md` and `contract/*.json` and tell the other track *before* changing code.
 
-**Testing posture.** Track B is test-first — the engine is the product, and its boolean logic is exactly what a demo failure would expose. Track F verifies in the browser at each task rather than adding a JS test runner, per `CLAUDE.md` §4. Deliberate deviation.
+**Testing posture.** Track B is test-first — the engine is the product, and its boolean logic is exactly what a demo failure would expose. Track F verifies in the browser at each task rather than adding a JS test runner, per `docs/ENGINEERING.md` §4. Deliberate deviation.
 
 ---
 
@@ -90,7 +90,7 @@ Every task inherits these. From `CLAUDE.md`, `PRODUCT.md`, and `api-contract.md`
 
 **Depends on `apps.rules.models` from the Rule Studio plan Task B1.** Do that task first — it is 20 minutes and both plans need it.
 
-This task exists because `CLAUDE.md` §5 says never hardcode an unverified threshold and never fabricate a citation. Rather than trusting discipline, the loader refuses to insert a row whose `verification.status` is not `VERIFIED`. You cannot accidentally ship a made-up number.
+This task exists because `docs/ENGINEERING.md` §5 says never hardcode an unverified threshold and never fabricate a citation. Rather than trusting discipline, the loader refuses to insert a row whose `verification.status` is not `VERIFIED`. You cannot accidentally ship a made-up number.
 
 - [ ] **Step 1: Create the seed file with every row unverified**
 
@@ -136,7 +136,7 @@ Add one entry per rule you intend to enforce. At minimum, to make demo steps 1�
 """Loads the central rule pack.
 
 Refuses to insert a rule that has not been verified against the regulation
-text. CLAUDE.md §5: never hardcode an unverified threshold, never fabricate a
+text. docs/ENGINEERING.md §5: never hardcode an unverified threshold, never fabricate a
 citation. This makes that mechanical rather than aspirational.
 """
 
@@ -846,7 +846,7 @@ git commit -m "feat(audit): add decision list and detail endpoints"
 **Interfaces:**
 - Produces: the override endpoint in `api-contract.md` §2.
 
-This is the locked design decision from `CLAUDE.md` §1 made real: HOLD plus a logged override, not a hard block. The override appends; it never mutates the decision.
+This is the locked design decision from `docs/ENGINEERING.md` §1 made real: HOLD plus a logged override, not a hard block. The override appends; it never mutates the decision.
 
 - [ ] **Step 1: Write the test**
 
@@ -910,7 +910,7 @@ Everything before F6 runs on `VITE_USE_MOCKS=true`. You are not blocked by Iqbal
 **Files:**
 - Create: `DESIGN.md`
 
-`CLAUDE.md` §7 asks for `DESIGN.md`, and it does not exist yet. Write it before the UI, not after — otherwise it becomes a description of whatever you happened to build.
+`docs/ENGINEERING.md` §7 asks for `DESIGN.md`, and it does not exist yet. Write it before the UI, not after — otherwise it becomes a description of whatever you happened to build.
 
 Use the `design-taste-frontend` skill to establish the direction, then record the decisions. It should be short and specific enough that a second person could build a new screen that looks like it belongs:
 
@@ -918,8 +918,8 @@ Use the `design-taste-frontend` skill to establish the direction, then record th
 - [ ] **Step 2: The two densities.** `/dispatch` is instrumentation: dark ground, high-density readouts, safety-signal colour. `/rule-studio` is a register: light ground, editorial measure, hairline rules. Same type system, different density. Write down what makes them one family.
 - [ ] **Step 3: Colour.** Amber for HOLD, green for PASS, and what carries `CENTRAL` versus `CLIENT` rule origin. Include contrast ratios — a booth judge reads this from 1.5 m.
 - [ ] **Step 4: Spacing scale and one grid.**
-- [ ] **Step 5: Motion.** What animates and why. Per `CLAUDE.md` §7: the verdict arriving, the Rule Studio staged reveal, the HOLD→PASS transition. Nothing else. Name the easing and durations.
-- [ ] **Step 6: The banned list** from `CLAUDE.md` §7 — no purple/blue gradients, no card-within-card, no meaningless glassmorphism, no decorative animation.
+- [ ] **Step 5: Motion.** What animates and why. Per `docs/ENGINEERING.md` §7: the verdict arriving, the Rule Studio staged reveal, the HOLD→PASS transition. Nothing else. Name the easing and durations.
+- [ ] **Step 6: The banned list** from `docs/ENGINEERING.md` §7 — no purple/blue gradients, no card-within-card, no meaningless glassmorphism, no decorative animation.
 
 - [ ] **Step 7: Commit**
 
@@ -978,7 +978,7 @@ This is the moment the demo turns on. `PRODUCT.md` §7: *step 2 is the moment th
 
 - [ ] **Step 3: Show rule origin.** `CENTRAL` and `CLIENT` must be visually distinct. `PRODUCT.md` §4: a judge asking "who's responsible if a rule is wrong?" needs a visible answer.
 
-- [ ] **Step 4: Make the request visible.** `PRODUCT.md` F2 requires the API call be legible as it happens, and `CLAUDE.md` §6 requires every visible async operation to have a visible state. Show the round trip and the returned `latency_ms`. Sub-300 ms is a claim worth showing rather than stating.
+- [ ] **Step 4: Make the request visible.** `PRODUCT.md` F2 requires the API call be legible as it happens, and `docs/ENGINEERING.md` §6 requires every visible async operation to have a visible state. Show the round trip and the returned `latency_ms`. Sub-300 ms is a claim worth showing rather than stating.
 
 - [ ] **Step 5: Handle failure cleanly.** A caught `ApiError` renders as a plain Indonesian message. Never a stack trace, never a raw code, in front of judges.
 
@@ -1110,7 +1110,7 @@ git commit -m "feat: wire dispatch and audit to the live API"
 - Road-class-aware validation. Limits vary by road class under PM 18/2021; routes are profile data only and are not used in validation. A known gap — do not let UI copy imply otherwise.
 - Declared versus sensor-verified weight. VETO validates what is typed in. Weighbridge integration is a later phase.
 - Vehicle profiles CRUD (`api-contract.md` §6) — P2, and cut unless everything above is done.
-- No auth on any endpoint. Anyone who can reach the API can validate or override. Accepted per `CLAUDE.md` §4; do not describe the audit trail as access-controlled.
+- No auth on any endpoint. Anyone who can reach the API can validate or override. Accepted per `docs/ENGINEERING.md` §4; do not describe the audit trail as access-controlled.
 
 ## Relationship to the Rule Studio plan
 
