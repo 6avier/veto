@@ -130,9 +130,11 @@ REST_FRAMEWORK = {
     # address instead. The ceilings are set well above what a booth visitor or a
     # judge clicking through the flow will ever reach, and well below what a
     # script pointed at the host would want.
+    # Both subclasses of DRF's own, differing only in how they identify the
+    # caller — see config/throttling.client_ident.
     "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.ScopedRateThrottle",
+        "config.throttling.IdentifiedAnonRateThrottle",
+        "config.throttling.IdentifiedScopedRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
         # Dispatch validation is the demo's hot path — someone trying the form

@@ -1,15 +1,13 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.throttling import AnonRateThrottle
-
-from config.throttling import WriteScopedRateThrottle
+from config.throttling import IdentifiedAnonRateThrottle, WriteScopedRateThrottle
 from .models import VehicleProfile
 
 class VehicleProfileListCreateView(APIView):
     # The list is read on every render of the profiling screen; the create is a
     # deliberate act. They share a URL, not a ceiling.
-    throttle_classes = [AnonRateThrottle, WriteScopedRateThrottle]
+    throttle_classes = [IdentifiedAnonRateThrottle, WriteScopedRateThrottle]
     throttle_scope = "write"
 
     def get(self, request):
