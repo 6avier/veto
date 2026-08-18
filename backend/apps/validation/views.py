@@ -4,8 +4,10 @@ from datetime import datetime, timezone
 
 from django.conf import settings
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.response import Response
+
+from config.throttling import DispatchRateThrottle
 
 from .engine import evaluate_payload
 from apps.rules.models import Rule, RuleStatus
@@ -23,6 +25,7 @@ def _now_iso():
 
 
 @api_view(["POST"])
+@throttle_classes([DispatchRateThrottle])
 def validate(request):
     started = time.perf_counter()
     payload = request.data

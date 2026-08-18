@@ -62,3 +62,9 @@ services:
       # rather than pretending the document held no rules.
       - key: OPENAI_API_KEY
         sync: false
+
+      # Ceiling on extractions per day across all callers, and so on what the
+      # key above can be made to spend. Set here rather than left to the code
+      # default so raising it for a demo is a dashboard edit, not a deploy.
+      - key: EXTRACT_DAILY_CAP
+        value: "60"

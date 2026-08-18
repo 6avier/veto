@@ -60,7 +60,12 @@ class RuleClientResetView(APIView):
     Deliberately scoped to CLIENT origin. The CENTRAL ODOL pack is what makes
     the ERP screen return HOLD at all, so wiping it would leave the dispatch
     demo passing everything — the failure would surface on the wrong stage.
+
+    Throttled as a write: it is the one unauthenticated endpoint that deletes
+    rows, and the reset button behind it is pressed once between demo runs.
     """
+
+    throttle_scope = "write"
 
     def post(self, request):
         rules = Rule.objects.filter(rule_pack__origin=RuleOrigin.CLIENT)
@@ -84,16 +89,23 @@ class RuleClientResetView(APIView):
 
 import base64
 import json
+import logging
 import os
+import uuid
 import fitz
 from django.conf import settings
+from django.core.cache import cache
+from django.utils import timezone as django_timezone
 import openai
 import time
 from datetime import datetime, timezone
-from django.utils import timezone as django_timezone
 from .models import Document, DocumentClassification, RuleCandidate, CandidateStatus, RuleOperator, RulePack
 
+logger = logging.getLogger(__name__)
+
 class DocumentUploadView(APIView):
+    throttle_scope = "upload"
+
     def post(self, request):
         if 'file' not in request.FILES:
             return Response({"error": {"code": "VALIDATION_ERROR", "message": "file is required"}}, status=status.HTTP_400_BAD_REQUEST)
@@ -109,7 +121,14 @@ class DocumentUploadView(APIView):
         # exist on a fresh clone or a new deploy and has to be created here.
         upload_dir = os.path.join(settings.MEDIA_ROOT, 'documents')
         os.makedirs(upload_dir, exist_ok=True)
-        file_path = os.path.join(upload_dir, os.path.basename(file.name))
+
+        # The name on disk is generated, never the uploader's. basename() already
+        # stopped the path from escaping this directory, but it did not stop two
+        # people uploading "SOP.pdf" from overwriting each other's document — the
+        # second upload silently replaced the source page the first one's rules
+        # were still pointing at. The original name is kept on the record for
+        # display; only the path is ours.
+        file_path = os.path.join(upload_dir, f"{uuid.uuid4()}.pdf")
         with open(file_path, 'wb+') as destination:
             for chunk in file.chunks():
                 destination.write(chunk)
@@ -129,7 +148,9 @@ class DocumentUploadView(APIView):
         is_relevant = any(word in first_page_text for word in ["sop", "kebijakan", "peraturan", "standar", "muatan", "logistik", "berat"])
         
         doc = Document.objects.create(
-            filename=file.name,
+            # filename is a CharField(255); a longer name is a write error, not
+            # a validation one, so it is cut here rather than left to the DB.
+            filename=file.name[:255],
             file_path=file_path,
             page_count=page_count,
             classification=DocumentClassification.INTERNAL_POLICY if is_relevant else DocumentClassification.OPERATIONAL_DOC,
@@ -152,7 +173,36 @@ class DocumentUploadView(APIView):
         }, status=status.HTTP_201_CREATED)
 
 class DocumentExtractView(APIView):
+    """Reads a document and asks the model for the rules in it.
+
+    The only endpoint in the product that costs money per call, on an API that
+    asks nobody who they are. It carries two independent ceilings: the per-address
+    throttle below, and a daily total across all callers, because an address is
+    not a thing an attacker is obliged to keep.
+    """
+
+    throttle_scope = "extract"
+
+    @staticmethod
+    def _daily_cap_key():
+        return f"veto-extract-count-{django_timezone.now():%Y-%m-%d}"
+
     def post(self, request, document_id):
+        cap_key = self._daily_cap_key()
+        used = cache.get_or_set(cap_key, 0, 60 * 60 * 26)
+        if used >= settings.EXTRACT_DAILY_CAP:
+            return Response(
+                {
+                    "error": {
+                        "code": "RATE_LIMITED",
+                        "message": (
+                            "Batas ekstraksi harian sudah tercapai. Coba lagi besok."
+                        ),
+                    }
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
         try:
             doc = Document.objects.get(document_id=document_id)
         except Document.DoesNotExist:
@@ -188,6 +238,13 @@ class DocumentExtractView(APIView):
                 raise RuntimeError("OPENAI_API_KEY is not configured")
 
             if settings.OPENAI_API_KEY:
+                # Counted here, where the spend actually happens — not at entry,
+                # where a rejected document would have burned a slot for nothing.
+                try:
+                    cache.incr(cap_key)
+                except ValueError:
+                    cache.set(cap_key, 1, 60 * 60 * 26)
+
                 client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
                 prompt = f"""
                 You are a logistics compliance officer. Read the following SOP document text.
@@ -230,7 +287,16 @@ class DocumentExtractView(APIView):
             # docs/ENGINEERING.md §5: the threshold below is a placeholder, not a figure
             # taken from any regulation or document.
             used_fallback = True
-            fallback_reason = str(e)
+            # The real exception goes to the server log. What comes back to the
+            # browser is a category: an OpenAI client error carries the model,
+            # the endpoint and sometimes the organisation, and none of that is
+            # the caller's business on an endpoint anyone can reach.
+            logger.warning("Rule extraction fell back for %s: %s", doc.document_id, e)
+            fallback_reason = (
+                "extraction_unavailable"
+                if not settings.OPENAI_API_KEY
+                else "extraction_failed"
+            )
             candidates_data = [
                 {
                     "dimension": "GROSS_WEIGHT",
@@ -316,6 +382,8 @@ class RuleCandidateListView(APIView):
         })
 
 class RuleCandidateApproveView(APIView):
+    throttle_scope = "write"
+
     def post(self, request, candidate_id):
         try:
             c = RuleCandidate.objects.get(candidate_id=candidate_id)
@@ -365,6 +433,8 @@ class RuleCandidateApproveView(APIView):
         })
 
 class RuleCandidateRejectView(APIView):
+    throttle_scope = "write"
+
     def post(self, request, candidate_id):
         try:
             c = RuleCandidate.objects.get(candidate_id=candidate_id)

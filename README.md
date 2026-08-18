@@ -208,7 +208,13 @@ none.
   PM 18/2021. Routes are stored as profile data and are not yet evaluated.
 - **There is no authentication.** No login, no API keys, no permission classes.
   This was a scoped decision for a four-day competition build, and it means the
-  audit trail must not be described as access-controlled.
+  audit trail must not be described as access-controlled: anything the hosted
+  demo has been shown is readable by anyone who finds the URL, so nothing real
+  should be typed into it. Because the demo is public, the endpoints are rate
+  limited per client address, document extraction carries a daily ceiling across
+  all callers, and the Django admin is not routed outside local development —
+  those bound the cost and the blast radius of an open API, but they are not
+  access control and are not offered as a substitute for it.
 - **Every threshold in the repository should be re-verified against source text
   before it is trusted operationally.** No figure and no citation in this product
   is invented, but "not invented" is a lower bar than "verified".

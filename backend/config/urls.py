@@ -1,5 +1,6 @@
 """Root URL config. All product routes live under /api/v1 per api-contract.md."""
 
+from django.conf import settings
 from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
@@ -17,7 +18,14 @@ api_v1 = [
 ]
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
     path("health/", health, name="health"),
     path("api/v1/", include(api_v1)),
 ]
+
+# The admin is a login form on a published hostname, and nothing in this repo
+# creates a superuser for it — so deployed it is a brute-force surface guarding
+# an empty room, and the moment anyone does create an account it guards the
+# whole database with whatever password they picked. It stays available locally,
+# where it is genuinely useful for inspecting seeded rules.
+if settings.DEBUG:
+    urlpatterns.insert(0, path("admin/", admin.site.urls))

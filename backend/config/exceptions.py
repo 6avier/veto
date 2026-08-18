@@ -11,6 +11,9 @@ STATUS_TO_CODE = {
     400: "VALIDATION_ERROR",
     404: "NOT_FOUND",
     409: "CONFLICT",
+    # Without this a throttled request came back as INTERNAL_ERROR, which reads
+    # as "the server is broken" for something that is working exactly as meant.
+    429: "RATE_LIMITED",
     504: "UPSTREAM_TIMEOUT",
 }
 

@@ -124,6 +124,30 @@ REST_FRAMEWORK = {
     ],
     "EXCEPTION_HANDLER": "config.exceptions.contract_exception_handler",
     "UNAUTHENTICATED_USER": None,
+    # The API carries no authentication by design (docs/ENGINEERING.md §4: auth is
+    # deprioritised for the event). That is defensible for a demo but not for a
+    # demo whose URL is published, so the endpoints are rate limited per client
+    # address instead. The ceilings are set well above what a booth visitor or a
+    # judge clicking through the flow will ever reach, and well below what a
+    # script pointed at the host would want.
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        # Dispatch validation is the demo's hot path — someone trying the form
+        # repeatedly must never hit this.
+        "anon": "120/min",
+        # Each upload puts a 10 MB file on a disk Render wipes anyway.
+        "upload": "12/hour",
+        # The only endpoint that spends money. See EXTRACT_DAILY_CAP below for
+        # the ceiling that does not depend on the caller keeping one address.
+        "extract": "10/hour",
+        # Destructive or state-changing: profile writes and the register reset.
+        "write": "30/hour",
+        # Each dispatch writes an audit row, and the audit trail is the demo.
+        "dispatch": "40/min",
+    },
 }
 if DEBUG:
     REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"].append(
@@ -144,9 +168,28 @@ MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_BYTES
 FILE_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_BYTES
 
+# Throttle state lives here. The default backend is per-process and in-memory,
+# which is stated rather than inherited: it resets when the service restarts,
+# and Render's free plan restarts on every wake from sleep. That is the right
+# trade for one gunicorn worker serving a demo — it holds for as long as
+# traffic keeps arriving, which is exactly when it is needed.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "veto-throttle",
+    }
+}
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 # Rule Studio only, never the dispatch path.
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+# A per-address throttle bounds one caller; it does not bound a caller willing
+# to change address. This is the ceiling on total extractions per day across
+# everyone, and so the ceiling on what the OpenAI key can be made to spend.
+# Raise it before a demo that needs more; it is an env var so that does not
+# need a deploy.
+EXTRACT_DAILY_CAP = int(os.getenv("EXTRACT_DAILY_CAP", "60"))
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)

@@ -1,9 +1,17 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.throttling import AnonRateThrottle
+
+from config.throttling import WriteScopedRateThrottle
 from .models import VehicleProfile
 
 class VehicleProfileListCreateView(APIView):
+    # The list is read on every render of the profiling screen; the create is a
+    # deliberate act. They share a URL, not a ceiling.
+    throttle_classes = [AnonRateThrottle, WriteScopedRateThrottle]
+    throttle_scope = "write"
+
     def get(self, request):
         queryset = VehicleProfile.objects.all()
         
@@ -83,6 +91,9 @@ class VehicleProfileListCreateView(APIView):
 
 
 class VehicleProfileDetailView(APIView):
+    # Every method here changes or removes a profile.
+    throttle_scope = "write"
+
     def patch(self, request, profile_id):
         try:
             p = VehicleProfile.objects.get(profile_id=profile_id)
