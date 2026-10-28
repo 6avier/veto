@@ -186,6 +186,10 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 # Rule Studio only, never the dispatch path.
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
+ROBOFLOW_API_KEY = os.getenv("ROBOFLOW_API_KEY", "")
+ROBOFLOW_MODEL_ID = os.getenv("ROBOFLOW_MODEL_ID", "truck-overload-project")
+ROBOFLOW_MODEL_VERSION = os.getenv("ROBOFLOW_MODEL_VERSION", "8")
+
 # A per-address throttle bounds one caller; it does not bound a caller willing
 # to change address. This is the ceiling on total extractions per day across
 # everyone, and so the ceiling on what the OpenAI key can be made to spend.

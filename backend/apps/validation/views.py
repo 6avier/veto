@@ -1,4 +1,8 @@
+import json
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 import uuid
 from datetime import datetime, timezone
 
@@ -136,3 +140,61 @@ def validate(request):
         request._veto_is_hold = True
         return Response(body, status=status.HTTP_403_FORBIDDEN)
     return Response(body, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+def vision_detect(request):
+    """Server-side proxy for VETO Vision inference so the API key stays on the backend."""
+    api_key = getattr(settings, "ROBOFLOW_API_KEY", "")
+    if not api_key:
+        return _error(
+            "VETO Vision API key is not configured on the server.",
+            code="VISION_UNAVAILABLE",
+            http_status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    payload = request.data
+    image_base64 = payload.get("image_base64") if isinstance(payload, dict) else None
+    if not image_base64 or not isinstance(image_base64, str):
+        return _error("image_base64 is required", field="image_base64")
+
+    model_id = getattr(settings, "ROBOFLOW_MODEL_ID", "truck-overload-project")
+    version = str(getattr(settings, "ROBOFLOW_MODEL_VERSION", "8"))
+
+    def _call_model(ver):
+        url = (
+            f"https://detect.roboflow.com/{urllib.parse.quote(model_id)}/{urllib.parse.quote(ver)}"
+            f"?api_key={urllib.parse.quote(api_key)}&confidence=15&overlap=25"
+        )
+        req = urllib.request.Request(
+            url,
+            data=image_base64.encode("utf-8"),
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+
+    try:
+        data = _call_model(version)
+        if not data.get("predictions") and version == "8":
+            try:
+                fallback = _call_model("6")
+                if fallback.get("predictions"):
+                    data = fallback
+            except Exception:
+                pass
+    except urllib.error.HTTPError as exc:
+        return _error(
+            f"VETO Vision upstream returned {exc.code}.",
+            code="VISION_UPSTREAM_ERROR",
+            http_status=status.HTTP_502_BAD_GATEWAY,
+        )
+    except Exception:
+        return _error(
+            "Could not reach VETO Vision upstream.",
+            code="VISION_UPSTREAM_ERROR",
+            http_status=status.HTTP_502_BAD_GATEWAY,
+        )
+
+    return Response({"predictions": data.get("predictions", [])}, status=status.HTTP_200_OK)
