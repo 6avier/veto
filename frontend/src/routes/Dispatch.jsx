@@ -8,6 +8,7 @@ import ViolationDialog from '@/components/dispatch/ViolationDialog'
 import PassDialog from '@/components/dispatch/PassDialog'
 import WaybillDialog from '@/components/dispatch/WaybillDialog'
 import PrintableWaybill from '@/components/dispatch/PrintableWaybill'
+import VisionScanner from '@/components/dispatch/VisionScanner'
 import { axleCountFor } from '@/lib/format'
 import { limitsFromRules } from '@/lib/limits'
 
@@ -163,6 +164,18 @@ export default function Dispatch() {
     setWaybillOpen(false)
   }
 
+  // The camera writes into the form the same way typing does, so it carries
+  // the same consequence: any verdict on the old figures is withdrawn. A
+  // functional update, because the scanner calls this from its own loop and
+  // must not overwrite a field the operator typed a moment earlier.
+  const applyDetection = (patch) => {
+    setForm((current) => ({ ...current, ...patch }))
+    setDecision(null)
+    setError(null)
+    setPassOpen(false)
+    setWaybillOpen(false)
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
     const found = validate(form)
@@ -223,6 +236,8 @@ export default function Dispatch() {
           </button>
         </div>
       </div>
+
+      <VisionScanner form={form} limits={limits} onApply={applyDetection} />
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
         <DispatchForm
