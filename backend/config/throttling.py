@@ -52,6 +52,18 @@ class DispatchRateThrottle(ClientIdentMixin, AnonRateThrottle):
     scope = "dispatch"
 
 
+class VisionDetectRateThrottle(ClientIdentMixin, AnonRateThrottle):
+    """The rate for POST /vision/detect (video frame over-dimension scanning)."""
+
+    scope = "vision_detect"
+
+
+class VisionAlprRateThrottle(ClientIdentMixin, AnonRateThrottle):
+    """The rate for POST /vision/alpr (license plate OCR + fleet verification)."""
+
+    scope = "vision_alpr"
+
+
 class IdentifiedAnonRateThrottle(ClientIdentMixin, AnonRateThrottle):
     """The global anonymous rate, counted against the caller rather than the chain."""
 

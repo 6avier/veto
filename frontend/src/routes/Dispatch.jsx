@@ -140,7 +140,7 @@ export default function Dispatch() {
   // A failure is silent: limits are an aid, and the engine is the authority.
   useEffect(() => {
     let cancelled = false
-    listRules({ origin: 'CENTRAL' })
+    listRules()
       .then((data) => !cancelled && setRules(data.results))
       .catch(() => {})
     return () => {

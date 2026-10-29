@@ -11,9 +11,22 @@ from rest_framework import status
 from rest_framework.decorators import api_view, throttle_classes
 from rest_framework.response import Response
 
-from config.throttling import DispatchRateThrottle
+from config.throttling import (
+    DispatchRateThrottle,
+    VisionAlprRateThrottle,
+    VisionDetectRateThrottle,
+)
 
 from .engine import evaluate_payload
+from .fleet_registry import get_fleet_registry, lookup_or_match_fleet
+from .vision import (
+    VisionServiceError,
+    detect_alpr_and_fleet,
+    detect_overdimension,
+    sanitize_body_type,
+    sanitize_plate,
+    validate_image_base64,
+)
 from apps.rules.models import Rule, RuleStatus
 from apps.audit.models import DispatchDecision, Violation
 
@@ -143,58 +156,77 @@ def validate(request):
 
 
 @api_view(["POST"])
+@throttle_classes([VisionDetectRateThrottle])
 def vision_detect(request):
-    """Server-side proxy for VETO Vision inference so the API key stays on the backend."""
-    api_key = getattr(settings, "ROBOFLOW_API_KEY", "")
-    if not api_key:
-        return _error(
-            "VETO Vision API key is not configured on the server.",
-            code="VISION_UNAVAILABLE",
-            http_status=status.HTTP_503_SERVICE_UNAVAILABLE,
-        )
-
-    payload = request.data
-    image_base64 = payload.get("image_base64") if isinstance(payload, dict) else None
-    if not image_base64 or not isinstance(image_base64, str):
-        return _error("image_base64 is required", field="image_base64")
-
-    model_id = getattr(settings, "ROBOFLOW_MODEL_ID", "truck-overload-project")
-    version = str(getattr(settings, "ROBOFLOW_MODEL_VERSION", "8"))
-
-    def _call_model(ver):
-        url = (
-            f"https://detect.roboflow.com/{urllib.parse.quote(model_id)}/{urllib.parse.quote(ver)}"
-            f"?api_key={urllib.parse.quote(api_key)}&confidence=15&overlap=25"
-        )
-        req = urllib.request.Request(
-            url,
-            data=image_base64.encode("utf-8"),
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+    """Server-side proxy for VETO Vision over-dimension + integrated ALPR & Fleet lookup."""
+    payload = request.data if isinstance(request.data, dict) else {}
+    raw_b64 = payload.get("image_base64")
 
     try:
-        data = _call_model(version)
-        if not data.get("predictions") and version == "8":
-            try:
-                fallback = _call_model("6")
-                if fallback.get("predictions"):
-                    data = fallback
-            except Exception:
-                pass
-    except urllib.error.HTTPError as exc:
+        clean_b64, mime_type = validate_image_base64(raw_b64)
+        predictions = detect_overdimension(clean_b64)
+    except VisionServiceError as exc:
         return _error(
-            f"VETO Vision upstream returned {exc.code}.",
-            code="VISION_UPSTREAM_ERROR",
-            http_status=status.HTTP_502_BAD_GATEWAY,
-        )
-    except Exception:
-        return _error(
-            "Could not reach VETO Vision upstream.",
-            code="VISION_UPSTREAM_ERROR",
-            http_status=status.HTTP_502_BAD_GATEWAY,
+            exc.message,
+            field=exc.field,
+            code=exc.code,
+            http_status=exc.http_status,
         )
 
-    return Response({"predictions": data.get("predictions", [])}, status=status.HTTP_200_OK)
+    response_body = {"predictions": predictions}
+    if predictions and payload.get("include_alpr", False):
+        alpr_bundle = detect_alpr_and_fleet(
+            clean_b64,
+            mime_type=mime_type,
+            use_session_cache=True,
+        )
+        response_body["alpr"] = alpr_bundle["alpr"]
+        response_body["fleet_match"] = alpr_bundle["fleet_match"]
+
+    return Response(response_body, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@throttle_classes([VisionAlprRateThrottle])
+def vision_alpr(request):
+    """Dedicated ALPR license plate recognition & Master Armada cross-check endpoint."""
+    payload = request.data if isinstance(request.data, dict) else {}
+    raw_b64 = payload.get("image_base64")
+
+    try:
+        clean_b64, mime_type = validate_image_base64(raw_b64)
+        alpr_bundle = detect_alpr_and_fleet(
+            clean_b64,
+            mime_type=mime_type,
+            use_session_cache=False,
+        )
+    except VisionServiceError as exc:
+        return _error(
+            exc.message,
+            field=exc.field,
+            code=exc.code,
+            http_status=exc.http_status,
+        )
+
+    return Response(alpr_bundle, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+def vision_fleet_registry(request):
+    """Return Master Armada vehicles or verify a specific plate + body type combination."""
+    plate_query = request.GET.get("plate")
+    body_query = request.GET.get("body_type")
+    if plate_query or body_query:
+        sanitized_plate = sanitize_plate(plate_query) if plate_query else None
+        sanitized_body = sanitize_body_type(body_query) if body_query else None
+        match = lookup_or_match_fleet(
+            detected_plate=sanitized_plate,
+            detected_body_type=sanitized_body,
+        )
+        return Response({"fleet_match": match}, status=status.HTTP_200_OK)
+
+    registry = get_fleet_registry()
+    return Response(
+        {"results": registry, "total": len(registry)},
+        status=status.HTTP_200_OK,
+    )

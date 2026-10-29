@@ -149,6 +149,9 @@ REST_FRAMEWORK = {
         "write": "30/hour",
         # Each dispatch writes an audit row, and the audit trail is the demo.
         "dispatch": "40/min",
+        # Computer vision endpoints (over-dimension frame scanner & ALPR).
+        "vision_detect": "90/min",
+        "vision_alpr": "15/min",
     },
 }
 if DEBUG:
@@ -196,6 +199,7 @@ ROBOFLOW_MODEL_VERSION = os.getenv("ROBOFLOW_MODEL_VERSION", "8")
 # Raise it before a demo that needs more; it is an env var so that does not
 # need a deploy.
 EXTRACT_DAILY_CAP = int(os.getenv("EXTRACT_DAILY_CAP", "60"))
+VISION_ALPR_DAILY_CAP = int(os.getenv("VISION_ALPR_DAILY_CAP", "120"))
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)

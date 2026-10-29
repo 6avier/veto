@@ -6,7 +6,6 @@
  */
 
 import { http } from '@/api/client'
-import { axleCountFor } from '@/lib/format'
 
 /** Used only when GET /rules has not supplied a ceiling. PP 55/2012. */
 const FALLBACK_LIMITS = { length: 12000, width: 2500, height: 4200 }
@@ -19,21 +18,22 @@ export const isOverloadClass = (name) => /overload/i.test(String(name ?? ''))
  * `maxWidth`. Smaller frames keep inference fast; prediction coordinates come
  * back in this canvas's pixel space.
  */
-export function captureFrame(video, maxWidth = 640) {
-  const vw = video.videoWidth
-  const vh = video.videoHeight
+export function captureFrame(media, maxWidth = 640) {
+  if (!media) return null
+  const vw = media.videoWidth || media.naturalWidth || media.width || 0
+  const vh = media.videoHeight || media.naturalHeight || media.height || 0
   if (!vw || !vh) return null
   const scale = Math.min(1, maxWidth / vw)
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(vw * scale)
   canvas.height = Math.round(vh * scale)
-  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height)
+  canvas.getContext('2d').drawImage(media, 0, 0, canvas.width, canvas.height)
   return canvas
 }
 
 /**
- * Sends a captured frame to the backend vision endpoint and returns the
- * primary truck bounding box.
+ * Sends a captured frame to the backend vision endpoint (/api/v1/vision/detect)
+ * and returns the primary truck bounding box for over-dimension profiling.
  */
 export async function inferVisionFrame(canvas, signal) {
   const base64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1]
@@ -53,6 +53,27 @@ export async function inferVisionFrame(canvas, signal) {
     predictions: best ? [best] : [],
     imageWidth: canvas.width,
     imageHeight: canvas.height,
+    latencyMs: Math.max(12, Math.round(performance.now() - started)),
+  }
+}
+
+/**
+ * Sends a captured frame to the dedicated ALPR endpoint (/api/v1/vision/alpr).
+ */
+export async function inferAlprFrame(canvas, signal) {
+  // Compress to lightweight JPEG quality 0.72 for fastest upload and low inference token count
+  const base64 = canvas.toDataURL('image/jpeg', 0.72).split(',')[1]
+  const started = performance.now()
+
+  const { data } = await http.post(
+    '/vision/alpr',
+    { image_base64: base64 },
+    { signal },
+  )
+
+  return {
+    alpr: data?.alpr ?? null,
+    fleetMatch: data?.fleet_match ?? null,
     latencyMs: Math.max(12, Math.round(performance.now() - started)),
   }
 }
@@ -161,34 +182,5 @@ export function estimateDimensions(className, limits = {}) {
     length: roundTo(L * 0.9, 50),
     width: roundTo(W * 0.96, 10),
     height: roundTo(H * 0.93, 10),
-  }
-}
-
-/**
- * Sample axle loads and tare for a blank form, so a camera-filled dispatch
- * can be validated in one click.
- */
-export function sampleWeights(form, limits = {}) {
-  const untouched = !form.tareWeight && form.axleLoads.every((load) => !load)
-  if (!untouched) return null
-
-  const count = axleCountFor(form.axleConfig)
-  let loads = Array.from({ length: count }, (_, i) => {
-    const ceiling = limits[`axle${i}`]?.threshold ?? limits.axle_generic?.threshold
-    const fallback = i === 0 ? 5000 : 8000
-    return (ceiling ?? fallback) * 0.8
-  })
-  const grossCeiling = limits.grossWeight?.threshold
-  const rawGross = loads.reduce((total, load) => total + load, 0)
-  if (grossCeiling && rawGross > grossCeiling * 0.85) {
-    const factor = (grossCeiling * 0.85) / rawGross
-    loads = loads.map((load) => load * factor)
-  }
-  const axleLoads = loads.map((load) => String(Math.max(100, roundTo(load, 100))))
-  const gross = axleLoads.reduce((total, load) => total + Number(load), 0)
-  return {
-    axleLoads,
-    grossWeight: String(gross),
-    tareWeight: String(roundTo(gross * 0.4, 100)),
   }
 }
