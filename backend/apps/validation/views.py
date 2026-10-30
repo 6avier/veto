@@ -174,7 +174,7 @@ def vision_detect(request):
         )
 
     response_body = {"predictions": predictions}
-    if predictions and payload.get("include_alpr", False):
+    if payload.get("include_alpr", False):
         alpr_bundle = detect_alpr_and_fleet(
             clean_b64,
             mime_type=mime_type,

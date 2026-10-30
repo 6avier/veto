@@ -35,13 +35,13 @@ export function captureFrame(media, maxWidth = 640) {
  * Sends a captured frame to the backend vision endpoint (/api/v1/vision/detect)
  * and returns the primary truck bounding box for over-dimension profiling.
  */
-export async function inferVisionFrame(canvas, signal) {
+export async function inferVisionFrame(canvas, signal, includeAlpr = false) {
   const base64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1]
   const started = performance.now()
 
   const { data } = await http.post(
     '/vision/detect',
-    { image_base64: base64 },
+    { image_base64: base64, include_alpr: includeAlpr },
     { signal },
   )
 
@@ -51,6 +51,8 @@ export async function inferVisionFrame(canvas, signal) {
   return {
     source: 'api',
     predictions: best ? [best] : [],
+    alpr: data?.alpr ?? null,
+    fleetMatch: data?.fleet_match ?? null,
     imageWidth: canvas.width,
     imageHeight: canvas.height,
     latencyMs: Math.max(12, Math.round(performance.now() - started)),
@@ -61,8 +63,8 @@ export async function inferVisionFrame(canvas, signal) {
  * Sends a captured frame to the dedicated ALPR endpoint (/api/v1/vision/alpr).
  */
 export async function inferAlprFrame(canvas, signal) {
-  // Compress to lightweight JPEG quality 0.72 for fastest upload and low inference token count
-  const base64 = canvas.toDataURL('image/jpeg', 0.72).split(',')[1]
+  // Use high clarity JPEG quality 0.88 so OCR can sharply read letters and numbers on the plate
+  const base64 = canvas.toDataURL('image/jpeg', 0.88).split(',')[1]
   const started = performance.now()
 
   const { data } = await http.post(

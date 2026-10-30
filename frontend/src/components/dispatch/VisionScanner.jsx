@@ -247,14 +247,16 @@ export default function VisionScanner({ form, limits, onApply }) {
   const scanCam1Once = useCallback(async () => {
     const media = cam1MediaRef.current
     if (!media || cam1InFlight.current) return
-    const canvas = captureFrame(media, 640)
+    const canvas = captureFrame(media, 800)
     if (!canvas) return
 
     cam1InFlight.current = true
     let next = null
     try {
       cam1AbortRef.current = new AbortController()
-      next = await inferVisionFrame(canvas, cam1AbortRef.current.signal)
+      // If CAM 02 doesn't have a verified plate yet and this is an image or user trigger, attempt ALPR from CAM 01 as well
+      const shouldCheckAlpr = !cam2FleetRef.current
+      next = await inferVisionFrame(canvas, cam1AbortRef.current.signal, shouldCheckAlpr)
       setCam1Error(null)
     } catch (caught) {
       if (caught?.name === 'AbortError') {
@@ -267,6 +269,13 @@ export default function VisionScanner({ form, limits, onApply }) {
       cam1InFlight.current = false
     }
     if (!next) return
+
+    // If ALPR plate was detected from CAM 01 and CAM 02 was empty, sync to CAM 02 state
+    if (!cam2FleetRef.current && next.fleetMatch?.license_plate) {
+      setCam2Alpr(next.alpr)
+      setCam2Fleet(next.fleetMatch)
+      cam2FleetRef.current = next.fleetMatch
+    }
 
     setCam1Frames((count) => count + 1)
     const top = topPrediction(next)
@@ -289,7 +298,8 @@ export default function VisionScanner({ form, limits, onApply }) {
   const scanCam2Once = useCallback(async () => {
     const media = cam2MediaRef.current
     if (!media || cam2InFlight.current) return
-    const canvas = captureFrame(media, 480)
+    // Capture at high resolution (1024px) so small license plate text remains crisp and readable by OCR
+    const canvas = captureFrame(media, 1024)
     if (!canvas) return
 
     cam2InFlight.current = true

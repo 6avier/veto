@@ -34,7 +34,7 @@ JPEG_MAGIC = b"\xff\xd8\xff"
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 
 # Guardrail 4: Strict Indonesian vehicle license plate pattern (e.g., B 9482 UEX)
-PLATE_REGEX = re.compile(r"^([A-Z]{1,2})\s*(\d{1,4})\s*([A-Z]{1,3})$")
+PLATE_REGEX = re.compile(r"(?:^|\b)([A-Z]{1,2})\s*(\d{1,4})\s*([A-Z]{1,3})(?:\b|$)")
 
 # Guardrail 5: Strict network timeout for upstream AI calls
 UPSTREAM_TIMEOUT_SECONDS = 12
@@ -130,8 +130,8 @@ def sanitize_plate(raw_plate):
     if not raw_plate or not isinstance(raw_plate, str):
         return None
     cleaned = re.sub(r"[^A-Z0-9 ]", " ", raw_plate.upper())
-    cleaned = re.sub(r"^(?:\b(?:PLAT|NOMOR|POLISI|NO)\b|\s)+", "", cleaned).strip()[:15]
-    match = PLATE_REGEX.match(cleaned)
+    cleaned = re.sub(r"^(?:\b(?:PLAT|NOMOR|POLISI|NO)\b|\s)+", "", cleaned).strip()
+    match = PLATE_REGEX.search(cleaned)
     if not match:
         return None
     return f"{match.group(1)} {match.group(2)} {match.group(3)}"
@@ -249,9 +249,10 @@ def detect_alpr_and_fleet(clean_b64, mime_type="image/jpeg", use_session_cache=F
 
             client = _get_openai_client(openai_key)
             prompt = (
-                "Fast ALPR. OCR Indonesian vehicle license plate and truck body type. "
-                "Return JSON ONLY with keys:\n"
-                "- license_plate: string or null (e.g. 'B 505 WLG')\n"
+                "Read the Indonesian vehicle license plate (nomor polisi) from this image "
+                "and classify the truck body type. Ignore the small 4-digit tax expiration "
+                "date at the bottom of the plate. Return JSON ONLY with keys:\n"
+                "- license_plate: string or null (format 'PREFIX DIGITS SUFFIX', e.g. 'B 505 WLG')\n"
                 "- detected_body_type: one of ['DUMP_TRUCK', 'BAK_TERPAL', 'BOX_TERTUTUP', 'FLATBED']\n"
                 "- plate_confidence: float 0.0 to 1.0"
             )
@@ -259,7 +260,7 @@ def detect_alpr_and_fleet(clean_b64, mime_type="image/jpeg", use_session_cache=F
                 model=model_name,
                 response_format={"type": "json_object"},
                 temperature=0.0,
-                max_tokens=60,
+                max_tokens=100,
                 messages=[
                     {
                         "role": "user",
@@ -269,7 +270,7 @@ def detect_alpr_and_fleet(clean_b64, mime_type="image/jpeg", use_session_cache=F
                                 "type": "image_url",
                                 "image_url": {
                                     "url": f"data:{mime_type};base64,{clean_b64}",
-                                    "detail": "low",
+                                    "detail": "auto",
                                 },
                             },
                         ],
