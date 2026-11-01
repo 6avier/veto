@@ -125,3 +125,17 @@ class RuleStudioTests(TestCase):
         
         # Ensure it didn't become a Rule
         self.assertNotIn("rule_id", data)
+
+    def test_reviewed_candidates_list_who_and_when(self):
+        file_obj = self._create_mock_pdf("SOP-Gudang.pdf", "SOP")
+        doc_id = self.client.post("/api/v1/documents", {"file": file_obj}).json()["document_id"]
+        candidate_id = self.client.post(f"/api/v1/documents/{doc_id}/extract").json()["candidates"][0]["candidate_id"]
+        self.client.post(f"/api/v1/rule-candidates/{candidate_id}/approve", json.dumps({"reviewed_by": "Test User"}), content_type="application/json")
+
+        res = self.client.get("/api/v1/rule-candidates", {"status": "APPROVED"})
+        self.assertEqual(res.status_code, 200)
+        row = next(r for r in res.json()["results"] if r["candidate_id"] == candidate_id)
+        self.assertEqual(row["reviewed_by"], "Test User")
+        self.assertIsNotNone(row["reviewed_at"])
+        self.assertIsNotNone(row["rule_id"])
+        self.assertEqual(row["document_filename"], "SOP-Gudang.pdf")

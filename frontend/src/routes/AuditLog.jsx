@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
-import { ApiError, getDecision, listDecisions } from '@/api'
+import { ApiError, getDecision, listDecisions, listRuleCandidates } from '@/api'
+import { dimensionOf, isUnverified, OPERATOR_LABELS, scopeOf } from '@/components/rulestudio/dimensions'
 import { BTN_DARK, BTN_QUIET, PANEL } from '@/components/rulestudio/ui'
 import { formatNumber, formatTimestamp } from '@/lib/format'
 import { resetSession, sessionStart } from '@/lib/session'
@@ -23,7 +24,25 @@ const TABS = [
   { value: 'pass', label: 'Lolos', params: { outcome: 'PASS' } },
   { value: 'hold', label: 'Ditahan', params: { outcome: 'HOLD' } },
   { value: 'override', label: 'Override', params: { has_override: true } },
+  { value: 'rules', label: 'Aturan' },
 ]
+
+/**
+ * The Aturan tab: every rule a person approved or rejected in Rule Studio.
+ * The decision tabs prove what the engine did; this one proves a human signed
+ * off on what the engine reads. Candidates have no `from` filter on the API,
+ * so the session scope is applied here, against `reviewed_at`.
+ */
+async function loadReviews(from) {
+  const [approved, rejected] = await Promise.all([
+    listRuleCandidates('APPROVED'),
+    listRuleCandidates('REJECTED'),
+  ])
+  const results = [...approved.results, ...rejected.results]
+    .filter((row) => row.reviewed_at && (!from || new Date(row.reviewed_at) >= new Date(from)))
+    .sort((a, b) => new Date(b.reviewed_at) - new Date(a.reviewed_at))
+  return { results, total: results.length }
+}
 
 export default function AuditLog() {
   const [tab, setTab] = useState('all')
@@ -42,6 +61,10 @@ export default function AuditLog() {
     setLoading(true)
     setError(null)
     try {
+      if (tab === 'rules') {
+        setData(await loadReviews(scopedFrom))
+        return
+      }
       // The server defaults to 50 and caps at 100; the footer admits the cap.
       const params = { limit: 100, ...TABS.find((t) => t.value === tab).params }
       if (scopedFrom) params.from = scopedFrom
@@ -57,7 +80,10 @@ export default function AuditLog() {
     load()
   }, [load])
 
-  const rows = data?.results ?? []
+  // Both loaders resolve into `data`; drop a result the other tab left behind
+  // so a decision row never renders through the review table, or the reverse.
+  const rows = (data?.results ?? []).filter((row) => (tab === 'rules') === ('candidate_id' in row))
+  const reviews = tab === 'rules'
 
   return (
     <div className="mx-auto grid max-w-[1400px] grid-cols-[minmax(0,1fr)] gap-4 px-4 py-5">
@@ -66,7 +92,13 @@ export default function AuditLog() {
       <section className={PANEL} aria-labelledby="audit-title">
         <div className="flex flex-wrap items-center gap-3 px-5 pb-2.5 pt-[18px]">
           <h2 id="audit-title" className="text-[19px] font-bold tracking-[-0.01em]">
-            {scope === 'session' ? 'Keputusan sesi ini' : 'Semua keputusan'}
+            {reviews
+              ? scope === 'session'
+                ? 'Persetujuan aturan sesi ini'
+                : 'Semua persetujuan aturan'
+              : scope === 'session'
+                ? 'Keputusan sesi ini'
+                : 'Semua keputusan'}
           </h2>
           <div role="group" aria-label="Saring jenis catatan" className="flex flex-wrap gap-1 rounded-xl bg-console p-1">
             {TABS.map((option) => (
@@ -134,7 +166,9 @@ export default function AuditLog() {
           <div className="px-5 py-10 text-center">
             <p className="text-[16px] font-bold text-ink-900">Belum ada catatan untuk saringan ini.</p>
             <p className="mt-1 text-[14px] text-ink-500">
-              Jalankan validasi di Client ERP, lalu catatannya muncul di sini.
+              {reviews
+                ? 'Setujui atau tolak usulan aturan di Rule Studio, lalu catatannya muncul di sini.'
+                : 'Jalankan validasi di Client ERP, lalu catatannya muncul di sini.'}
             </p>
           </div>
         )}
@@ -154,7 +188,8 @@ export default function AuditLog() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.flatMap((row) => {
+                  {reviews && rows.map((row) => <ReviewRow key={row.candidate_id} row={row} />)}
+                  {!reviews && rows.flatMap((row) => {
                     const events = []
                     if (row.override && tab !== 'pass') {
                       events.push(<OverrideRow key={`${row.decision_id}-o`} row={row} />)
@@ -175,9 +210,18 @@ export default function AuditLog() {
               </table>
             </div>
             <p className="border-t border-ink-100 px-5 py-3 text-[13px] text-ink-500">
-              Menampilkan {formatNumber(rows.length)} dari {formatNumber(data.total)} keputusan
-              {scope === 'session' ? ' pada sesi ini' : ''}
-              {rows.length < data.total && ' · sisanya tersimpan, hanya tidak ditampilkan'}.
+              {reviews ? (
+                <>
+                  {formatNumber(rows.length)} aturan ditinjau{scope === 'session' ? ' pada sesi ini' : ''}. Aturan
+                  hanya aktif setelah disetujui manusia.
+                </>
+              ) : (
+                <>
+                  Menampilkan {formatNumber(rows.length)} dari {formatNumber(data.total)} keputusan
+                  {scope === 'session' ? ' pada sesi ini' : ''}
+                  {rows.length < data.total && ' · sisanya tersimpan, hanya tidak ditampilkan'}.
+                </>
+              )}
             </p>
           </>
         )}
@@ -191,11 +235,48 @@ function Chip({ tone, children }) {
     pass: 'bg-[#e6f4ea] text-[#11692f]',
     hold: 'bg-[#fdf2df] text-hold-ink',
     override: 'border border-hold bg-white text-hold-ink',
+    approved: 'bg-accent-soft text-accent-ink',
+    rejected: 'bg-ink-100 text-ink-700',
   }
   return (
     <span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-extrabold ${tones[tone]}`}>
       {children}
     </span>
+  )
+}
+
+function ReviewRow({ row }) {
+  const approved = row.status === 'APPROVED'
+  return (
+    <tr className="border-t border-ink-100 align-middle">
+      <Td className="whitespace-nowrap font-mono text-[12px] text-ink-500">{formatTimestamp(row.reviewed_at)}</Td>
+      <Td>
+        <Chip tone={approved ? 'approved' : 'rejected'}>{approved ? 'Disetujui' : 'Ditolak'}</Chip>
+      </Td>
+      <Td className="max-w-[28ch] font-mono text-[13px] text-ink-700">
+        <span className="block truncate" title={row.document_filename}>
+          {row.document_filename}
+        </span>
+        <small className="block text-[12px] text-ink-400">
+          {row.source_reference && row.source_reference !== row.document_filename && `${row.source_reference} · `}
+          {row.source_page ? `hlm. ${row.source_page}` : ''}
+        </small>
+      </Td>
+      <Td className="max-w-[52ch] text-[13.5px]">
+        {dimensionOf(row.dimension).label} {OPERATOR_LABELS[row.operator] ?? row.operator}{' '}
+        <span className="tabular-nums">
+          {formatNumber(row.threshold)} {row.unit}
+        </span>
+        <small className="block text-[12px] text-ink-400">
+          {/* Past tense on purpose: a reset can retire the rule later, and this
+              row records the review, not what is active now. */}
+          {scopeOf(row)} · {approved ? 'ditambahkan ke aturan Perusahaan' : 'tidak pernah dipakai mesin'}
+          {isUnverified(row) && ' · angka cadangan'}
+        </small>
+      </Td>
+      <Td className="text-[13px] text-ink-600">{row.reviewed_by || 'Tidak tercatat'}</Td>
+      <Td />
+    </tr>
   )
 }
 

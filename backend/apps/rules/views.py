@@ -403,8 +403,13 @@ class DocumentExtractView(APIView):
 class RuleCandidateListView(APIView):
     def get(self, request):
         status_filter = request.GET.get('status', CandidateStatus.PENDING)
-        queryset = RuleCandidate.objects.filter(status=status_filter)
-        
+        # Newest review first, so the audit trail's rule tab reads like the
+        # decision log beside it. PENDING rows have no review time, so their
+        # order is left as it was for Rule Studio.
+        queryset = RuleCandidate.objects.filter(status=status_filter).select_related("document")
+        if status_filter != CandidateStatus.PENDING:
+            queryset = queryset.order_by("-reviewed_at")
+
         results = []
         for c in queryset:
             results.append({
@@ -418,7 +423,13 @@ class RuleCandidateListView(APIView):
                 "source_text_excerpt": c.source_text_excerpt,
                 "source_page": c.source_page,
                 "tags": c.tags,
-                "status": c.status
+                "status": c.status,
+                # Who decided and when: the human half of human-in-the-loop,
+                # read by the Aturan tab on /audit.
+                "rule_id": str(c.rule_id) if c.rule_id else None,
+                "reviewed_by": c.reviewed_by,
+                "reviewed_at": c.reviewed_at.isoformat() if c.reviewed_at else None,
+                "document_filename": c.document.filename,
             })
             
         return Response({
