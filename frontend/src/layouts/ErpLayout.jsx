@@ -39,48 +39,56 @@ const ACTIVE = 'Pengiriman'
 export default function ErpLayout() {
   return (
     <div className="flex min-h-[calc(100dvh-2.75rem)] bg-[#f1f4f8] font-erp text-[#111827]">
-      <nav
-        aria-label="Navigasi NUSANTARA WMS"
-        className="sticky top-0 hidden h-[calc(100dvh-2.75rem)] w-20 shrink-0 sm:flex flex-col items-center gap-1 border-r border-[#e2e7ee] bg-white px-1 pb-3.5 pt-4"
-      >
-        <span className="mb-1.5 grid w-full place-items-center border-b border-[#e2e7ee] pb-3">
-          <img
-            src={nusantaraLogo}
-            width={256}
-            height={256}
-            alt="NUSANTARA WMS"
-            className="h-[38px] w-[38px] rounded-[10px] object-contain"
-            draggable={false}
-          />
-        </span>
-
-        {NAV.map(({ label, Icon }) => {
-          const active = label === ACTIVE
-          return (
-            <span
-              key={label}
-              aria-current={active ? 'page' : undefined}
-              className={[
-                'grid w-full cursor-default justify-items-center gap-1 rounded-[10px] pb-[7px] pt-[9px] text-[12px] font-semibold tracking-[-0.01em] transition-colors',
-                active ? 'bg-[#e7f0fc] text-[#165bb4]' : 'text-[#5b6676] hover:bg-[#f7f9fc] hover:text-[#111827]',
-              ].join(' ')}
-            >
-              <Icon size={20} weight={active ? 'fill' : 'regular'} aria-hidden />
-              {label}
-            </span>
-          )
-        })}
-
-        <span
-          className="mt-auto grid w-full place-items-center border-t border-[#e2e7ee] pt-3"
-          title="Budi Santoso · Petugas Dispatch"
+      {/*
+        The white column stretches the full page height; only the nav inside
+        it is sticky. The nav is sized to the viewport less the system bar,
+        so once that bar scrolls away it ends 2.75rem short, and without this
+        column that strip showed the page grey under the rail.
+      */}
+      <div className="hidden w-20 shrink-0 border-r border-[#e2e7ee] bg-white sm:block">
+        <nav
+          aria-label="Navigasi NUSANTARA WMS"
+          className="sticky top-0 flex h-[calc(100dvh-2.75rem)] flex-col items-center gap-1 px-1 pb-3.5 pt-4"
         >
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-[#e7f0fc] text-[12px] font-bold text-[#165bb4]">
-            BS
+          <span className="mb-1.5 grid w-full place-items-center border-b border-[#e2e7ee] pb-3">
+            <img
+              src={nusantaraLogo}
+              width={256}
+              height={256}
+              alt="NUSANTARA WMS"
+              className="h-[38px] w-[38px] rounded-[10px] object-contain"
+              draggable={false}
+            />
           </span>
-          <span className="sr-only">Budi Santoso, Petugas Dispatch, Gudang Cikarang 01</span>
-        </span>
-      </nav>
+
+          {NAV.map(({ label, Icon }) => {
+            const active = label === ACTIVE
+            return (
+              <span
+                key={label}
+                aria-current={active ? 'page' : undefined}
+                className={[
+                  'grid w-full cursor-default justify-items-center gap-1 rounded-[10px] pb-[7px] pt-[9px] text-[12px] font-semibold tracking-[-0.01em] transition-colors',
+                  active ? 'bg-[#e7f0fc] text-[#165bb4]' : 'text-[#5b6676] hover:bg-[#f7f9fc] hover:text-[#111827]',
+                ].join(' ')}
+              >
+                <Icon size={20} weight={active ? 'fill' : 'regular'} aria-hidden />
+                {label}
+              </span>
+            )
+          })}
+
+          <span
+            className="mt-auto grid w-full place-items-center border-t border-[#e2e7ee] pt-3"
+            title="Budi Santoso · Petugas Dispatch"
+          >
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-[#e7f0fc] text-[12px] font-bold text-[#165bb4]">
+              BS
+            </span>
+            <span className="sr-only">Budi Santoso, Petugas Dispatch, Gudang Cikarang 01</span>
+          </span>
+        </nav>
+      </div>
 
       <div className="min-w-0 flex-1">
         <Outlet />
