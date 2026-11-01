@@ -364,7 +364,7 @@ export default function VisionScanner({ form, limits, onApply }) {
   const colour = overload ? OVER_COLOUR : NEUTRAL_COLOUR
 
   return (
-    <section className="mb-4 border border-ink-200 bg-white font-sans">
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-[#e2e7ee] bg-white font-sans shadow-[0_1px_2px_rgba(17,24,39,0.04),0_8px_24px_-12px_rgba(17,24,39,0.12)]">
       {/* Top Header */}
       <div className="flex flex-wrap items-center justify-between border-b border-ink-200 px-4 py-2.5">
         <div className="flex flex-wrap items-center gap-2">
@@ -384,8 +384,9 @@ export default function VisionScanner({ form, limits, onApply }) {
         </div>
       </div>
 
-      {/* Main 2-Section Grid */}
-      <div className="grid gap-4 p-4 lg:grid-cols-2">
+      {/* Both cameras stacked: this panel sits in the left column of the
+          dispatch screen, beside the declared-load truck. */}
+      <div className="grid gap-3 p-3">
         {/* ========================================================= */}
         {/* SECTION 1: KAMERA 1 - DETEKSI OVER DIMENSION             */}
         {/* ========================================================= */}

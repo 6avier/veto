@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react'
 
 import { ApiError, listRules, validateDispatch } from '@/api'
 import DispatchForm from '@/components/dispatch/DispatchForm'
-import TruckEnvelope from '@/components/dispatch/TruckEnvelope'
+import TruckLoad from '@/components/dispatch/TruckLoad'
 import VerdictPanel from '@/components/dispatch/VerdictPanel'
 import ViolationDialog from '@/components/dispatch/ViolationDialog'
 import PassDialog from '@/components/dispatch/PassDialog'
 import WaybillDialog from '@/components/dispatch/WaybillDialog'
 import PrintableWaybill from '@/components/dispatch/PrintableWaybill'
 import VisionScanner from '@/components/dispatch/VisionScanner'
-import { axleCountFor } from '@/lib/format'
+import { axleCountFor, formatNumber } from '@/lib/format'
 import { limitsFromRules } from '@/lib/limits'
 
 /**
@@ -134,6 +134,8 @@ export default function Dispatch() {
   // mean the same thing at both.
   const [waybillFromPass, setWaybillFromPass] = useState(false)
   const [rules, setRules] = useState([])
+  // A logged override releases the slip for this one decision.
+  const [override, setOverride] = useState(null)
 
   // The form reads its ceilings from the active rule base rather than
   // hardcoding them, so a change to the seeded pack shows up here unedited.
@@ -151,12 +153,14 @@ export default function Dispatch() {
   const limits = limitsFromRules(rules, form.axleConfig)
 
   const passed = decision?.outcome === 'PASS'
+  const released = passed || Boolean(override)
   const fieldViolations = violationsByField(decision)
 
   // Editing invalidates the verdict. Otherwise the gate could be opened by a
   // PASS for figures that are no longer on screen.
   const handleChange = (next) => {
     setForm(next)
+    setOverride(null)
     if (decision) setDecision(null)
     if (error) setError(null)
     // A verdict dialog must not outlive the verdict that opened it.
@@ -171,6 +175,7 @@ export default function Dispatch() {
   const applyDetection = (patch) => {
     setForm((current) => ({ ...current, ...patch }))
     setDecision(null)
+    setOverride(null)
     setError(null)
     setPassOpen(false)
     setWaybillOpen(false)
@@ -185,6 +190,7 @@ export default function Dispatch() {
     setPending(true)
     setError(null)
     setDecision(null)
+    setOverride(null)
     try {
       const result = await validateDispatch(toPayload(form))
       setDecision(result)
@@ -212,7 +218,23 @@ export default function Dispatch() {
         </div>
 
         <div className="flex items-center gap-3">
-          {!passed && (
+          {decision && (
+            // The verdict stays in view after its dialog closes, and reopens it.
+            <button
+              type="button"
+              key={`${decision.decision_id}-${override ? 'o' : ''}`}
+              onClick={() => (passed ? setPassOpen(true) : setDialogOpen(true))}
+              className={[
+                'veto-chip-in rounded-[10px] border px-3 py-1.5 text-[12.5px] font-bold transition-transform active:scale-[.97]',
+                passed
+                  ? 'border-transparent bg-[#e6f4ea] text-[#11692f]'
+                  : 'border-hold bg-[#fdf2df] text-hold-ink',
+              ].join(' ')}
+            >
+              {passed ? 'LOLOS' : override ? 'DITAHAN, di-override' : 'DITAHAN'}
+            </button>
+          )}
+          {!released && (
             <p className="max-w-[22ch] text-label text-[#6b757f]">
               Surat jalan terkunci sampai VETO meloloskan muatan.
             </p>
@@ -220,14 +242,14 @@ export default function Dispatch() {
           {/* The way back in, once the PASS dialog has been dismissed. */}
           <button
             type="button"
-            disabled={!passed}
+            disabled={!released}
             onClick={() => {
               setWaybillFromPass(false)
               setWaybillOpen(true)
             }}
             className={[
               'rounded-veto px-4 py-2 text-label transition-colors',
-              passed
+              released
                 ? 'bg-[#1f2933] text-white hover:bg-[#111820]'
                 : 'cursor-not-allowed border border-[#c9ced4] bg-[#e3e7ea] text-[#98a0a9]',
             ].join(' ')}
@@ -237,7 +259,12 @@ export default function Dispatch() {
         </div>
       </div>
 
-      <VisionScanner form={form} limits={limits} onApply={applyDetection} />
+      {/* Cameras on the left, the declared load on the right: what the dock
+          sees beside what the slip says. */}
+      <div className="mb-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+        <VisionScanner form={form} limits={limits} onApply={applyDetection} />
+        <DeclaredLoad form={form} limits={limits} decision={decision} />
+      </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
         <DispatchForm
@@ -258,13 +285,6 @@ export default function Dispatch() {
         />
       </div>
 
-      <TruckEnvelope
-        length={form.length}
-        width={form.width}
-        height={form.height}
-        limits={limits}
-      />
-
       <p className="mt-4 max-w-[65ch] text-label text-[#6b757f]">
         VETO memeriksa angka yang dideklarasikan pada surat jalan, bukan hasil timbangan.
         Data masukan yang keliru tetap dapat lolos.
@@ -276,7 +296,14 @@ export default function Dispatch() {
         swap rather than a push.
       */}
       {dialogOpen && (
-        <ViolationDialog decision={decision} onClose={() => setDialogOpen(false)} />
+        <ViolationDialog
+          decision={decision}
+          onClose={() => setDialogOpen(false)}
+          onOverridden={(result) => {
+            setOverride(result)
+            setDialogOpen(false)
+          }}
+        />
       )}
 
       {passOpen && passed && !waybillOpen && (
@@ -292,7 +319,7 @@ export default function Dispatch() {
         />
       )}
 
-      {waybillOpen && passed && (
+      {waybillOpen && released && (
         <WaybillDialog
           form={form}
           // Kembali, Escape and the backdrop all do the same thing, because
@@ -312,11 +339,58 @@ export default function Dispatch() {
       browser's own print shortcut renders a valid-looking surat jalan for a
       load VETO just held — the exact thing the gate exists to prevent.
     */}
-    {passed && (
+    {released && (
       <div className="hidden print:block">
         <PrintableWaybill form={form} />
       </div>
     )}
     </>
+  )
+}
+
+/**
+ * The declared load against the configuration's JBI, as a figure and on the
+ * truck. Neutral until VETO answers; the truck draws VETO's marks only for the
+ * limits a HOLD names.
+ */
+function DeclaredLoad({ form, limits, decision }) {
+  const gross = Number(form.grossWeight) || 0
+  const capacity = limits.grossWeight?.threshold
+  const pct = capacity ? Math.round((gross / capacity) * 100) : null
+  const grossHeld = decision?.outcome === 'HOLD' && decision.violations.some((v) => v.dimension === 'GROSS_WEIGHT')
+  return (
+    <section className="min-w-0 rounded-2xl border border-[#e2e7ee] bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04),0_8px_24px_-12px_rgba(17,24,39,0.12)]">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-5 pt-4">
+        <div>
+          <h2 className="text-[15px] font-bold tracking-[-0.01em] text-[#111827]">Muatan yang dideklarasikan</h2>
+          <p className="mt-0.5 text-[12px] text-[#5b6676]">Konfigurasi {form.axleConfig}</p>
+        </div>
+        <div className="ml-auto flex items-center gap-3">
+          <span
+            className={`text-[44px] font-extrabold leading-none tracking-[-0.04em] tabular-nums ${grossHeld ? 'text-[#8a5200]' : 'text-[#1f74e0]'}`}
+          >
+            {pct ?? '-'}
+            <small className="ml-1 text-[18px] font-bold tracking-normal text-[#5b6676]">%</small>
+          </span>
+          <span className="text-[12.5px] leading-snug text-[#5b6676]">
+            dari JBI
+            <br />
+            <b className="tabular-nums text-[#111827]">
+              {formatNumber(gross)} / {capacity ? formatNumber(capacity) : '-'} kg
+            </b>
+          </span>
+        </div>
+      </div>
+      <div className="px-2 pb-1 pt-2">
+        <TruckLoad
+          axleConfig={form.axleConfig}
+          axleLoads={form.axleLoads}
+          grossWeight={form.grossWeight}
+          height={form.height}
+          limits={limits}
+          decision={decision}
+        />
+      </div>
+    </section>
   )
 }

@@ -38,22 +38,9 @@ export default function PassDialog({ decision, form, limits = {}, onClose, onPri
       onClose={onClose}
       labelledBy="veto-pass-title"
       header={
-        <div className="flex items-center gap-3.5">
-          {/* A marker, never text. The word stays graphite, exactly as TAHAN
-              does beside the amber one. */}
-          <span aria-hidden className="h-3 w-3 shrink-0 bg-pass" />
-          <div className="min-w-0">
-            <h2 id="veto-pass-title" className="text-h1 text-ink-900">
-              Muatan lolos
-            </h2>
-            <p className="mt-0.5 text-label text-ink-500">
-              Surat jalan dapat dicetak
-            </p>
-          </div>
-          <span className="ml-auto shrink-0 self-start text-right font-mono text-mono-xs text-ink-400">
-            {decision.dispatch_ref}
-            <span className="block">{formatNumber(decision.latency_ms)} ms</span>
-          </span>
+        <div className="flex items-center gap-2.5 font-mono text-[11.5px] text-ink-500">
+          <span className="truncate">{decision.dispatch_ref}</span>
+          <span className="ml-auto">{formatNumber(decision.latency_ms)} ms</span>
         </div>
       }
       footer={
@@ -61,14 +48,14 @@ export default function PassDialog({ decision, form, limits = {}, onClose, onPri
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[44px] rounded-veto border border-ink-200 px-4 py-2 text-label text-ink-700 transition-colors hover:bg-ink-50"
+            className="min-h-[42px] rounded-[13px] border border-ink-200 bg-white px-4 text-[14px] font-bold text-ink-900 transition-[transform,border-color] hover:border-ink-400 active:scale-[.97]"
           >
             Tutup
           </button>
           <button
             type="button"
             onClick={onPrint}
-            className="min-h-[44px] rounded-veto bg-ink-900 px-4 py-2 text-label text-white transition-colors hover:bg-ink-950"
+            className="min-h-[42px] rounded-[13px] bg-accent px-4 text-[14px] font-bold text-white shadow-[0_8px_18px_-10px_rgba(36,87,245,0.9)] transition-[transform,background-color] hover:bg-accent-hi active:scale-[.97]"
           >
             Cetak Surat Jalan
           </button>
@@ -76,7 +63,11 @@ export default function PassDialog({ decision, form, limits = {}, onClose, onPri
       }
     >
       <div className="px-5 py-4">
-        <p className="text-body text-ink-900">
+        <h2 id="veto-pass-title" className="flex items-center gap-4 font-satoshi text-[44px] font-black leading-none tracking-[0.03em] text-pass">
+          <span aria-hidden className="h-[0.42em] w-[0.42em] rounded-md bg-pass" />
+          LOLOS
+        </h2>
+        <p className="mt-3 text-body text-ink-900">
           Muatan berada di dalam seluruh batas yang berlaku untuk konfigurasi{' '}
           <span className="font-mono text-mono">{form?.axleConfig}</span>.
         </p>

@@ -58,6 +58,9 @@ export default function Dialog({
   footer,
   labelledBy,
   maxWidth = '560px',
+  // A HOLD must never be dismissed by a stray click outside it.
+  dismissOnBackdrop = true,
+  describedBy,
   children,
 }) {
   const panelRef = useRef(null)
@@ -148,7 +151,7 @@ export default function Dialog({
     <div
       className="veto-scrim fixed inset-0 z-50 flex items-center justify-center p-4 print:hidden"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose()
+        if (dismissOnBackdrop && event.target === event.currentTarget) onClose()
       }}
     >
       <div
@@ -156,15 +159,16 @@ export default function Dialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        aria-describedby={describedBy}
         tabIndex={-1}
         style={{ maxWidth }}
         // The panel is a column so the header and footer stay put while only
         // the body scrolls. dvh, not vh, because mobile browser chrome makes vh
         // taller than the visible viewport and the footer lands under it.
-        className="veto-dialog flex max-h-[calc(100dvh-2rem)] w-full flex-col rounded-veto bg-white font-sans shadow-[0_24px_60px_rgba(20,23,26,0.28)] focus:outline-none"
+        className="veto-dialog flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-[22px] bg-white font-satoshi font-medium shadow-[0_30px_80px_-24px_rgba(13,21,38,0.35)] focus:outline-none"
       >
         {header ? (
-          <div className="shrink-0 border-b border-ink-200 px-5 py-4">{header}</div>
+          <div className="shrink-0 border-b border-ink-100 px-5 py-4">{header}</div>
         ) : (
           title && (
             <div className="shrink-0 border-b border-ink-200 px-5 py-4">
@@ -178,7 +182,7 @@ export default function Dialog({
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
 
         {footer && (
-          <div className="shrink-0 border-t border-ink-200 px-5 py-4">{footer}</div>
+          <div className="shrink-0 border-t border-ink-100 px-5 py-4">{footer}</div>
         )}
       </div>
     </div>
