@@ -9,7 +9,7 @@ that would clear it.
 > Fakultas Ilmu Komputer Universitas Indonesia, angkatan 2025.
 
 **Live demo:** [veto-gold.vercel.app](https://veto-gold.vercel.app) ·
-**API:** [veto-api-cgek.onrender.com](https://veto-api-cgek.onrender.com/health/)
+**API:** [veto-backend-ebon.vercel.app](https://veto-backend-ebon.vercel.app/health/)
 
 The API is hosted on a free tier that sleeps after ~15 minutes idle. The first
 request after a nap takes around 40 seconds to wake it; everything after that is
