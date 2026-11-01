@@ -368,9 +368,9 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
   // declared load the page passes in as `aside`, with the gate camera's plate
   // read as a strip beneath it. Detection logic is unchanged.
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+    <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
       {/* ===================== CAM-01: SIDE / DIMENSION ===================== */}
-      <section className="min-w-0 overflow-hidden rounded-2xl bg-[#0b0e12] text-[#d6dee8] shadow-[0_1px_2px_rgba(17,24,39,0.04),0_8px_24px_-12px_rgba(17,24,39,0.12)]">
+      <section className="flex min-w-0 flex-col overflow-hidden rounded-2xl bg-[#0b0e12] text-[#d6dee8] shadow-[0_1px_2px_rgba(17,24,39,0.04),0_8px_24px_-12px_rgba(17,24,39,0.12)]">
         <div className="flex items-center gap-2 px-4 py-2.5 font-mono text-[12px]">
           <span className={`h-2 w-2 rounded-full ${cam1Result ? 'bg-[#2f8f4e]' : 'bg-white/25'}`} aria-hidden />
           <b className="font-semibold text-white">CAM-01 Sisi</b>
@@ -386,7 +386,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
         </div>
 
         {cam1Url ? (
-          <div className="relative aspect-video w-full overflow-hidden bg-black">
+          <div className="relative min-h-[240px] w-full flex-1 overflow-hidden bg-black">
             {cam1Type === 'video' ? (
               <video
                 ref={cam1MediaRef}
@@ -421,7 +421,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
               e.preventDefault()
               pickCam1File(e.dataTransfer.files?.[0])
             }}
-            className="mx-3 flex aspect-video cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 text-center transition-colors hover:bg-white/5"
+            className="mx-3 flex min-h-[220px] flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 text-center transition-colors hover:bg-white/5"
           >
             <VideoCameraIcon size={26} className="text-white/50" aria-hidden />
             <span className="font-sans text-[14px] font-semibold text-white">Foto atau video sisi truk</span>
@@ -482,7 +482,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
         </div>
 
         {/* Sync to the form */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-white px-4 py-3 text-[#111827]">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-white/10 px-4 py-3">
           <Toggle checked={autoSync} onChange={setAutoSync}>
             Sinkron otomatis
           </Toggle>
@@ -493,7 +493,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
             type="button"
             disabled={!cam2Fleet || cam2Fleet.identity_status !== 'VERIFIED'}
             onClick={() => applyDataToForm(cam1Settled, cam2Fleet, true)}
-            className="ml-auto h-9 rounded-[10px] border border-[#cdd5e0] bg-white px-3 text-[13px] font-semibold transition-[background-color,transform] hover:bg-[#f7f9fc] active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-45"
+            className="ml-auto h-9 rounded-[10px] border border-white/20 px-3 text-[13px] font-semibold text-white transition-[background-color,transform] hover:bg-white/10 active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-45"
           >
             {cam2Fleet?.identity_status === 'VERIFIED'
               ? cam1Settled
@@ -504,7 +504,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
           {appliedNotice && (
             <p
               className={`w-full text-[12px] font-medium ${
-                appliedNotice.startsWith('Tersinkron') ? 'text-[#2f8f4e]' : 'text-[#b54708]'
+                appliedNotice.startsWith('Tersinkron') ? 'text-[#7fdc9b]' : 'text-[#f2a93b]'
               }`}
             >
               {appliedNotice.startsWith('Tersinkron') ? `✓ ${appliedNotice}` : `⚠ ${appliedNotice}`}
@@ -513,14 +513,14 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
         </div>
       </section>
 
-      <div className="grid min-w-0 gap-4">
-        {aside}
+      <div className="flex min-w-0 flex-col gap-4">
+        <div className="flex flex-1 flex-col [&>*]:flex-1">{aside}</div>
 
         {/* ===================== CAM-02: GATE / PLATE ===================== */}
-        <section className="flex min-w-0 flex-wrap items-stretch gap-4 rounded-2xl bg-[#0b0e12] p-3 text-[#d6dee8] sm:flex-nowrap">
-          <div className="w-full shrink-0 sm:w-36">
+        <section className="flex min-w-0 items-stretch overflow-hidden rounded-2xl bg-[#0b0e12] text-[#d6dee8]">
+          <div className="w-32 shrink-0 border-r border-white/10 bg-black sm:w-40">
             {cam2Url ? (
-              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-black">
+              <div className="relative h-full min-h-[112px] w-full overflow-hidden">
                 {cam2Type === 'video' ? (
                   <video
                     ref={cam2MediaRef}
@@ -550,7 +550,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
                   e.preventDefault()
                   pickCam2File(e.dataTransfer.files?.[0])
                 }}
-                className="flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/20 text-center transition-colors hover:bg-white/5"
+                className="flex h-full min-h-[112px] w-full cursor-pointer flex-col items-center justify-center gap-1.5 text-center transition-colors hover:bg-white/5"
               >
                 <IdentificationCardIcon size={22} className="text-white/50" aria-hidden />
                 <span className="text-[12.5px] font-semibold text-white">Foto depan truk</span>
@@ -565,7 +565,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
             )}
           </div>
 
-          <div className="grid min-w-0 flex-1 content-center gap-1.5">
+          <div className="grid min-w-0 flex-1 content-center gap-1.5 px-4 py-3">
             <p className="flex items-center gap-2 font-mono text-[11.5px] text-white/45">
               <span className={`h-2 w-2 rounded-full ${cam2Fleet ? 'bg-[#2f8f4e]' : 'bg-white/25'}`} aria-hidden />
               CAM-02 Gerbang
@@ -648,7 +648,7 @@ function Telemetry({ label, value }) {
 
 function Toggle({ checked, onChange, children }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 text-[12.5px] text-[#5b6676]">
+    <label className="flex cursor-pointer items-center gap-2 text-[12.5px] text-white/70">
       <input
         type="checkbox"
         checked={checked}

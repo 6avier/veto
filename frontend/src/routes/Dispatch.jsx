@@ -393,7 +393,7 @@ function DeclaredLoad({ form, limits, decision }) {
   const pct = capacity ? Math.round((gross / capacity) * 100) : null
   const grossHeld = decision?.outcome === 'HOLD' && decision.violations.some((v) => v.dimension === 'GROSS_WEIGHT')
   return (
-    <section className="min-w-0 rounded-2xl border border-[#e2e7ee] bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04),0_8px_24px_-12px_rgba(17,24,39,0.12)]">
+    <section className="flex min-w-0 flex-col rounded-2xl border border-[#e2e7ee] bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04),0_8px_24px_-12px_rgba(17,24,39,0.12)]">
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-5 pt-4">
         <div>
           <h2 className="text-[15px] font-bold tracking-[-0.01em] text-[#111827]">Muatan yang dideklarasikan</h2>
@@ -415,7 +415,7 @@ function DeclaredLoad({ form, limits, decision }) {
           </span>
         </div>
       </div>
-      <div className="px-2 pb-1 pt-2">
+      <div className="flex flex-1 items-end px-2 pb-1 pt-2">
         <TruckLoad
           axleConfig={form.axleConfig}
           axleLoads={form.axleLoads}
