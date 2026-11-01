@@ -1,4 +1,4 @@
-import { CaretDownIcon } from '@phosphor-icons/react'
+import { ArrowRightIcon, CaretDownIcon } from '@phosphor-icons/react'
 
 import { axleCountFor, formatKg, formatNumber, formatTonnes } from '@/lib/format'
 
@@ -47,6 +47,25 @@ function axleLabel(index, count) {
   if (index === count - 1) return AXLE_NAMES[2]
   return AXLE_NAMES[1]
 }
+
+/**
+ * Known cases for the booth, on the 1.2 configuration. Plausible figures for a
+ * two-axle box truck; whether each passes is the engine's call, not this list's.
+ */
+const SCENARIOS = [
+  {
+    label: 'Muatan aman',
+    values: { axleConfig: '1.2', tareWeight: '5200', axleLoads: ['5000', '9000'], grossWeight: '14000', length: '8200', width: '2400', height: '3900' },
+  },
+  {
+    label: 'Overload sumbu',
+    values: { axleConfig: '1.2', tareWeight: '5200', axleLoads: ['5600', '10400'], grossWeight: '16000', length: '8200', width: '2400', height: '3900' },
+  },
+  {
+    label: 'Terlalu tinggi',
+    values: { axleConfig: '1.2', tareWeight: '5200', axleLoads: ['5000', '9000'], grossWeight: '14000', length: '8200', width: '2400', height: '4400' },
+  },
+]
 
 export default function DispatchForm({
   value,
@@ -143,7 +162,27 @@ export default function DispatchForm({
       noValidate
       className="rounded-2xl border border-[#e2e7ee] bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04),0_8px_24px_-12px_rgba(17,24,39,0.12)]"
     >
-      <Section title="1. Identifikasi Kendaraan">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-[18px] pt-4">
+        <h2 className="text-[16px] font-bold text-[#111827]">Data muatan</h2>
+        {/* One tap to a known case, for whoever walks up to the booth. Each
+            fills the form the same way typing does; nothing is submitted. */}
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <span className="text-[12.5px] text-[#5b6676]">Coba skenario:</span>
+          {SCENARIOS.map((scenario) => (
+            <button
+              key={scenario.label}
+              type="button"
+              onClick={() => onChange({ ...value, ...scenario.values })}
+              className="h-8 rounded-full border border-[#cdd5e0] bg-white px-3 text-[12.5px] font-semibold text-[#111827] transition-[background-color,transform] hover:bg-[#f7f9fc] active:scale-[.97]"
+            >
+              {scenario.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.4fr)_minmax(0,1fr)] lg:divide-x lg:divide-[#eef1f5]">
+      <Section n={1} title="Kendaraan" cols="grid-cols-1">
         <Field label="Nomor Surat Jalan" error={errors.dispatchRef}>
           <TextInput
             value={value.dispatchRef}
@@ -173,28 +212,7 @@ export default function DispatchForm({
         </Field>
       </Section>
 
-      <Section title="2. Data Muatan">
-        {/*
-          Derived, not typed. A vehicle's gross weight *is* what its axles
-          carry, so the field reports the axle sum instead of inviting a second,
-          contradictable version of the same number. It stays an <input> rather
-          than becoming text so the form's rhythm and the violation and excess
-          affordances it already carries keep working.
-        */}
-        <Field
-          label="Berat Kotor"
-          unit="kg"
-          error={errors.grossWeight}
-          violation={violations.grossWeight}
-          note="Dihitung dari jumlah beban sumbu."
-        >
-          <NumberInput
-            value={value.grossWeight}
-            readOnly
-            maxDigits={MAX_DIGITS.weight}
-            aria-invalid={Boolean(errors.grossWeight || violations.grossWeight)}
-          />
-        </Field>
+      <Section n={2} title="Berat per sumbu" cols="grid-cols-2 sm:grid-cols-3">
         {value.axleLoads.map((load, index) => (
           <Field
             key={index}
@@ -211,9 +229,30 @@ export default function DispatchForm({
             />
           </Field>
         ))}
+        {/*
+          Derived, not typed. A vehicle's gross weight *is* what its axles
+          carry, so the field reports the axle sum instead of inviting a second,
+          contradictable version of the same number. It stays an <input> rather
+          than becoming text so the form's rhythm and the violation and excess
+          affordances it already carries keep working.
+        */}
+        <Field
+          label="Berat Kotor"
+          unit="kg"
+          error={errors.grossWeight}
+          violation={violations.grossWeight}
+          note="Jumlah beban sumbu."
+        >
+          <NumberInput
+            value={value.grossWeight}
+            readOnly
+            maxDigits={MAX_DIGITS.weight}
+            aria-invalid={Boolean(errors.grossWeight || violations.grossWeight)}
+          />
+        </Field>
       </Section>
 
-      <Section title="3. Dimensi Muatan">
+      <Section n={3} title="Dimensi" cols="grid-cols-2 sm:grid-cols-3">
         {[
           ['Panjang', 'length'],
           ['Lebar', 'width'],
@@ -236,6 +275,8 @@ export default function DispatchForm({
         ))}
       </Section>
 
+      </div>
+
       {balanceWarning && (
         <p className="mx-[18px] mb-4 rounded-[10px] bg-[#fdf2df] px-3 py-2 text-[13px] text-[#8a5200]">
           Peringatan keseimbangan: {balanceWarning}
@@ -244,20 +285,31 @@ export default function DispatchForm({
 
       {/* The check bar stays on screen, so the one action that matters is
           always one tap away while the officer reads the truck above. */}
-      <div className="fixed inset-x-0 bottom-0 left-16 z-20 border-t border-[#e2e7ee] bg-white/90 px-4 py-3 backdrop-blur-md print:hidden">
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-7 gap-y-2">
-          <Readout label="Berat kotor" value={formatKg(axleSum)} hint={formatTonnes(axleSum)} />
+      <div className="fixed inset-x-0 bottom-0 z-20 sm:left-20 border-t border-[#e2e7ee] bg-white/90 px-4 py-3 backdrop-blur-md print:hidden">
+        <div className="mx-auto grid max-w-[1400px] grid-cols-3 items-center gap-x-4 gap-y-2.5 sm:flex sm:flex-wrap sm:gap-x-8">
+          <Readout
+            label="Berat kotor"
+            value={formatKg(axleSum)}
+            hint={formatTonnes(axleSum)}
+            share={axleSum && limits.grossWeight?.threshold ? axleSum / limits.grossWeight.threshold : 0}
+          />
           <Readout
             label="Sumbu terberat"
             value={heaviest ? `Sumbu ${heaviest.index + 1}, ${formatTonnes(heaviest.kg)}` : '-'}
+            share={heaviest ? heaviest.kg / ((limits[`axle${heaviest.index}`] || limits.axle_generic)?.threshold || Infinity) : 0}
           />
-          <Readout label="Tinggi" value={value.height ? `${formatNumber(value.height)} mm` : '-'} />
+          <Readout
+            label="Tinggi"
+            value={value.height ? `${formatNumber(value.height)} mm` : '-'}
+            share={value.height && limits.height?.threshold ? Number(value.height) / limits.height.threshold : 0}
+          />
           <button
             type="submit"
             disabled={pending}
-            className="ml-auto min-h-[46px] rounded-xl bg-[#1f74e0] px-6 text-[15px] font-bold text-white shadow-[0_8px_18px_-10px_rgba(31,116,224,0.9)] transition-[background-color,transform] hover:bg-[#165bb4] active:scale-[.97] disabled:opacity-50"
+            className="col-span-3 inline-flex min-h-[46px] items-center justify-center gap-2 sm:ml-auto rounded-xl bg-[#1f74e0] px-6 text-[15px] font-bold text-white shadow-[0_8px_18px_-10px_rgba(31,116,224,0.9)] transition-[background-color,transform] hover:bg-[#165bb4] active:scale-[.97] disabled:opacity-50"
           >
             {pending ? 'Mengirim ke VETO…' : 'Validasi ke VETO'}
+            <ArrowRightIcon size={16} weight="bold" aria-hidden />
           </button>
         </div>
       </div>
@@ -275,14 +327,17 @@ export default function DispatchForm({
  * it sits welded to the divider no matter what the value is. The grouping stays
  * accessible through aria-labelledby.
  */
-function Section({ title, children }) {
+function Section({ n, title, cols, children }) {
   const id = `sec-${title.replace(/[^a-zA-Z]+/g, '-').toLowerCase()}`
   return (
-    <fieldset aria-labelledby={id} className="border-b border-[#eef1f5] px-[18px] pt-5 pb-[18px] last-of-type:border-b-0">
-      <p id={id} className="mb-3 text-[12px] font-semibold uppercase tracking-[0.06em] text-[#687385]">
+    <fieldset aria-labelledby={id} className="min-w-0 border-b border-[#eef1f5] px-[18px] pb-[18px] pt-4 lg:border-b-0">
+      <p id={id} className="mb-3 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-[#687385]">
+        <span aria-hidden className="grid h-5 w-5 place-items-center rounded-full border border-[#cdd5e0] text-[11px] tracking-normal">
+          {n}
+        </span>
         {title}
       </p>
-      <div className="grid gap-x-6 gap-y-[18px] sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+      <div className={`grid gap-x-3 gap-y-4 ${cols}`}>{children}</div>
     </fieldset>
   )
 }
@@ -326,13 +381,22 @@ function Field({ label, unit, error, violation, note, children }) {
   )
 }
 
-function Readout({ label, value, hint }) {
+/** A figure and how much of its limit it uses. The bar is a guide; the
+    engine's verdict is the answer. */
+function Readout({ label, value, hint, share = 0 }) {
+  const over = share > 1
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 sm:min-w-[150px]">
       <div className="text-[12px] text-[#5b6676]">{label}</div>
-      <div className="text-[14px] font-bold tabular-nums text-[#111827]">
+      <div className="truncate text-[13px] font-bold tabular-nums text-[#111827] sm:text-[14px]">
         {value}
-        {hint && <span className="ml-1 font-medium text-[#687385]">{hint}</span>}
+        {hint && <span className="ml-1 hidden font-medium text-[#687385] sm:inline">{hint}</span>}
+      </div>
+      <div aria-hidden className="mt-1 h-1 overflow-hidden rounded-full bg-[#eef1f5]">
+        <div
+          className={`h-full rounded-full transition-[width] duration-300 ${over ? 'bg-[#f2a93b]' : 'bg-[#1f74e0]'}`}
+          style={{ width: `${Math.min(share, 1) * 100}%` }}
+        />
       </div>
     </div>
   )

@@ -6,7 +6,6 @@ import {
 } from '@phosphor-icons/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import VetoMark from '@/components/VetoMark'
 import { axleCountFor, formatMm, formatNumber } from '@/lib/format'
 import {
   captureFrame,
@@ -23,7 +22,7 @@ const NEUTRAL_COLOUR = '#2f8f4e'
 const WINDOW = 5
 const INTERVAL_MS = 700
 
-export default function VisionScanner({ form, limits, onApply }) {
+export default function VisionScanner({ form, limits, onApply, aside }) {
   // --- CAMERA 1 (OVER-DIMENSION) REFS & STATE ---
   const cam1MediaRef = useRef(null)
   const cam1OverlayRef = useRef(null)
@@ -363,198 +362,165 @@ export default function VisionScanner({ form, limits, onApply }) {
   const estimate = cam1Settled ? estimateDimensions(cam1Settled, limits) : null
   const colour = overload ? OVER_COLOUR : NEUTRAL_COLOUR
 
+  const plate = cam2Alpr?.license_plate || cam2Fleet?.license_plate
+
+  // Laid out like a dock: CAM-01's side view on the left; on the right, the
+  // declared load the page passes in as `aside`, with the gate camera's plate
+  // read as a strip beneath it. Detection logic is unchanged.
   return (
-    <section className="min-w-0 overflow-hidden rounded-2xl border border-[#e2e7ee] bg-white font-sans shadow-[0_1px_2px_rgba(17,24,39,0.04),0_8px_24px_-12px_rgba(17,24,39,0.12)]">
-      {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-between border-b border-ink-200 px-4 py-2.5">
-        <div className="flex flex-wrap items-center gap-2">
-          <VetoMark className="h-3 w-auto" />
-          <span className="font-mono text-mono-xs tracking-[0.14em] text-ink-400">VETO · VISION SYSTEM</span>
-          <span className="font-medium text-label text-ink-900">Dual-Camera Gate Inspection (Dimensi + ALPR)</span>
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+      {/* ===================== CAM-01: SIDE / DIMENSION ===================== */}
+      <section className="min-w-0 overflow-hidden rounded-2xl bg-[#0b0e12] text-[#d6dee8] shadow-[0_1px_2px_rgba(17,24,39,0.04),0_8px_24px_-12px_rgba(17,24,39,0.12)]">
+        <div className="flex items-center gap-2 px-4 py-2.5 font-mono text-[12px]">
+          <span className={`h-2 w-2 rounded-full ${cam1Result ? 'bg-[#2f8f4e]' : 'bg-white/25'}`} aria-hidden />
+          <b className="font-semibold text-white">CAM-01 Sisi</b>
+          <span className="text-white/45">Dimensi muatan</span>
+          {cam1Settled && (
+            <span
+              className="ml-auto rounded-md px-2 py-0.5 font-sans text-[11.5px] font-bold text-white"
+              style={{ background: colour }}
+            >
+              {overload ? 'Kemungkinan overload' : 'Normal'}
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-3 text-xs">
-          <span className="flex items-center gap-1.5 font-mono text-ink-500">
-            <span className={`h-2 w-2 rounded-full ${cam1Result ? 'bg-[#2f8f4e]' : 'bg-ink-300'}`} />
-            CAM-01 (Sisi)
-          </span>
-          <span className="flex items-center gap-1.5 font-mono text-ink-500">
-            <span className={`h-2 w-2 rounded-full ${cam2Fleet ? 'bg-[#2f8f4e]' : 'bg-ink-300'}`} />
-            CAM-02 (Depan)
-          </span>
-        </div>
-      </div>
 
-      {/* Both cameras stacked: this panel sits in the left column of the
-          dispatch screen, beside the declared-load truck. */}
-      <div className="grid gap-3 p-3">
-        {/* ========================================================= */}
-        {/* SECTION 1: KAMERA 1 - DETEKSI OVER DIMENSION             */}
-        {/* ========================================================= */}
-        <div className="flex flex-col border border-ink-200 bg-ink-50/50 p-3.5">
-          <div className="mb-2.5 flex items-center justify-between border-b border-ink-200 pb-2">
-            <div className="flex items-center gap-2">
-              <span className="rounded bg-ink-900 px-1.5 py-0.5 font-mono text-mono-xs font-semibold text-white">
-                CAM 01
-              </span>
-              <p className="font-medium text-label text-ink-900">Pemindai Dimensi Muatan (Samping)</p>
-            </div>
-            {cam1Settled && (
-              <span
-                className="rounded px-2 py-0.5 text-xs font-semibold text-white"
-                style={{ background: colour }}
-              >
-                {overload ? 'POSSIBLE OVERLOAD' : 'NORMAL'}
-              </span>
-            )}
-          </div>
-
-          {/* Media Viewport */}
-          <div>
-            {cam1Url ? (
-              <div className="relative aspect-video w-full overflow-hidden bg-ink-950">
-                {cam1Type === 'video' ? (
-                  <video
-                    ref={cam1MediaRef}
-                    src={cam1Url}
-                    controls
-                    autoPlay
-                    muted
-                    playsInline
-                    onPlay={() => setCam1Playing(true)}
-                    onPause={() => setCam1Playing(false)}
-                    onEnded={() => setCam1Playing(false)}
-                    onLoadedMetadata={() => clearOverlay(cam1OverlayRef.current)}
-                    onLoadedData={() => scanCam1Once()}
-                    onSeeked={() => !cam1Playing && scanCam1Once()}
-                    className="absolute inset-0 h-full w-full object-contain"
-                  />
-                ) : (
-                  <img
-                    ref={cam1MediaRef}
-                    src={cam1Url}
-                    alt="Kamera 1: Profil Dimensi"
-                    onLoad={() => scanCam1Once()}
-                    className="absolute inset-0 h-full w-full object-contain"
-                  />
-                )}
-                <canvas ref={cam1OverlayRef} className="pointer-events-none absolute inset-0 h-full w-full" />
-              </div>
+        {cam1Url ? (
+          <div className="relative aspect-video w-full overflow-hidden bg-black">
+            {cam1Type === 'video' ? (
+              <video
+                ref={cam1MediaRef}
+                src={cam1Url}
+                controls
+                autoPlay
+                muted
+                playsInline
+                onPlay={() => setCam1Playing(true)}
+                onPause={() => setCam1Playing(false)}
+                onEnded={() => setCam1Playing(false)}
+                onLoadedMetadata={() => clearOverlay(cam1OverlayRef.current)}
+                onLoadedData={() => scanCam1Once()}
+                onSeeked={() => !cam1Playing && scanCam1Once()}
+                className="absolute inset-0 h-full w-full object-contain"
+              />
             ) : (
-              <label
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  pickCam1File(e.dataTransfer.files?.[0])
-                }}
-                className="flex aspect-video w-full cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-ink-300 bg-white text-center transition-colors hover:bg-ink-100/70"
-              >
-                <VideoCameraIcon size={26} className="text-ink-400" aria-hidden />
-                <span className="text-body font-medium text-ink-900">Foto / Video Sisi Truk</span>
-                <span className="text-mono-xs text-ink-400">Deteksi siluet & over-dimension</span>
-                <span className="mt-1 rounded-veto bg-ink-900 px-3 py-1 text-label text-white">
-                  Pilih Media Dimensi
-                </span>
-                <input
-                  type="file"
-                  accept="video/*,image/*"
-                  className="sr-only"
-                  onChange={(e) => pickCam1File(e.target.files?.[0])}
-                />
-              </label>
+              <img
+                ref={cam1MediaRef}
+                src={cam1Url}
+                alt="Kamera 1: Profil Dimensi"
+                onLoad={() => scanCam1Once()}
+                className="absolute inset-0 h-full w-full object-contain"
+              />
             )}
+            <canvas ref={cam1OverlayRef} className="pointer-events-none absolute inset-0 h-full w-full" />
+          </div>
+        ) : (
+          <label
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault()
+              pickCam1File(e.dataTransfer.files?.[0])
+            }}
+            className="mx-3 flex aspect-video cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 text-center transition-colors hover:bg-white/5"
+          >
+            <VideoCameraIcon size={26} className="text-white/50" aria-hidden />
+            <span className="font-sans text-[14px] font-semibold text-white">Foto atau video sisi truk</span>
+            <span className="text-[12px] text-white/50">Deteksi siluet dan over-dimension</span>
+            <span className="mt-1 rounded-lg bg-white px-3 py-1.5 font-sans text-[13px] font-semibold text-[#111827]">
+              Pilih media
+            </span>
+            <input
+              type="file"
+              accept="video/*,image/*"
+              className="sr-only"
+              onChange={(e) => pickCam1File(e.target.files?.[0])}
+            />
+          </label>
+        )}
 
+        <div className="grid gap-2 px-4 py-3 font-mono text-[11.5px]">
+          <dl className="flex flex-wrap items-end gap-x-6 gap-y-1">
+            <Telemetry label="KEYAKINAN" value={top ? `${formatNumber((top.confidence * 100).toFixed(1))}%` : '–'} />
+            <Telemetry label="FRAME" value={formatNumber(cam1Frames)} />
+            <Telemetry label="LATENSI" value={cam1Result ? `${formatNumber(cam1Result.latencyMs)} ms` : '–'} />
             {cam1Url && (
-              <div className="mt-2 flex items-center justify-between gap-2">
-                <span className="truncate font-mono text-mono-xs text-ink-500">{cam1FileName}</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={scanCam1Once}
-                    className="rounded border border-ink-200 bg-white px-2 py-0.5 text-xs text-ink-800 hover:bg-ink-50"
-                  >
-                    Pindai Ulang
-                  </button>
-                  <button
-                    type="button"
-                    onClick={clearCam1}
-                    className="text-xs text-ink-500 hover:text-ink-900"
-                  >
-                    Ganti
-                  </button>
-                </div>
+              <div className="ml-auto flex items-center gap-3 font-sans text-[12px]">
+                <span className="max-w-[16ch] truncate text-white/45">{cam1FileName}</span>
+                <button type="button" onClick={scanCam1Once} className="font-semibold text-white hover:underline">
+                  Pindai ulang
+                </button>
+                <button type="button" onClick={clearCam1} className="font-semibold text-white/60 hover:text-white">
+                  Ganti
+                </button>
               </div>
             )}
-          </div>
+          </dl>
 
-          {/* Telemetry & Estimated Dimensions */}
-          <div className="mt-3 space-y-2.5">
-            <dl className="grid grid-cols-3 gap-2 border-y border-ink-200 py-1.5">
-              <Telemetry label="Confidence" value={top ? `${formatNumber((top.confidence * 100).toFixed(1))}%` : '–'} />
-              <Telemetry label="Frame" value={formatNumber(cam1Frames)} />
-              <Telemetry label="Latensi" value={cam1Result ? `${formatNumber(cam1Result.latencyMs)} ms` : '–'} />
-            </dl>
+          {estimate && (
+            <ul className="flex flex-wrap gap-x-5 gap-y-1 border-t border-white/10 pt-2">
+              {[
+                ['Panjang', 'length'],
+                ['Lebar', 'width'],
+                ['Tinggi', 'height'],
+              ].map(([label, key]) => {
+                const ceiling = limits[key]?.threshold
+                const over = ceiling && estimate[key] > ceiling
+                return (
+                  <li key={key}>
+                    <span className="text-white/45">{label} </span>
+                    <span className={over ? 'font-semibold text-[#ff8a7a]' : 'text-white'}>
+                      {formatMm(estimate[key])}
+                      {over && ` (+${formatNumber(estimate[key] - ceiling)})`}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
 
-            {estimate && (
-              <div className="rounded border border-ink-200 bg-white p-2">
-                <p className="font-mono text-mono-xs font-semibold text-ink-600">ESTIMASI DIMENSI KAMERA</p>
-                <ul className="mt-1 space-y-1 text-xs">
-                  {[
-                    ['Panjang', 'length'],
-                    ['Lebar', 'width'],
-                    ['Tinggi', 'height'],
-                  ].map(([label, key]) => {
-                    const ceiling = limits[key]?.threshold
-                    const over = ceiling && estimate[key] > ceiling
-                    return (
-                      <li key={key} className="flex justify-between">
-                        <span className="text-ink-500">{label}:</span>
-                        <span className={`font-mono font-medium ${over ? 'text-[#d92d20]' : 'text-ink-900'}`}>
-                          {formatMm(estimate[key])}
-                          {over && <span className="text-ink-400"> (+{formatNumber(estimate[key] - ceiling)} mm)</span>}
-                        </span>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
-            )}
-
-            {cam1Error && <p className="text-xs text-[#d92d20]">{cam1Error}</p>}
-          </div>
+          {cam1Error && <p className="font-sans text-[12px] text-[#ff8a7a]">{cam1Error}</p>}
         </div>
 
-        {/* ========================================================= */}
-        {/* SECTION 2: KAMERA 2 - ALPR PELAT NOMOR & MASTER ARMADA   */}
-        {/* ========================================================= */}
-        <div className="flex flex-col border border-ink-200 bg-ink-50/50 p-3.5">
-          <div className="mb-2.5 flex items-center justify-between border-b border-ink-200 pb-2">
-            <div className="flex items-center gap-2">
-              <span className="rounded bg-ink-900 px-1.5 py-0.5 font-mono text-mono-xs font-semibold text-white">
-                CAM 02
-              </span>
-              <p className="font-medium text-label text-ink-900">Kamera ALPR Gerbang (Pelat & Kabin)</p>
-            </div>
-            {cam2Fleet && (
-              <span
-                className={`inline-flex items-center gap-1 rounded px-2 py-0.5 font-mono text-xs font-semibold ${
-                  cam2Fleet.identity_status === 'VERIFIED'
-                    ? 'bg-[#eaf5ea] text-[#1b7f3b]'
-                    : cam2Fleet.identity_status === 'MISMATCH_ALERT'
-                    ? 'bg-[#fef3f2] text-[#d92d20] animate-pulse'
-                    : 'bg-ink-200 text-ink-800'
-                }`}
-              >
-                {cam2Fleet.identity_status === 'VERIFIED' && <ShieldCheckIcon size={13} />}
-                {cam2Fleet.identity_status === 'MISMATCH_ALERT' && <WarningCircleIcon size={13} />}
-                {cam2Fleet.identity_status}
-              </span>
-            )}
-          </div>
+        {/* Sync to the form */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-white px-4 py-3 text-[#111827]">
+          <Toggle checked={autoSync} onChange={setAutoSync}>
+            Sinkron otomatis
+          </Toggle>
+          <Toggle checked={fillWeights} onChange={setFillWeights}>
+            Isi contoh beban
+          </Toggle>
+          <button
+            type="button"
+            disabled={!cam2Fleet || cam2Fleet.identity_status !== 'VERIFIED'}
+            onClick={() => applyDataToForm(cam1Settled, cam2Fleet, true)}
+            className="ml-auto h-9 rounded-[10px] border border-[#cdd5e0] bg-white px-3 text-[13px] font-semibold transition-[background-color,transform] hover:bg-[#f7f9fc] active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {cam2Fleet?.identity_status === 'VERIFIED'
+              ? cam1Settled
+                ? 'Terapkan truk & dimensi'
+                : 'Terapkan data truk'
+              : 'Menunggu pelat terverifikasi'}
+          </button>
+          {appliedNotice && (
+            <p
+              className={`w-full text-[12px] font-medium ${
+                appliedNotice.startsWith('Tersinkron') ? 'text-[#2f8f4e]' : 'text-[#b54708]'
+              }`}
+            >
+              {appliedNotice.startsWith('Tersinkron') ? `✓ ${appliedNotice}` : `⚠ ${appliedNotice}`}
+            </p>
+          )}
+        </div>
+      </section>
 
-          {/* Media Viewport */}
-          <div>
+      <div className="grid min-w-0 gap-4">
+        {aside}
+
+        {/* ===================== CAM-02: GATE / PLATE ===================== */}
+        <section className="flex min-w-0 flex-wrap items-stretch gap-4 rounded-2xl bg-[#0b0e12] p-3 text-[#d6dee8] sm:flex-nowrap">
+          <div className="w-full shrink-0 sm:w-36">
             {cam2Url ? (
-              <div className="relative aspect-[21/9] w-full overflow-hidden bg-ink-950">
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-black">
                 {cam2Type === 'video' ? (
                   <video
                     ref={cam2MediaRef}
@@ -584,14 +550,11 @@ export default function VisionScanner({ form, limits, onApply }) {
                   e.preventDefault()
                   pickCam2File(e.dataTransfer.files?.[0])
                 }}
-                className="flex aspect-[21/9] w-full cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-ink-300 bg-white text-center transition-colors hover:bg-ink-100/70"
+                className="flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/20 text-center transition-colors hover:bg-white/5"
               >
-                <IdentificationCardIcon size={26} className="text-ink-400" aria-hidden />
-                <span className="text-body font-medium text-ink-900">Foto / Video Depan Truk (Pelat)</span>
-                <span className="text-mono-xs text-ink-400">Automatic License Plate Recognition (ALPR)</span>
-                <span className="mt-1 rounded-veto bg-ink-900 px-3 py-1 text-label text-white">
-                  Pilih Media Pelat
-                </span>
+                <IdentificationCardIcon size={22} className="text-white/50" aria-hidden />
+                <span className="text-[12.5px] font-semibold text-white">Foto depan truk</span>
+                <span className="rounded-md bg-white px-2 py-1 text-[12px] font-semibold text-[#111827]">Pilih media</span>
                 <input
                   type="file"
                   accept="video/*,image/*"
@@ -600,177 +563,97 @@ export default function VisionScanner({ form, limits, onApply }) {
                 />
               </label>
             )}
+          </div>
+
+          <div className="grid min-w-0 flex-1 content-center gap-1.5">
+            <p className="flex items-center gap-2 font-mono text-[11.5px] text-white/45">
+              <span className={`h-2 w-2 rounded-full ${cam2Fleet ? 'bg-[#2f8f4e]' : 'bg-white/25'}`} aria-hidden />
+              CAM-02 Gerbang
+              {cam2Latency && (
+                <span>
+                  · {cam2Latency} ms
+                  {cam2Alpr?.plate_confidence ? ` · ${(cam2Alpr.plate_confidence * 100).toFixed(0)}%` : ''}
+                </span>
+              )}
+            </p>
+
+            {cam2Fleet ? (
+              <>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <b className="font-mono text-[22px] font-semibold tracking-[0.06em] text-white">
+                    {plate || 'Pelat tidak terbaca'}
+                  </b>
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11.5px] font-bold ${
+                      cam2Fleet.identity_status === 'VERIFIED'
+                        ? 'bg-[#2f8f4e]/20 text-[#7fdc9b]'
+                        : cam2Fleet.identity_status === 'MISMATCH_ALERT'
+                        ? 'bg-[#d92d20]/25 text-[#ff8a7a]'
+                        : 'bg-white/10 text-white/70'
+                    }`}
+                  >
+                    {cam2Fleet.identity_status === 'VERIFIED' && <ShieldCheckIcon size={13} aria-hidden />}
+                    {cam2Fleet.identity_status === 'MISMATCH_ALERT' && <WarningCircleIcon size={13} aria-hidden />}
+                    {cam2Fleet.identity_status === 'VERIFIED'
+                      ? 'Terdaftar di Master Armada'
+                      : cam2Fleet.identity_status === 'MISMATCH_ALERT'
+                      ? 'Tidak cocok'
+                      : cam2Fleet.license_plate
+                      ? 'Belum terdaftar'
+                      : 'Tidak terbaca'}
+                  </span>
+                </div>
+                {cam2Fleet.vehicle_model && (
+                  <p className="text-[12.5px] text-white/70">
+                    {cam2Fleet.vehicle_model} · {cam2Fleet.axle_config || '–'} · kosong{' '}
+                    {cam2Fleet.tare_weight_kg ? `${formatNumber(cam2Fleet.tare_weight_kg)} kg` : '–'}
+                    {cam2Alpr?.detected_body_type && ` · kamera: ${cam2Alpr.detected_body_type}`}
+                  </p>
+                )}
+                {cam2Fleet.fraud_warning && (
+                  <p className="text-[12.5px] font-semibold text-[#ff8a7a]">{cam2Fleet.fraud_warning}</p>
+                )}
+              </>
+            ) : (
+              <p className="text-[13px] text-white/60">Pelat dibaca dari kamera gerbang, lalu dicocokkan ke Master Armada.</p>
+            )}
 
             {cam2Url && (
-              <div className="mt-2 flex items-center justify-between gap-2">
-                <span className="truncate font-mono text-mono-xs text-ink-500">{cam2FileName}</span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={scanCam2Once}
-                    className="rounded border border-ink-200 bg-white px-2 py-0.5 text-xs text-ink-800 hover:bg-ink-50"
-                  >
-                    Pindai Ulang
-                  </button>
-                  <button
-                    type="button"
-                    onClick={clearCam2}
-                    className="text-xs text-ink-500 hover:text-ink-900"
-                  >
-                    Ganti
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* ALPR & Master Armada Identity Card */}
-          <div className="mt-3 space-y-2.5">
-            {cam2Fleet ? (
-              <div className="rounded border border-ink-200 bg-white p-2.5">
-                {/* Plate Badge & Vehicle Model */}
-                <div className="flex items-center gap-3">
-                  <div className="rounded border-2 border-ink-900 bg-black px-2.5 py-1 text-center font-mono font-bold tracking-wider text-white shadow-sm">
-                    <span className="text-base text-yellow-400">
-                      {cam2Alpr?.license_plate || cam2Fleet.license_plate || 'PELAT TERTUTUP'}
-                    </span>
-                  </div>
-                  <div>
-                    {cam2Fleet.vehicle_model ? (
-                      <>
-                        <p className="font-semibold text-ink-900">{cam2Fleet.vehicle_model}</p>
-                        <p className="text-mono-xs text-ink-500">{cam2Fleet.vendor_name}</p>
-                      </>
-                    ) : cam2Fleet.license_plate ? (
-                      <>
-                        <p className="text-xs font-medium text-ink-600">Tidak Terdaftar di Master Armada</p>
-                        <p className="text-mono-xs text-ink-400">Armada Luar / Belum Terdata</p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-xs font-medium text-ink-600">Pelat Nomor Tidak Terbaca</p>
-                        <p className="text-mono-xs text-ink-400">Arahkan kamera ke bagian depan & pelat nomor</p>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Fraud Alert Banner */}
-                {cam2Fleet.fraud_warning && (
-                  <div className="mt-2 rounded border border-[#fda29b] bg-[#fef3f2] p-2 text-label text-[#d92d20]">
-                    <div className="flex items-start gap-1.5">
-                      <WarningCircleIcon size={16} className="mt-0.5 shrink-0" />
-                      <p className="text-xs font-medium leading-snug">{cam2Fleet.fraud_warning}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Fleet Technical Data - Only show if vehicle is registered; hide body type if no plate detected */}
-                {cam2Fleet.vehicle_model ? (
-                  <div className="mt-2.5 grid grid-cols-2 gap-1.5 border-t border-ink-200 pt-2 text-xs">
-                    <div>
-                      <span className="text-ink-400">Bentuk Kamera:</span>{' '}
-                      <span className="font-medium text-ink-800">{cam2Alpr?.detected_body_type || '–'}</span>
-                    </div>
-                    <div>
-                      <span className="text-ink-400">Karoseri KIR:</span>{' '}
-                      <span className="font-medium text-ink-800">{cam2Fleet.registered_body_type || '–'}</span>
-                    </div>
-                    <div>
-                      <span className="text-ink-400">Sumbu Resmi:</span>{' '}
-                      <span className="font-mono font-medium text-ink-900">{cam2Fleet.axle_config || '–'}</span>
-                    </div>
-                    <div>
-                      <span className="text-ink-400">Berat Kosong:</span>{' '}
-                      <span className="font-medium text-ink-900">
-                        {cam2Fleet.tare_weight_kg ? `${formatNumber(cam2Fleet.tare_weight_kg)} kg` : '–'}
-                      </span>
-                    </div>
-                  </div>
-                ) : cam2Fleet.license_plate ? (
-                  <div className="mt-2.5 border-t border-ink-200 pt-2 text-xs text-ink-500">
-                    <span className="text-ink-400">Bentuk Kamera:</span>{' '}
-                    <span className="font-medium text-ink-800">{cam2Alpr?.detected_body_type || '–'}</span>
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <div className="flex h-24 items-center justify-center rounded border border-dashed border-ink-200 bg-white p-3 text-center">
-                <p className="text-xs text-ink-400">
-                  Upload foto/video depan truk untuk membaca pelat nomor (ALPR) dan menarik data Master Armada resmi.
-                </p>
-              </div>
-            )}
-
-            {cam2Latency && (
-              <p className="font-mono text-mono-xs text-ink-400">
-                Latensi ALPR: {cam2Latency} ms {cam2Alpr?.plate_confidence ? `· Keyakinan: ${(cam2Alpr.plate_confidence * 100).toFixed(0)}%` : ''}
+              <p className="flex items-center gap-3 text-[12px]">
+                <span className="max-w-[18ch] truncate text-white/45">{cam2FileName}</span>
+                <button type="button" onClick={scanCam2Once} className="font-semibold text-white hover:underline">
+                  Pindai ulang
+                </button>
+                <button type="button" onClick={clearCam2} className="font-semibold text-white/60 hover:text-white">
+                  Ganti
+                </button>
               </p>
             )}
-            {cam2Error && <p className="text-xs text-[#d92d20]">{cam2Error}</p>}
+            {cam2Error && <p className="text-[12px] text-[#ff8a7a]">{cam2Error}</p>}
           </div>
-        </div>
+        </section>
       </div>
-
-      {/* Bottom Integration Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-200 bg-ink-50 px-4 py-3">
-        <div className="flex flex-wrap items-center gap-4">
-          <Toggle checked={autoSync} onChange={setAutoSync}>
-            Sinkron otomatis ke Form Dispatch
-          </Toggle>
-          <Toggle checked={fillWeights} onChange={setFillWeights}>
-            Isi contoh beban muatan saat sinkron
-          </Toggle>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            disabled={!cam2Fleet || cam2Fleet.identity_status !== 'VERIFIED'}
-            onClick={() => applyDataToForm(cam1Settled, cam2Fleet, true)}
-            className="rounded-veto bg-ink-900 px-4 py-2 text-label font-medium text-white transition-colors hover:bg-ink-950 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {cam2Fleet?.identity_status === 'VERIFIED'
-              ? cam1Settled
-                ? 'Terapkan Data Truk & Dimensi ke Form'
-                : 'Terapkan Spesifikasi Truk ke Form'
-              : 'Menunggu Pelat Terverifikasi di CAM 02'}
-          </button>
-        </div>
-      </div>
-
-      {appliedNotice && (
-        <div className="border-t border-ink-100 bg-white px-4 py-2">
-          <p
-            className={`text-xs font-medium ${
-              appliedNotice.startsWith('Tersinkron') ? 'text-[#2f8f4e]' : 'text-[#b54708]'
-            }`}
-          >
-            {appliedNotice.startsWith('Tersinkron') ? `✓ ${appliedNotice}` : `⚠ ${appliedNotice}`}
-          </p>
-        </div>
-      )}
-    </section>
+    </div>
   )
 }
 
 function Telemetry({ label, value }) {
   return (
     <div>
-      <dt className="font-mono text-mono-xs text-ink-400">{label}</dt>
-      <dd className="tnum text-xs font-semibold text-ink-900">{value}</dd>
+      <dt className="text-white/45">{label}</dt>
+      <dd className="font-semibold tabular-nums text-white">{value}</dd>
     </div>
   )
 }
 
 function Toggle({ checked, onChange, children }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-700">
+    <label className="flex cursor-pointer items-center gap-2 text-[12.5px] text-[#5b6676]">
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-3.5 w-3.5 accent-[#1b1f23]"
+        className="h-3.5 w-3.5 accent-[#1f74e0]"
       />
       {children}
     </label>

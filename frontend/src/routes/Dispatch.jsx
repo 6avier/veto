@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
+import { PrinterIcon } from '@phosphor-icons/react'
 
 import { ApiError, listRules, validateDispatch } from '@/api'
 import DispatchForm from '@/components/dispatch/DispatchForm'
 import TruckLoad from '@/components/dispatch/TruckLoad'
-import VerdictPanel from '@/components/dispatch/VerdictPanel'
 import ViolationDialog from '@/components/dispatch/ViolationDialog'
 import PassDialog from '@/components/dispatch/PassDialog'
 import WaybillDialog from '@/components/dispatch/WaybillDialog'
@@ -229,15 +229,25 @@ export default function Dispatch() {
   return (
     <>
     <div className="mx-auto max-w-[1400px] px-4 pt-5 pb-28 print:hidden">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <header className="mb-[18px] flex flex-wrap items-end gap-x-6 gap-y-3">
         <div>
-          <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.02em] text-[#111827]">Buat Surat Jalan</h1>
-          <p className="mt-0.5 text-label text-[#5a646e]">
-            Gudang Cikarang 01 · Pengiriman keluar
+          <p className="flex items-center gap-1.5 text-[13px] text-[#5b6676]">
+            Gudang Cikarang 01 <span aria-hidden>›</span> Pengiriman <span aria-hidden>›</span> Surat Jalan
           </p>
+          <h1 className="mt-1 text-[26px] font-bold leading-tight tracking-[-0.02em] text-[#111827]">
+            Buat Surat Jalan
+          </h1>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="ml-auto flex flex-wrap items-center gap-2.5">
+          <span className="flex items-center gap-2 text-[12.5px] text-[#5b6676]">
+            <span aria-hidden className="grid h-8 w-8 place-items-center rounded-full bg-[#e7f0fc] text-[11px] font-bold text-[#165bb4]">
+              BS
+            </span>
+            <span>
+              <b className="font-semibold text-[#111827]">Budi Santoso</b> · Petugas Dispatch
+            </span>
+          </span>
           {decision && (
             // The verdict stays in view after its dialog closes, and reopens it.
             <button
@@ -254,11 +264,9 @@ export default function Dispatch() {
               {passed ? 'LOLOS' : override ? 'DITAHAN, di-override' : 'DITAHAN'}
             </button>
           )}
-          {!released && (
-            <p className="max-w-[22ch] text-label text-[#6b757f]">
-              Surat jalan terkunci sampai VETO meloloskan muatan.
-            </p>
-          )}
+          <span className="rounded-lg border border-[#e2e7ee] bg-white px-2.5 py-1.5 font-mono text-[12px] text-[#5b6676]">
+            {form.dispatchRef || 'DO-…'}
+          </span>
           {/* The way back in, once the PASS dialog has been dismissed. */}
           <button
             type="button"
@@ -267,46 +275,51 @@ export default function Dispatch() {
               setWaybillFromPass(false)
               setWaybillOpen(true)
             }}
+            title={released ? undefined : 'Terbuka setelah VETO meloloskan muatan'}
             className={[
-              'min-h-[42px] rounded-xl px-4 text-[14px] font-bold transition-[background-color,transform] active:scale-[.97]',
+              'inline-flex h-10 items-center gap-2 rounded-[10px] border px-4 text-[14px] font-semibold transition-[background-color,transform] active:scale-[.97]',
               released
-                ? 'bg-[#111827] text-white hover:bg-black'
-                : 'cursor-not-allowed border border-[#e2e7ee] bg-[#eef1f5] text-[#8a95a5]',
+                ? 'border-[#1f74e0] bg-[#1f74e0] text-white hover:bg-[#165bb4]'
+                : 'cursor-not-allowed border-[#cdd5e0] bg-white text-[#111827] opacity-45',
             ].join(' ')}
           >
+            <PrinterIcon size={16} aria-hidden />
             Cetak Surat Jalan
           </button>
         </div>
-      </div>
+      </header>
 
       {/* Cameras on the left, the declared load on the right: what the dock
           sees beside what the slip says. */}
-      <div className="mb-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
-        <VisionScanner form={form} limits={limits} onApply={applyDetection} />
-        <DeclaredLoad form={form} limits={limits} decision={decision} />
-      </div>
-
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <DispatchForm
-          value={form}
-          onChange={handleChange}
-          onSubmit={handleSubmit}
-          pending={pending}
-          errors={errors}
-          violations={fieldViolations}
+      <div className="mb-4">
+        <VisionScanner
+          form={form}
           limits={limits}
-        />
-
-        <VerdictPanel
-          decision={decision}
-          error={error}
-          pending={pending}
-          settled={Boolean(decision) && !dialogOpen && !passOpen && !waybillOpen}
-          overridden={Boolean(override)}
+          onApply={applyDetection}
+          aside={<DeclaredLoad form={form} limits={limits} decision={decision} />}
         />
       </div>
 
-      <p className="mt-4 max-w-[65ch] text-label text-[#6b757f]">
+      {/* The verdict itself lives in the header chip and its dialogs; this is
+          only for a request that never got one. */}
+      {error && (
+        <div role="alert" className="mb-4 rounded-2xl border border-[#f2a93b] bg-[#fdf2df] px-4 py-3">
+          <p className="text-[14px] font-bold text-[#8a5200]">VETO tidak dapat dihubungi</p>
+          <p className="mt-0.5 text-[13px] text-[#8a5200]">{error.message}</p>
+        </div>
+      )}
+
+      <DispatchForm
+        value={form}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        pending={pending}
+        errors={errors}
+        violations={fieldViolations}
+        limits={limits}
+      />
+
+      <p className="mt-3 max-w-[65ch] px-1 text-[12.5px] text-[#687385]">
         VETO memeriksa angka yang dideklarasikan pada surat jalan, bukan hasil timbangan.
         Data masukan yang keliru tetap dapat lolos.
       </p>
