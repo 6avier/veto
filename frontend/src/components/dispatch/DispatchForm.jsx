@@ -181,16 +181,16 @@ export default function DispatchForm({
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.4fr)_minmax(0,1fr)] lg:divide-x lg:divide-[#eef1f5]">
+      <div className="grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,2.1fr)_minmax(0,1.3fr)] lg:divide-x lg:divide-[#eef1f5]">
       <Section n={1} title="Kendaraan" cols="grid-cols-1">
-        <Field label="Nomor Surat Jalan" error={errors.dispatchRef}>
-          <TextInput
-            value={value.dispatchRef}
-            onChange={(e) => set({ dispatchRef: e.target.value })}
-            className="font-mono"
-          />
-        </Field>
-        <Field label="Konfigurasi Sumbu" unit={<CaretDownIcon size={14} weight="bold" aria-hidden />}>
+        {/* The slip number is issued by the page and shown in the header, so
+            it is stated here rather than typed. */}
+        <Field
+          label="Konfigurasi Sumbu"
+          unit={<CaretDownIcon size={14} weight="bold" aria-hidden />}
+          error={errors.dispatchRef}
+          note={`Surat jalan ${value.dispatchRef}`}
+        >
           <select
             value={value.axleConfig}
             onChange={(e) => setAxleConfig(e.target.value)}
@@ -203,6 +203,9 @@ export default function DispatchForm({
             ))}
           </select>
         </Field>
+      </Section>
+
+      <Section n={2} title="Berat per sumbu" cols="grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(118px,1fr))]">
         <Field label="Berat Kosong" unit="kg" error={errors.tareWeight}>
           <NumberInput
             value={value.tareWeight}
@@ -210,9 +213,6 @@ export default function DispatchForm({
             maxDigits={MAX_DIGITS.weight}
           />
         </Field>
-      </Section>
-
-      <Section n={2} title="Berat per sumbu" cols="grid-cols-2 sm:grid-cols-3">
         {value.axleLoads.map((load, index) => (
           <Field
             key={index}
@@ -252,7 +252,7 @@ export default function DispatchForm({
         </Field>
       </Section>
 
-      <Section n={3} title="Dimensi" cols="grid-cols-2 sm:grid-cols-3">
+      <Section n={3} title="Dimensi" cols="grid-cols-3">
         {[
           ['Panjang', 'length'],
           ['Lebar', 'width'],
@@ -415,10 +415,6 @@ const inputBase =
 const inputClass = `${inputBase} border-[#cdd5e0] bg-white text-[#111827] hover:border-[#8a95a5] focus:border-[#1f74e0] focus:outline-none focus:ring-[3px] focus:ring-[#e7f0fc] aria-[invalid=true]:border-[#f2a93b] aria-[invalid=true]:ring-[3px] aria-[invalid=true]:ring-[#fdf2df]`
 
 const inputLockedClass = `${inputBase} cursor-not-allowed border-[#e2e7ee] bg-[#f7f9fc] text-[#5b6676] aria-[invalid=true]:border-[#f2a93b]`
-
-function TextInput({ className = '', ...props }) {
-  return <input type="text" {...props} className={`${inputClass} ${className}`} />
-}
 
 function NumberInput({ onChange, maxDigits, readOnly, ...props }) {
   const limitDigits = (event) => {

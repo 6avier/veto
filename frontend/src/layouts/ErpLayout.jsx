@@ -41,7 +41,7 @@ export default function ErpLayout() {
     <div className="flex min-h-[calc(100dvh-2.75rem)] bg-[#f1f4f8] font-erp text-[#111827]">
       <nav
         aria-label="Navigasi NUSANTARA WMS"
-        className="sticky top-0 hidden h-[calc(100dvh-2.75rem)] w-20 shrink-0 sm:flex flex-col items-center gap-1 border-r border-[#e2e7ee] bg-white px-2 pb-3.5 pt-4"
+        className="sticky top-0 hidden h-[calc(100dvh-2.75rem)] w-20 shrink-0 sm:flex flex-col items-center gap-1 border-r border-[#e2e7ee] bg-white px-1 pb-3.5 pt-4"
       >
         <span className="mb-1.5 grid w-full place-items-center border-b border-[#e2e7ee] pb-3">
           <img
@@ -61,7 +61,7 @@ export default function ErpLayout() {
               key={label}
               aria-current={active ? 'page' : undefined}
               className={[
-                'grid w-16 cursor-default justify-items-center gap-1 rounded-[10px] px-0.5 pb-[7px] pt-[9px] text-[11.5px] font-semibold transition-colors',
+                'grid w-full cursor-default justify-items-center gap-1 rounded-[10px] pb-[7px] pt-[9px] text-[11px] font-semibold tracking-[-0.01em] transition-colors',
                 active ? 'bg-[#e7f0fc] text-[#165bb4]' : 'text-[#5b6676] hover:bg-[#f7f9fc] hover:text-[#111827]',
               ].join(' ')}
             >
