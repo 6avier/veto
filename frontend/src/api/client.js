@@ -42,20 +42,20 @@ export class ApiError extends Error {
     if (error.code === 'ECONNABORTED') {
       return new ApiError({
         code: 'UPSTREAM_TIMEOUT',
-        message: 'The request timed out.',
+        message: 'Server VETO tidak menjawab tepat waktu. Coba kirim lagi.',
         status: 504,
       })
     }
     if (!error.response) {
       return new ApiError({
         code: 'NETWORK_ERROR',
-        message: 'Could not reach the VETO API.',
+        message: 'Server VETO tidak bisa dihubungi. Periksa koneksi, lalu coba lagi.',
         status: 0,
       })
     }
     return new ApiError({
       code: 'INTERNAL_ERROR',
-      message: 'Something went wrong.',
+      message: 'Terjadi kesalahan di server VETO. Coba lagi sebentar lagi.',
       status,
     })
   }

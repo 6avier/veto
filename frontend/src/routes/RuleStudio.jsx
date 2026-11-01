@@ -203,7 +203,7 @@ export default function RuleStudio() {
   const showPlate = Boolean(page || pageLoading || pageError)
 
   return (
-    <div className="mx-auto grid max-w-[1400px] gap-4 px-4 py-5">
+    <div className="mx-auto grid max-w-[1400px] grid-cols-[minmax(0,1fr)] gap-4 px-4 py-5">
       <header className="flex flex-wrap items-end justify-between gap-3 px-1">
         <h1 className="text-[32px] font-bold leading-tight tracking-[-0.02em]">Rule Studio</h1>
         {stage !== 'idle' && (
@@ -244,7 +244,7 @@ export default function RuleStudio() {
               <h2 className="text-[20px] font-bold tracking-[-0.02em]">
                 {waiting ? `${waiting} usulan menunggu` : 'Semua sudah diputuskan'}
               </h2>
-              <span className="ml-auto font-mono text-[12px] tabular-nums text-ink-400" aria-live="polite">
+              <span className="ml-auto font-mono text-[12px] tabular-nums text-ink-500" aria-live="polite">
                 {decided} dari {candidates.length} ditinjau
               </span>
             </div>

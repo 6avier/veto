@@ -72,7 +72,8 @@ export default function ParseView({ document: doc, result, startedAt, central, o
         setImage(fetched?.image ?? null)
         setSweep({ at: 0, ms: 0 })
         await wait(40)
-        const ms = resultRef.current ? FAST_MS : SWEEP_MS
+        // Under reduced motion the veil steps instead of sliding.
+        const ms = reducedMotion ? 0 : resultRef.current ? FAST_MS : SWEEP_MS
         setSweep({ at: 100, ms })
         await wait(ms + 60)
         setScanned(n)

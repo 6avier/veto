@@ -131,9 +131,10 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Focus is never removed, only restyled. */
+  /* Focus is never removed, only restyled. Accent blue, not the HOLD amber:
+     amber measured 2:1 on white and read as a warning. */
   :focus-visible {
-    outline: 2px solid var(--color-hold);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
 

@@ -52,7 +52,7 @@ export default function DropZone({ onFile, disabled }) {
   }
 
   return (
-    <section className={`${PANEL} grid gap-4 p-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]`}>
+    <section className={`${PANEL} grid grid-cols-[minmax(0,1fr)] gap-4 p-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]`}>
       <div
         onDragOver={(e) => {
           e.preventDefault()
@@ -71,11 +71,11 @@ export default function DropZone({ onFile, disabled }) {
         ].join(' ')}
       >
         <div>
-          <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-[18px] bg-accent text-white transition-transform duration-200 group-hover:-translate-y-0.5">
+          <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-[18px] bg-accent text-white transition-transform duration-200 motion-safe:group-hover:-translate-y-0.5">
             <UploadSimpleIcon size={26} aria-hidden />
           </span>
           <p className="text-[19px] font-bold tracking-[-0.02em]">Seret PDF ke sini</p>
-          <p className="mt-1 text-[14px] text-ink-400">SOP, syarat kontrak, atau batas internal</p>
+          <p className="mt-1 text-[14px] text-ink-500">SOP, syarat kontrak, atau batas internal</p>
           <button
             type="button"
             disabled={disabled}
@@ -88,6 +88,9 @@ export default function DropZone({ onFile, disabled }) {
             ref={inputRef}
             type="file"
             accept="application/pdf,.pdf"
+            // Opened by the Pilih PDF button; a second, invisible tab stop
+            // would only lose keyboard users.
+            tabIndex={-1}
             className="sr-only"
             onChange={(e) => accept(e.target.files?.[0])}
           />
@@ -101,7 +104,7 @@ export default function DropZone({ onFile, disabled }) {
           type="button"
           disabled={disabled || loadingSample}
           onClick={useSample}
-          className="mt-2 flex w-full items-center gap-3.5 rounded-2xl border border-ink-100 bg-white p-3 text-left transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px hover:border-accent hover:shadow-[0_16px_36px_-16px_rgba(36,87,245,0.3)] disabled:opacity-50"
+          className="mt-2 flex w-full items-center gap-3.5 rounded-2xl border border-ink-100 bg-white p-3 text-left transition-[border-color,box-shadow,transform] duration-200 motion-safe:hover:-translate-y-px hover:border-accent hover:shadow-[0_16px_36px_-16px_rgba(36,87,245,0.3)] disabled:opacity-50"
         >
           <span className="grid h-12 w-10 shrink-0 place-items-center rounded-[10px] bg-accent-soft text-accent">
             <FilePdfIcon size={22} aria-hidden />

@@ -60,7 +60,7 @@ export default function AuditLog() {
   const rows = data?.results ?? []
 
   return (
-    <div className="mx-auto grid max-w-[1400px] gap-4 px-4 py-5">
+    <div className="mx-auto grid max-w-[1400px] grid-cols-[minmax(0,1fr)] gap-4 px-4 py-5">
       <h1 className="px-1 text-[32px] font-bold leading-tight tracking-[-0.02em]">Jejak Audit</h1>
 
       <section className={PANEL} aria-labelledby="audit-title">

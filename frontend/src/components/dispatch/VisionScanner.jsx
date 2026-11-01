@@ -421,7 +421,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
               e.preventDefault()
               pickCam1File(e.dataTransfer.files?.[0])
             }}
-            className="mx-3 flex min-h-[220px] flex-1 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 text-center transition-colors hover:bg-white/5"
+            className="mx-3 flex min-h-[220px] flex-1 cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 text-center transition-colors hover:bg-white/5"
           >
             <VideoCameraIcon size={26} className="text-white/50" aria-hidden />
             <span className="font-sans text-[14px] font-semibold text-white">Foto atau video sisi truk</span>
@@ -493,7 +493,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
             type="button"
             disabled={!cam2Fleet || cam2Fleet.identity_status !== 'VERIFIED'}
             onClick={() => applyDataToForm(cam1Settled, cam2Fleet, true)}
-            className="ml-auto h-9 rounded-[10px] border border-white/20 px-3 text-[13px] font-semibold text-white transition-[background-color,transform] hover:bg-white/10 active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-45"
+            className="ml-auto h-9 rounded-[10px] border border-white/20 px-3 text-[13px] font-semibold text-white transition-[background-color,transform] hover:bg-white/10 motion-safe:enabled:active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-45"
           >
             {cam2Fleet?.identity_status === 'VERIFIED'
               ? cam1Settled
@@ -550,7 +550,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
                   e.preventDefault()
                   pickCam2File(e.dataTransfer.files?.[0])
                 }}
-                className="flex h-full min-h-[112px] w-full cursor-pointer flex-col items-center justify-center gap-1.5 text-center transition-colors hover:bg-white/5"
+                className="flex h-full min-h-[112px] w-full cursor-pointer focus-within:outline-2 focus-within:-outline-offset-2 focus-within:outline-accent flex-col items-center justify-center gap-1.5 text-center transition-colors hover:bg-white/5"
               >
                 <IdentificationCardIcon size={22} className="text-white/50" aria-hidden />
                 <span className="text-[12.5px] font-semibold text-white">Foto depan truk</span>

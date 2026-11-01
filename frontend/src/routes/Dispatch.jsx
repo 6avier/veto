@@ -255,7 +255,7 @@ export default function Dispatch() {
               key={`${decision.decision_id}-${override ? 'o' : ''}`}
               onClick={() => (passed ? setPassOpen(true) : setDialogOpen(true))}
               className={[
-                'veto-chip-in rounded-[10px] border px-3 py-1.5 text-[12.5px] font-bold transition-transform active:scale-[.97]',
+                'veto-chip-in rounded-[10px] border px-3 py-1.5 text-[12.5px] font-bold transition-transform motion-safe:enabled:active:scale-[0.96]',
                 passed
                   ? 'border-transparent bg-[#e6f4ea] text-[#11692f]'
                   : 'border-hold bg-[#fdf2df] text-hold-ink',
@@ -277,7 +277,7 @@ export default function Dispatch() {
             }}
             title={released ? undefined : 'Terbuka setelah VETO meloloskan muatan'}
             className={[
-              'inline-flex h-10 items-center gap-2 rounded-[10px] border px-4 text-[14px] font-semibold transition-[background-color,transform] active:scale-[.97]',
+              'inline-flex h-10 items-center gap-2 rounded-[10px] border px-4 text-[14px] font-semibold transition-[background-color,transform] motion-safe:enabled:active:scale-[0.96]',
               released
                 ? 'border-[#1f74e0] bg-[#1f74e0] text-white hover:bg-[#165bb4]'
                 : 'cursor-not-allowed border-[#cdd5e0] bg-white text-[#111827] opacity-45',
@@ -319,7 +319,7 @@ export default function Dispatch() {
         limits={limits}
       />
 
-      <p className="mt-3 max-w-[65ch] px-1 text-[12.5px] text-[#687385]">
+      <p className="mt-3 max-w-[65ch] px-1 text-[12.5px] text-[#5b6676]">
         VETO memeriksa angka yang dideklarasikan pada surat jalan, bukan hasil timbangan.
         Data masukan yang keliru tetap dapat lolos.
       </p>

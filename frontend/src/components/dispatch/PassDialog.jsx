@@ -48,14 +48,14 @@ export default function PassDialog({ decision, form, limits = {}, onClose, onPri
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[42px] rounded-[13px] border border-ink-200 bg-white px-4 text-[14px] font-bold text-ink-900 transition-[transform,border-color] hover:border-ink-400 active:scale-[.97]"
+            className="min-h-[42px] rounded-[13px] border border-ink-200 bg-white px-4 text-[14px] font-bold text-ink-900 transition-[transform,border-color] hover:border-ink-400 motion-safe:enabled:active:scale-[0.96]"
           >
             Tutup
           </button>
           <button
             type="button"
             onClick={onPrint}
-            className="min-h-[42px] rounded-[13px] bg-accent px-4 text-[14px] font-bold text-white shadow-[0_8px_18px_-10px_rgba(36,87,245,0.9)] transition-[transform,background-color] hover:bg-accent-hi active:scale-[.97]"
+            className="min-h-[42px] rounded-[13px] bg-accent px-4 text-[14px] font-bold text-white shadow-[0_8px_18px_-10px_rgba(36,87,245,0.9)] transition-[transform,background-color] hover:bg-accent-hi motion-safe:enabled:active:scale-[0.96]"
           >
             Cetak Surat Jalan
           </button>

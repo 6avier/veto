@@ -173,7 +173,7 @@ export default function DispatchForm({
               key={scenario.label}
               type="button"
               onClick={() => onChange({ ...value, ...scenario.values })}
-              className="h-8 rounded-full border border-[#cdd5e0] bg-white px-3 text-[12.5px] font-semibold text-[#111827] transition-[background-color,transform] hover:bg-[#f7f9fc] active:scale-[.97]"
+              className="h-8 rounded-full border border-[#cdd5e0] bg-white px-3 text-[12.5px] font-semibold text-[#111827] transition-[background-color,transform] hover:bg-[#f7f9fc] motion-safe:enabled:active:scale-[0.96]"
             >
               {scenario.label}
             </button>
@@ -306,7 +306,7 @@ export default function DispatchForm({
           <button
             type="submit"
             disabled={pending}
-            className="col-span-3 inline-flex min-h-[46px] items-center justify-center gap-2 sm:ml-auto rounded-xl bg-[#1f74e0] px-6 text-[15px] font-bold text-white shadow-[0_8px_18px_-10px_rgba(31,116,224,0.9)] transition-[background-color,transform] hover:bg-[#165bb4] active:scale-[.97] disabled:opacity-50"
+            className="col-span-3 inline-flex min-h-[46px] items-center justify-center gap-2 sm:ml-auto rounded-xl bg-[#1f74e0] px-6 text-[15px] font-bold text-white shadow-[0_8px_18px_-10px_rgba(31,116,224,0.9)] transition-[background-color,transform] hover:bg-[#165bb4] motion-safe:enabled:active:scale-[0.96] disabled:opacity-50"
           >
             {pending ? 'Mengirim ke VETO…' : 'Validasi ke VETO'}
             <ArrowRightIcon size={16} weight="bold" aria-hidden />
@@ -387,7 +387,11 @@ function Readout({ label, value, hint, share = 0 }) {
   const over = share > 1
   return (
     <div className="min-w-0 sm:min-w-[150px]">
-      <div className="text-[12px] text-[#5b6676]">{label}</div>
+      <div className="text-[12px] text-[#5b6676]">
+        {label}
+        {/* Said in words too, so the amber bar is never the only signal. */}
+        {over && <span className="ml-1.5 font-bold text-[#8a5200]">lewat batas</span>}
+      </div>
       <div className="truncate text-[13px] font-bold tabular-nums text-[#111827] sm:text-[14px]">
         {value}
         {hint && <span className="ml-1 hidden font-medium text-[#687385] sm:inline">{hint}</span>}

@@ -43,7 +43,7 @@ function SystemTab({ to, active, children }) {
       aria-current={active ? 'page' : undefined}
       className={[
         'rounded-veto px-3 py-1 text-label transition-colors',
-        active ? 'bg-ink-100 text-ink-950' : 'text-ink-400 hover:text-ink-200',
+        active ? 'bg-ink-100 text-ink-950' : 'text-ink-300 hover:text-ink-100',
       ].join(' ')}
     >
       {children}
