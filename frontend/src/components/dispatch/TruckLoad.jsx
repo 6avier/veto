@@ -178,10 +178,17 @@ export default function TruckLoad({ axleConfig, axleLoads = [], grossWeight, hei
   for (let i = 1; i < xs.length; i += 1) xs[i] = Math.max(xs[i], xs[i - 1] + TW + GAP)
   const shift = Math.max(0, xs[xs.length - 1] + TW - 792)
 
+  // The frame ends where the drawing does: the height ruler, the last axle
+  // tag, or a HOLD tag, whichever reaches furthest. A fixed 800-wide frame
+  // left a blank margin beside every truck shorter than the longest one.
+  const tagRight = tags.reduce((edge, t) => Math.max(edge, t.right ? t.x : t.x + t.text.length * 7 + 20), 0)
+  const vbRight = Math.min(800, Math.ceil(Math.max(X(boxX1) + 40, xs[xs.length - 1] - shift + TW + 8, tagRight + 8)))
+  const vbLeft = 12
+
   const label = `Truk konfigurasi ${axleConfig}, berat kotor ${formatNumber(gross)} kg${capacity ? ` dari JBI ${formatNumber(capacity)} kg` : ''}${decision?.outcome === 'HOLD' ? ', ditahan VETO' : ''}`
 
   return (
-    <svg viewBox={`0 ${vbTop} 800 ${472 - vbTop}`} role="img" aria-label={label} className="block h-auto w-full">
+    <svg viewBox={`${vbLeft} ${vbTop} ${vbRight - vbLeft} ${472 - vbTop}`} role="img" aria-label={label} className="block h-auto w-full">
       <defs>
         <linearGradient id="tl-body" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor={COLORS.body} />
@@ -212,7 +219,7 @@ export default function TruckLoad({ axleConfig, axleLoads = [], grossWeight, hei
       </defs>
 
       <ellipse cx={X(geo.end / 2)} cy={GROUND + 4} rx={geo.end * S * 0.56} ry="12" fill="url(#tl-shadow)" />
-      <line x1="16" y1={GROUND + 0.5} x2="784" y2={GROUND + 0.5} stroke={COLORS.line} />
+      <line x1={vbLeft + 4} y1={GROUND + 0.5} x2={vbRight - 4} y2={GROUND + 0.5} stroke={COLORS.line} />
       <rect x={X(250)} y={Y(1120)} width={(geo.end - 450) * S} height={260 * S} rx="2" fill={COLORS.tire} />
       <rect x={X(geo.axles[0] + 1250)} y={Y(1000)} width={1300 * S} height={520 * S} rx="6" fill={COLORS.trim} />
 

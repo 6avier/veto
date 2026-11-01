@@ -368,7 +368,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
   // declared load the page passes in as `aside`, with the gate camera's plate
   // read as a strip beneath it. Detection logic is unchanged.
   return (
-    <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+    <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
       {/* ===================== CAM-01: SIDE / DIMENSION ===================== */}
       <section className="flex min-w-0 flex-col overflow-hidden rounded-2xl bg-[#0b0e12] text-[#d6dee8] shadow-[0_1px_2px_rgba(17,24,39,0.04),0_8px_24px_-12px_rgba(17,24,39,0.12)]">
         <div className="flex items-center gap-2 px-4 py-2.5 font-mono text-[12px]">
