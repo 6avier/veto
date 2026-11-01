@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { listRules, resetClientRules } from '@/api'
 import { axleCountFor, formatNumber } from '@/lib/format'
 
+import { PANEL } from './ui'
+
 /**
  * The rule base, on screen.
  *
@@ -129,18 +131,15 @@ export default function RuleRegister() {
   const packVersion = (list) => list[0]?.rule_pack_version
 
   return (
-    <section className="mt-10 border-t border-ink-300 pt-5">
+    <section className={`${PANEL} p-5`}>
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <h2 className="text-h2 text-ink-900">Aturan yang berlaku</h2>
+        <h2 className="text-[19px] font-bold tracking-[-0.02em] text-ink-900">Aturan aktif</h2>
         {rules && (
           <p className="tnum text-data text-ink-500">
             {formatNumber(rules.length)} aktif
           </p>
         )}
-        <p className="ml-auto max-w-[52ch] text-label text-ink-500">
-          Aturan klien berlaku di atas aturan pusat. Bila keduanya mengatur hal yang sama,
-          ambang yang lebih ketat yang dipakai.
-        </p>
+
       </div>
 
       {!rules && (
@@ -155,13 +154,13 @@ export default function RuleRegister() {
         <div className="mt-5 grid gap-x-10 gap-y-6 lg:grid-cols-2">
           <Group
             title="Pusat"
-            note="Dipelihara VETO. Tidak perlu diunggah."
+            note="Dikelola VETO"
             version={packVersion(central)}
             rules={central}
           />
           <Group
-            title="Klien"
-            note="Berasal dari kebijakan internal yang sudah disetujui."
+            title="Perusahaan"
+            note="Dari SOP yang disetujui tim Anda"
             version={packVersion(client)}
             rules={client}
             client
@@ -188,7 +187,11 @@ function Group({ title, note, version, rules, client = false, action = null }) {
   return (
     <div className="min-w-0">
       <div className="flex items-baseline gap-2 border-b border-ink-200 pb-1.5">
-        <h3 className="text-label text-ink-900">{title}</h3>
+        <h3
+          className={`rounded-full px-2.5 py-0.5 text-[12px] font-bold ${client ? 'bg-accent-soft text-accent-ink' : 'bg-ink-900 text-white'}`}
+        >
+          {title}
+        </h3>
         {version !== undefined && (
           <span className="font-mono text-mono-xs text-ink-500">ODOL v{version}</span>
         )}
@@ -203,7 +206,7 @@ function Group({ title, note, version, rules, client = false, action = null }) {
 
       {rules.length === 0 ? (
         <p className="mt-3 text-label text-ink-500">
-          Belum ada aturan klien. Unggah kebijakan internal untuk menambahkannya.
+          Belum ada aturan perusahaan. Unggah SOP di atas untuk menambahkannya.
         </p>
       ) : (
         <div className="mt-1 divide-y divide-ink-100">
@@ -252,7 +255,7 @@ function ResetClient({ count, onDone }) {
         onClick={() => setConfirming(true)}
         className="text-label text-ink-500 underline underline-offset-4 hover:text-ink-900"
       >
-        Reset aturan klien
+        Reset aturan perusahaan
       </button>
     )
   }
@@ -260,7 +263,7 @@ function ResetClient({ count, onDone }) {
   return (
     <div className="w-full">
       <p className="max-w-[58ch] text-label text-ink-900">
-        Hapus {formatNumber(count)} aturan klien? Aturan pusat tetap berlaku, jadi layar
+        Hapus {formatNumber(count)} aturan perusahaan? Aturan pusat tetap berlaku, jadi layar
         pengiriman tetap bisa menahan muatan berlebih.
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -330,8 +333,8 @@ function Bucket({ group, client }) {
                   {group.key === 'axle' ? ` · ${scopeOf(rule)}` : ''}
                 </span>
               </p>
-              <p className="mt-0.5 truncate font-mono text-mono-xs text-ink-500">
-                {client ? `[ SOP KLIEN ] ${rule.legal_citation}` : rule.legal_citation}
+              <p className="mt-0.5 truncate font-mono text-mono-xs text-ink-500" title={rule.legal_citation}>
+                {rule.legal_citation}
               </p>
             </div>
             <p className="tnum shrink-0 text-data-lg text-ink-900">

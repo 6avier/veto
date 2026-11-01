@@ -14,3 +14,14 @@ Caveat on record: Apache-2.0 is an unusual licence for a typeface, and SAP's
 own marketing describes 72 as designed for SAP products. The repository licence
 governs the files as distributed and carries no font-specific carve-out. This is
 fine for the hackathon build. Have it reviewed before any commercial release.
+
+# Satoshi
+
+`Satoshi-Variable.woff2` is **Satoshi** by Indian Type Foundry, downloaded from
+[Fontshare](https://www.fontshare.com/fonts/satoshi) and distributed under the
+ITF Free Font License, a copy of which sits beside this file as
+`LICENSE-Satoshi-FFL.txt`. The licence permits self-hosting the official font
+files on a website.
+
+Satoshi is VETO's own voice: Rule Studio and the rest of VETO's chrome. The client
+ERP surface keeps 72.
