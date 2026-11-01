@@ -22,12 +22,24 @@ import { limitsFromRules } from '@/lib/limits'
  * that have since changed is not a verdict.
  */
 
-/** Today's date, so a slip never opens showing a stale one at the booth. */
+/**
+ * Today's date, so a slip never opens showing a stale one at the booth. The
+ * sequence starts at the minute of the day, so a reload for the next visitor
+ * does not reissue a number the audit trail already holds.
+ */
 function todayDispatchRef() {
   const now = new Date()
   const month = String(now.getMonth() + 1).padStart(2, '0')
   const day = String(now.getDate()).padStart(2, '0')
-  return `DO-${now.getFullYear()}-${month}-${day}-0001`
+  const seq = String(now.getHours() * 60 + now.getMinutes() + 1).padStart(4, '0')
+  return `DO-${now.getFullYear()}-${month}-${day}-${seq}`
+}
+
+/** The next slip's number: the trailing sequence plus one. */
+function nextDispatchRef(ref) {
+  const match = ref.match(/^(.*?)(\d+)$/)
+  if (!match) return todayDispatchRef()
+  return match[1] + String(Number(match[2]) + 1).padStart(match[2].length, '0')
 }
 
 /**
@@ -158,8 +170,12 @@ export default function Dispatch() {
 
   // Editing invalidates the verdict. Otherwise the gate could be opened by a
   // PASS for figures that are no longer on screen.
+  // Once a slip is released it is done, so the next edit starts a new slip
+  // with its own number. A HOLD keeps its number while the load is fixed,
+  // which is how the audit trail shows a HOLD and its later PASS as one slip.
   const handleChange = (next) => {
-    setForm(next)
+    const fresh = released && next.dispatchRef === form.dispatchRef
+    setForm(fresh ? { ...next, dispatchRef: nextDispatchRef(form.dispatchRef) } : next)
     setOverride(null)
     if (decision) setDecision(null)
     if (error) setError(null)
@@ -173,7 +189,11 @@ export default function Dispatch() {
   // functional update, because the scanner calls this from its own loop and
   // must not overwrite a field the operator typed a moment earlier.
   const applyDetection = (patch) => {
-    setForm((current) => ({ ...current, ...patch }))
+    setForm((current) => ({
+      ...current,
+      ...patch,
+      ...(released && { dispatchRef: nextDispatchRef(current.dispatchRef) }),
+    }))
     setDecision(null)
     setOverride(null)
     setError(null)
