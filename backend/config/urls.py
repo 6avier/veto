@@ -2,12 +2,23 @@
 
 from django.conf import settings
 from django.contrib import admin
+from django.db import connection
 from django.http import JsonResponse
 from django.urls import include, path
 
 
 def health(_request):
-    return JsonResponse({"status": "ok", "service": "veto-api"})
+    # Says which database the process actually reached, so a host that never
+    # passed DATABASE_URL through (and fell back to SQLite) is visible from a
+    # browser. Only the vendor and the error class: never the connection string.
+    # Stays 200 either way; this is a liveness check, not a readiness one.
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        db = connection.vendor
+    except Exception as exc:
+        db = f"error: {type(exc).__name__}"
+    return JsonResponse({"status": "ok", "service": "veto-api", "db": db})
 
 
 api_v1 = [
