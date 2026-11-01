@@ -2,12 +2,15 @@
 # Everything the frontend build does not need is excluded here so the upload
 # stays small.
 #
+# backend/ is not listed: the API is its own Vercel project with Root Directory
+# set to backend, and Vercel applies this repo-root file to that project too.
+# Ignoring backend/ here strips every file before the Python build runs.
+#
 # The build no longer reads contract/ — that was the mocks, which are gone. The
 # root-level build is now only a deployment setting, not a dependency. Leave it
 # as it is until after the event; retargeting the build is not a thing to try
 # on a day the site has to stay up.
 
-backend/
 data/
 docs/
 PROPOSAL+REGULATIONS/
