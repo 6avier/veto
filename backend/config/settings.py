@@ -140,13 +140,18 @@ REST_FRAMEWORK = {
         # Dispatch validation is the demo's hot path — someone trying the form
         # repeatedly must never hit this.
         "anon": "120/min",
+        # A booth runs every visitor through one laptop, and a venue puts every
+        # phone behind one NAT address, so these count a whole crowd as one
+        # caller. The old 10 extracts and 30 writes an hour ran out inside the
+        # first hour of visitors trying Rule Studio. Spend is still bounded by
+        # EXTRACT_DAILY_CAP below; the rates are env vars so the booth can
+        # raise them without a deploy.
         # Each upload puts a 10 MB file on a disk Render wipes anyway.
-        "upload": "12/hour",
-        # The only endpoint that spends money. See EXTRACT_DAILY_CAP below for
-        # the ceiling that does not depend on the caller keeping one address.
-        "extract": "10/hour",
-        # Destructive or state-changing: profile writes and the register reset.
-        "write": "30/hour",
+        "upload": os.getenv("THROTTLE_UPLOAD", "60/hour"),
+        # The only endpoint that spends money.
+        "extract": os.getenv("THROTTLE_EXTRACT", "40/hour"),
+        # State-changing: approvals, overrides, profile writes, register reset.
+        "write": os.getenv("THROTTLE_WRITE", "300/hour"),
         # Each dispatch writes an audit row, and the audit trail is the demo.
         "dispatch": "40/min",
         # Computer vision endpoints (over-dimension frame scanner & ALPR).

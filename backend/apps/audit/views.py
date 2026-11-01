@@ -1,13 +1,28 @@
-import json
 import uuid
-from django.views import View
-from django.http import JsonResponse
+from django.db import transaction
 from django.utils.dateparse import parse_datetime
 from django.db.models import Count
 from django.utils import timezone
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from apps.rules.candidates import clean_name
 from .models import DispatchDecision, Outcome
 
-class DecisionListView(View):
+# These were plain Django views. Django's CSRF middleware applies to those, so
+# the override POST from the frontend (another origin, no CSRF cookie) came back
+# 403 in production while the test client, which skips CSRF, kept passing. As
+# DRF views they share the API's parsing, error envelope and rate limits.
+
+MIN_REASON_CHARS = 10
+MAX_REASON_CHARS = 2000
+
+
+def _not_found():
+    return Response({"error": {"code": "NOT_FOUND", "message": "Decision not found"}}, status=status.HTTP_404_NOT_FOUND)
+
+
+class DecisionListView(APIView):
     def get(self, request):
         queryset = DispatchDecision.objects.annotate(violation_count=Count('violations')).order_by('-evaluated_at')
         
@@ -75,19 +90,19 @@ class DecisionListView(View):
                 "evaluated_at": d.evaluated_at.isoformat()
             })
             
-        return JsonResponse({
+        return Response({
             "results": data,
             "total": total,
             "limit": limit,
             "offset": offset
         })
 
-class DecisionDetailView(View):
+class DecisionDetailView(APIView):
     def get(self, request, decision_id):
         try:
             d = DispatchDecision.objects.prefetch_related('violations').get(decision_id=decision_id)
         except DispatchDecision.DoesNotExist:
-            return JsonResponse({"error": {"code": "NOT_FOUND", "message": "Decision not found"}}, status=404)
+            return _not_found()
             
         override = None
         if d.override_reason:
@@ -114,7 +129,7 @@ class DecisionDetailView(View):
                 vd["axle_index"] = v.axle_index
             violations_data.append(vd)
             
-        return JsonResponse({
+        return Response({
             "decision_id": str(d.decision_id),
             "outcome": d.outcome,
             "dispatch_ref": d.dispatch_ref,
@@ -126,39 +141,46 @@ class DecisionDetailView(View):
             "payload": d.payload
         })
 
-class DecisionOverrideView(View):
+class DecisionOverrideView(APIView):
+    throttle_scope = "write"
+
     def post(self, request, decision_id):
-        try:
-            d = DispatchDecision.objects.get(decision_id=decision_id)
-        except DispatchDecision.DoesNotExist:
-            return JsonResponse({"error": {"code": "NOT_FOUND", "message": "Decision not found"}}, status=404)
-            
-        if d.outcome == Outcome.PASS:
-            return JsonResponse({"error": {"code": "VALIDATION_ERROR", "message": "Cannot override a PASS decision"}}, status=400)
-            
-        try:
-            body = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({"error": {"code": "VALIDATION_ERROR", "message": "Invalid JSON body"}}, status=400)
-            
-        reason = body.get("reason", "")
-        if not reason or len(reason) < 10:
-            return JsonResponse({"error": {"code": "VALIDATION_ERROR", "message": "Reason must be at least 10 characters long", "field": "reason"}}, status=400)
-            
-        overridden_by = body.get("overridden_by", "Unknown")
-        
-        if not d.override_id:
+        body = request.data if isinstance(request.data, dict) else {}
+
+        reason = body.get("reason")
+        reason = reason.strip() if isinstance(reason, str) else ""
+        if len(reason) < MIN_REASON_CHARS:
+            return Response({"error": {"code": "VALIDATION_ERROR", "message": f"Reason must be at least {MIN_REASON_CHARS} characters long", "field": "reason"}}, status=status.HTTP_400_BAD_REQUEST)
+        if len(reason) > MAX_REASON_CHARS:
+            return Response({"error": {"code": "VALIDATION_ERROR", "message": f"Reason must be at most {MAX_REASON_CHARS} characters long", "field": "reason"}}, status=status.HTTP_400_BAD_REQUEST)
+
+        overridden_by = clean_name(body.get("overridden_by"))
+
+        with transaction.atomic():
+            try:
+                d = DispatchDecision.objects.select_for_update().get(decision_id=decision_id)
+            except DispatchDecision.DoesNotExist:
+                return _not_found()
+
+            if d.outcome == Outcome.PASS:
+                return Response({"error": {"code": "VALIDATION_ERROR", "message": "Cannot override a PASS decision"}}, status=status.HTTP_400_BAD_REQUEST)
+
+            # An override is part of the audit trail, and the trail is
+            # append-only. A second override used to overwrite the first, and
+            # with it the only record of who released the truck and why.
+            if d.override_id:
+                return Response({"error": {"code": "CONFLICT", "message": "Decision has already been overridden"}}, status=status.HTTP_409_CONFLICT)
+
             d.override_id = uuid.uuid4()
-            
-        d.override_reason = reason
-        d.overridden_by = overridden_by
-        d.override_created_at = timezone.now()
-        d.save()
-        
-        return JsonResponse({
+            d.override_reason = reason
+            d.overridden_by = overridden_by
+            d.override_created_at = timezone.now()
+            d.save(update_fields=["override_id", "override_reason", "overridden_by", "override_created_at"])
+
+        return Response({
             "override_id": str(d.override_id),
             "decision_id": str(d.decision_id),
             "reason": d.override_reason,
             "overridden_by": d.overridden_by,
             "created_at": d.override_created_at.isoformat()
-        }, status=201)
+        }, status=status.HTTP_201_CREATED)

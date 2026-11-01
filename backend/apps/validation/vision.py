@@ -39,6 +39,13 @@ PLATE_REGEX = re.compile(r"(?:^|\b)([A-Z]{1,2})\s*(\d{1,4})\s*([A-Z]{1,3})(?:\b|
 # Guardrail 5: Strict network timeout for upstream AI calls
 UPSTREAM_TIMEOUT_SECONDS = 12
 
+# How long one caller's last ALPR answer stands in for new frames. CAM 01 asks
+# for ALPR on every frame until a plate is verified, so this is also what keeps
+# a running scanner from spending VISION_ALPR_DAILY_CAP in minutes: at 15 s it
+# is at most four OpenAI calls a minute per caller. Short enough that the next
+# truck through the gate is read on its own.
+ALPR_SESSION_CACHE_SECONDS = 15
+
 _OPENAI_CLIENT = None
 
 
@@ -138,11 +145,16 @@ def sanitize_plate(raw_plate):
 
 
 def sanitize_body_type(raw_body):
-    """Validate truck body classification against strict enum whitelist."""
+    """Validate truck body classification against strict enum whitelist.
+
+    Anything outside the whitelist is None, not BAK_TERPAL. Defaulting an
+    unreadable body to BAK_TERPAL made the fleet check compare a guess against
+    the register, and a registered DUMP_TRUCK came back flagged as a plate swap.
+    """
     if not raw_body or not isinstance(raw_body, str):
-        return "BAK_TERPAL"
+        return None
     cleaned = re.sub(r"[^A-Z_]", "", raw_body.upper()).strip()
-    return cleaned if cleaned in ALLOWED_BODY_TYPES else "BAK_TERPAL"
+    return cleaned if cleaned in ALLOWED_BODY_TYPES else None
 
 
 def sanitize_visual_notes(raw_notes):
@@ -211,23 +223,32 @@ def _alpr_daily_cap_key():
     return f"veto-alpr-count-{django_timezone.now():%Y-%m-%d}"
 
 
-def detect_alpr_and_fleet(clean_b64, mime_type="image/jpeg", use_session_cache=False):
+def detect_alpr_and_fleet(clean_b64, mime_type="image/jpeg", session_owner=None):
     """Run ALPR license plate OCR + physical body classification + Master Armada lookup.
 
-    - Uses SHA-256 frame caching (120s) and optional session caching (60s) so
-      rapid video frames do not repeatedly bill OpenAI Vision.
+    - Uses SHA-256 frame caching (120s) and, when session_owner is given, a
+      short per-caller session cache so rapid video frames do not repeatedly
+      bill OpenAI Vision.
     - Enforces VISION_ALPR_DAILY_CAP across all callers.
     - Sanitizes all OCR outputs before matching against FLEET_REGISTRY.
     """
     frame_hash = hashlib.sha256(clean_b64.encode("ascii", errors="ignore")).hexdigest()[:16]
     frame_cache_key = f"veto-alpr-frame-{frame_hash}"
-    session_cache_key = "veto-alpr-latest-session"
+    # The session cache used to be one key for everyone, held for 60 seconds:
+    # scanning a second truck inside that window returned the first truck's
+    # plate, and one visitor's scan answered another's. It is now per caller
+    # and short enough that the next truck through the gate gets read.
+    session_cache_key = (
+        f"veto-alpr-session-{hashlib.sha256(session_owner.encode()).hexdigest()[:16]}"
+        if session_owner
+        else None
+    )
 
     cached = cache.get(frame_cache_key)
     if cached:
         return cached
 
-    if use_session_cache:
+    if session_cache_key:
         recent = cache.get(session_cache_key)
         if recent:
             return recent
@@ -293,7 +314,11 @@ def detect_alpr_and_fleet(clean_b64, mime_type="image/jpeg", use_session_cache=F
                 "license_plate": sanitized_plate,
                 "plate_confidence": round(confidence, 3) if sanitized_plate else 0.0,
                 "detected_body_type": sanitized_body,
-                "visual_notes": f"Truk karoseri {sanitized_body}",
+                "visual_notes": (
+                    f"Truk karoseri {sanitized_body}"
+                    if sanitized_body
+                    else "Jenis karoseri tidak terbaca."
+                ),
                 "source": "OPENAI_VISION_OCR",
             }
         except Exception as exc:
@@ -304,7 +329,7 @@ def detect_alpr_and_fleet(clean_b64, mime_type="image/jpeg", use_session_cache=F
             "plate_detected": False,
             "license_plate": None,
             "plate_confidence": 0.0,
-            "detected_body_type": "BAK_TERPAL",
+            "detected_body_type": None,
             "visual_notes": "Identifikasi profil fisik karoseri truk dari kamera gerbang.",
             "source": "VISUAL_PROFILE_FALLBACK",
         }
@@ -318,6 +343,11 @@ def detect_alpr_and_fleet(clean_b64, mime_type="image/jpeg", use_session_cache=F
         "alpr": alpr_data,
         "fleet_match": fleet_match,
     }
-    cache.set(frame_cache_key, result, 120)
-    cache.set(session_cache_key, result, 60)
+    # A fallback is what came back when the model could not be asked or did
+    # not answer. Caching it kept a transient failure on screen for a minute
+    # after the model had recovered.
+    if alpr_data["source"] != "VISUAL_PROFILE_FALLBACK":
+        cache.set(frame_cache_key, result, 120)
+        if session_cache_key:
+            cache.set(session_cache_key, result, ALPR_SESSION_CACHE_SECONDS)
     return result

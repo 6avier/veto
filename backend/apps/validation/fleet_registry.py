@@ -128,10 +128,13 @@ def lookup_or_match_fleet(detected_plate=None, detected_body_type=None):
     - UNREGISTERED_PLATE: Plate was read clearly, but is not registered in Master Armada.
     - VISUAL_MATCH_FALLBACK: Plate occluded/side angle; matched by physical body profile.
     """
+    # An unreadable body type stays None. It used to become BAK_TERPAL, and a
+    # guess compared against the register raised a plate-swap warning on a
+    # truck nobody had actually seen the body of.
     normalized_body = (
         detected_body_type
         if detected_body_type in ALLOWED_BODY_TYPES
-        else "BAK_TERPAL"
+        else None
     )
     compact = _compact_plate(detected_plate)
 
@@ -139,11 +142,11 @@ def lookup_or_match_fleet(detected_plate=None, detected_body_type=None):
     if compact and compact in _REGISTRY_BY_PLATE:
         record = dict(_REGISTRY_BY_PLATE[compact])
         is_flexible = record.get("body_type_strict", True) is False
-        if is_flexible and detected_body_type:
+        if is_flexible and normalized_body:
             record["registered_body_type"] = normalized_body
         body_match = (
             True
-            if (not detected_body_type or is_flexible)
+            if (not normalized_body or is_flexible)
             else (record["registered_body_type"] == normalized_body)
         )
         if body_match:

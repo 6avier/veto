@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Rule, RulePack, RuleOrigin, RuleDimension, RuleStatus
+from .models import Rule, RulePack, RuleOrigin, RuleStatus
 
 class RuleListView(APIView):
     def get(self, request):
@@ -92,14 +92,32 @@ import json
 import logging
 import os
 import uuid
+from functools import lru_cache
+
 import fitz
 from django.conf import settings
 from django.core.cache import cache
+from django.db import transaction
 from django.utils import timezone as django_timezone
 import openai
 import time
-from datetime import datetime, timezone
-from .models import Document, DocumentClassification, RuleCandidate, CandidateStatus, RuleOperator, RulePack
+from .candidates import (
+    axle_configs_for_class,
+    entries_from_model_output,
+    normalize_axle_config,
+    reviewer_name,
+    sanitize_candidate,
+)
+from .models import Document, DocumentClassification, RuleCandidate, CandidateStatus
+
+# How much of a document the extractor reads. The sample SOP runs to ~27,000
+# characters and its weight table starts around 7,000; the old 10,000 ceiling
+# cut the dimension table off mid-row.
+EXTRACT_TEXT_LIMIT = 60_000
+
+# Tagged on the placeholder the fallback produces. Approving it is allowed, so
+# the booth demo survives the model being down, but the rule it makes says so.
+FALLBACK_TAG = "belum-diverifikasi"
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +160,13 @@ class DocumentUploadView(APIView):
                 if page_count > 0:
                     first_page_text = pdf_doc[0].get_text().lower()
         except Exception:
-            return Response({"error": {"code": "INTERNAL_ERROR", "message": "Failed to read PDF"}}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # A file that is not a readable PDF is the uploader's problem, not
+            # the server's, and it is not kept: nothing will ever point at it.
+            try:
+                os.remove(file_path)
+            except OSError:
+                pass
+            return Response({"error": {"code": "VALIDATION_ERROR", "message": "File is not a readable PDF", "field": "file"}}, status=status.HTTP_400_BAD_REQUEST)
             
         # Check text for relevance
         is_relevant = any(word in first_page_text for word in ["sop", "kebijakan", "peraturan", "standar", "muatan", "logistik", "berat"])
@@ -208,8 +232,8 @@ class DocumentExtractView(APIView):
         except Document.DoesNotExist:
             return Response({"error": {"code": "NOT_FOUND", "message": "Document not found"}}, status=status.HTTP_404_NOT_FOUND)
             
-        body = request.data or {}
-        force = body.get("force", False)
+        body = request.data if isinstance(request.data, dict) else {}
+        force = body.get("force") is True
         
         if not doc.accepted and not force:
             return Response({"error": {"code": "VALIDATION_ERROR", "message": "Document was rejected during triage"}}, status=status.HTTP_409_CONFLICT)
@@ -252,16 +276,22 @@ class DocumentExtractView(APIView):
                 
                 Respond ONLY with a valid JSON array of objects. Do not wrap in markdown or backticks.
                 Each object must have these exact keys:
-                - dimension: enum (GROSS_WEIGHT, AXLE_LOAD, DIMENSION_LENGTH, DIMENSION_WIDTH, DIMENSION_HEIGHT, AXLE_CONFIG)
+                - dimension: enum (GROSS_WEIGHT, AXLE_LOAD, DIMENSION_LENGTH, DIMENSION_WIDTH, DIMENSION_HEIGHT)
                 - operator: enum (LTE, GTE, EQ)
-                - threshold: integer (convert to raw number, e.g. 24 ton -> 24000)
+                - threshold: integer (convert to raw number, e.g. 24 ton -> 24000, 12.0 m -> 12000)
                 - unit: string (must be "kg" or "mm")
-                - applies_to: object (e.g. {{"axle_config": ["1.2"]}} or null)
+                - applies_to: object or null. Keys, all optional:
+                    vehicle_class: the row label when the limit comes from a table of vehicle classes (e.g. "Tronton")
+                    axle_config: array of axle configurations, only when the document states them (e.g. ["1.2.2"])
                 - source_text_excerpt: string (the exact text snippet or table row from the document)
                 - source_page: integer (guess the page number based on '--- Page N ---' markers)
                 
+                GROSS_WEIGHT is the total vehicle weight (GVW / JBI / JBB). A payload or
+                cargo-only limit is not GROSS_WEIGHT; skip it. Skip any parameter that is not
+                one of the dimensions above (for example overhang).
+                
                 Document Text:
-                {pdf_text[:10000]} # Limit text to avoid token limits in MVP
+                {pdf_text[:EXTRACT_TEXT_LIMIT]}
                 """
                 
                 response = client.chat.completions.create(
@@ -270,13 +300,20 @@ class DocumentExtractView(APIView):
                     temperature=0.1,
                 )
                 
-                raw_json = response.choices[0].message.content.strip()
+                raw_json = (response.choices[0].message.content or "").strip()
                 if raw_json.startswith('```json'):
                     raw_json = raw_json[7:-3]
                 elif raw_json.startswith('```'):
                     raw_json = raw_json[3:-3]
-                    
-                candidates_data = json.loads(raw_json)
+
+                candidates_data = [
+                    clean
+                    for clean in (
+                        sanitize_candidate(entry, doc.page_count)
+                        for entry in entries_from_model_output(json.loads(raw_json))
+                    )
+                    if clean
+                ]
         except Exception as e:
             # Fallback if API fails or is unavailable. It keeps the booth demo
             # alive when the model is unreachable, so it must never pass itself
@@ -309,25 +346,33 @@ class DocumentExtractView(APIView):
                         "cadangan dan belum diverifikasi terhadap dokumen ini."
                     ),
                     "source_page": 1,
-                    "tags": ["cadangan", "belum-diverifikasi"],
+                    "tags": ["cadangan", FALLBACK_TAG],
                 }
             ]
             
         created_candidates = []
-        for cdata in candidates_data:
-            c = RuleCandidate.objects.create(
-                document=doc,
-                dimension=cdata.get("dimension", RuleDimension.GROSS_WEIGHT),
-                operator=cdata.get("operator", RuleOperator.LTE),
-                threshold=cdata.get("threshold", 0),
-                unit=cdata.get("unit", "kg"),
-                applies_to=cdata.get("applies_to"),
-                source_reference=doc.filename,
-                source_text_excerpt=cdata.get("source_text_excerpt", ""),
-                source_page=cdata.get("source_page", 1),
-                tags=cdata.get("tags") or ["openai-extracted"],
-                status=CandidateStatus.PENDING
-            )
+        with transaction.atomic():
+            # Extracting the same document again replaces what is still waiting
+            # for review instead of stacking a second copy of every clause on
+            # top of it. Reviewed candidates are history and stay.
+            RuleCandidate.objects.filter(document=doc, status=CandidateStatus.PENDING).delete()
+            candidates = [
+                RuleCandidate.objects.create(
+                    document=doc,
+                    dimension=cdata["dimension"],
+                    operator=cdata["operator"],
+                    threshold=cdata["threshold"],
+                    unit=cdata["unit"],
+                    applies_to=cdata["applies_to"],
+                    source_reference=doc.filename,
+                    source_text_excerpt=cdata["source_text_excerpt"],
+                    source_page=cdata["source_page"],
+                    tags=cdata["tags"] or ["openai-extracted"],
+                    status=CandidateStatus.PENDING
+                )
+                for cdata in candidates_data
+            ]
+        for c in candidates:
             created_candidates.append({
                 "candidate_id": str(c.candidate_id),
                 "dimension": c.dimension,
@@ -385,42 +430,80 @@ class RuleCandidateApproveView(APIView):
     throttle_scope = "write"
 
     def post(self, request, candidate_id):
-        try:
-            c = RuleCandidate.objects.get(candidate_id=candidate_id)
-        except RuleCandidate.DoesNotExist:
-            return Response({"error": {"code": "NOT_FOUND", "message": "Candidate not found"}}, status=status.HTTP_404_NOT_FOUND)
-            
-        if c.status != CandidateStatus.PENDING:
-            return Response({"error": {"code": "VALIDATION_ERROR", "message": "Candidate is not PENDING"}}, status=status.HTTP_409_CONFLICT)
-            
-        body = request.data or {}
-        reviewed_by = body.get("reviewed_by", "Unknown")
-        
-        # Get or create active CLIENT RulePack
-        pack, _ = RulePack.objects.get_or_create(
-            domain="ODOL",
-            origin=RuleOrigin.CLIENT,
-            defaults={"version": 1}
-        )
-        
-        # Create actual Rule
-        r = Rule.objects.create(
-            rule_pack=pack,
-            dimension=c.dimension,
-            operator=c.operator,
-            threshold=c.threshold,
-            unit=c.unit,
-            axle_config=c.applies_to.get("axle_config") if c.applies_to else None,
-            axle_index=c.applies_to.get("axle_index") if c.applies_to else None,
-            legal_citation=c.source_reference,
-            status=RuleStatus.ACTIVE
-        )
-        
-        c.status = CandidateStatus.APPROVED
-        c.rule_id = r.id
-        c.reviewed_by = reviewed_by
-        c.reviewed_at = django_timezone.now()
-        c.save()
+        reviewed_by = reviewer_name(request.data)
+
+        # The check that the candidate is still pending and the write that
+        # approves it happen under one row lock. Apart, a double click went
+        # through twice and put two copies of the rule into the live base.
+        with transaction.atomic():
+            try:
+                c = RuleCandidate.objects.select_for_update().get(candidate_id=candidate_id)
+            except RuleCandidate.DoesNotExist:
+                return Response({"error": {"code": "NOT_FOUND", "message": "Candidate not found"}}, status=status.HTTP_404_NOT_FOUND)
+
+            if c.status != CandidateStatus.PENDING:
+                return Response({"error": {"code": "CONFLICT", "message": "Candidate is not PENDING"}}, status=status.HTTP_409_CONFLICT)
+
+            applies = c.applies_to if isinstance(c.applies_to, dict) else {}
+            axle_config = normalize_axle_config(applies.get("axle_config"))
+            vehicle_class = applies.get("vehicle_class")
+            if axle_config is None and vehicle_class:
+                axle_config = axle_configs_for_class(vehicle_class)
+                if axle_config is None:
+                    # Without a configuration the engine applies a rule to
+                    # every truck, so a "Pickup: 3,500 kg" row approved as-is
+                    # would put every tronton on HOLD.
+                    return Response(
+                        {
+                            "error": {
+                                "code": "CONFLICT",
+                                "message": (
+                                    f"Kelas kendaraan \"{vehicle_class}\" belum bisa dipetakan ke "
+                                    "konfigurasi sumbu. Kalau disetujui, rule ini akan berlaku "
+                                    "untuk semua truk. Tolak kandidat ini."
+                                ),
+                            }
+                        },
+                        status=status.HTTP_409_CONFLICT,
+                    )
+
+            # One CLIENT pack, versioned: every approval changes what the engine
+            # enforces, so every approval is a new version of the pack. A
+            # decision's rule_packs_applied then says which state it ran under.
+            pack = (
+                RulePack.objects.select_for_update()
+                .filter(domain="ODOL", origin=RuleOrigin.CLIENT)
+                .order_by("-version")
+                .first()
+            )
+            if pack is None:
+                pack = RulePack.objects.create(domain="ODOL", origin=RuleOrigin.CLIENT, version=1)
+            else:
+                pack.version += 1
+                pack.save(update_fields=["version"])
+
+            axle_index = applies.get("axle_index")
+            citation = c.source_reference
+            if FALLBACK_TAG in (c.tags or []):
+                citation = f"{citation} (cadangan, belum diverifikasi)"
+
+            r = Rule.objects.create(
+                rule_pack=pack,
+                dimension=c.dimension,
+                operator=c.operator,
+                threshold=c.threshold,
+                unit=c.unit,
+                axle_config=axle_config,
+                axle_index=axle_index if isinstance(axle_index, int) and not isinstance(axle_index, bool) else None,
+                legal_citation=citation[:255],
+                status=RuleStatus.ACTIVE
+            )
+
+            c.status = CandidateStatus.APPROVED
+            c.rule_id = r.id
+            c.reviewed_by = reviewed_by
+            c.reviewed_at = django_timezone.now()
+            c.save()
         
         return Response({
             "candidate_id": str(c.candidate_id),
@@ -436,21 +519,21 @@ class RuleCandidateRejectView(APIView):
     throttle_scope = "write"
 
     def post(self, request, candidate_id):
-        try:
-            c = RuleCandidate.objects.get(candidate_id=candidate_id)
-        except RuleCandidate.DoesNotExist:
-            return Response({"error": {"code": "NOT_FOUND", "message": "Candidate not found"}}, status=status.HTTP_404_NOT_FOUND)
-            
-        if c.status != CandidateStatus.PENDING:
-            return Response({"error": {"code": "VALIDATION_ERROR", "message": "Candidate is not PENDING"}}, status=status.HTTP_409_CONFLICT)
-            
-        body = request.data or {}
-        reviewed_by = body.get("reviewed_by", "Unknown")
-        
-        c.status = CandidateStatus.REJECTED
-        c.reviewed_by = reviewed_by
-        c.reviewed_at = django_timezone.now()
-        c.save()
+        reviewed_by = reviewer_name(request.data)
+
+        with transaction.atomic():
+            try:
+                c = RuleCandidate.objects.select_for_update().get(candidate_id=candidate_id)
+            except RuleCandidate.DoesNotExist:
+                return Response({"error": {"code": "NOT_FOUND", "message": "Candidate not found"}}, status=status.HTTP_404_NOT_FOUND)
+
+            if c.status != CandidateStatus.PENDING:
+                return Response({"error": {"code": "CONFLICT", "message": "Candidate is not PENDING"}}, status=status.HTTP_409_CONFLICT)
+
+            c.status = CandidateStatus.REJECTED
+            c.reviewed_by = reviewed_by
+            c.reviewed_at = django_timezone.now()
+            c.save()
         
         return Response({
             "candidate_id": str(c.candidate_id),
@@ -458,6 +541,16 @@ class RuleCandidateRejectView(APIView):
             "reviewed_by": c.reviewed_by,
             "reviewed_at": c.reviewed_at.isoformat()
         })
+
+
+@lru_cache(maxsize=32)
+def _render_page_png(file_path, page_number, dpi):
+    """A page as base64 PNG. Upload names are generated per file and never
+    rewritten, so (path, page) always means the same pixels; flipping between
+    pages in Rule Studio used to re-rasterise each one on every visit."""
+    with fitz.open(file_path) as pdf_doc:
+        pixmap = pdf_doc[page_number - 1].get_pixmap(dpi=dpi)
+        return base64.b64encode(pixmap.tobytes("png")).decode("ascii")
 
 
 class DocumentPageView(APIView):
@@ -475,7 +568,6 @@ class DocumentPageView(APIView):
     """
 
     DPI = 110
-    MAX_DPI_PIXELS = 4000
 
     @staticmethod
     def _row_label(candidate):
@@ -582,8 +674,7 @@ class DocumentPageView(APIView):
             with fitz.open(doc.file_path) as pdf_doc:
                 page = pdf_doc[page_number - 1]
                 box = page.rect
-                pixmap = page.get_pixmap(dpi=self.DPI)
-                image_b64 = base64.b64encode(pixmap.tobytes("png")).decode("ascii")
+                image_b64 = _render_page_png(doc.file_path, page_number, self.DPI)
 
                 # Candidates that cite this page. A clause the extractor
                 # paraphrased beyond recognition still returns nothing, which
