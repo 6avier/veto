@@ -38,7 +38,7 @@ export default function PassDialog({ decision, form, limits = {}, onClose, onPri
       onClose={onClose}
       labelledBy="veto-pass-title"
       header={
-        <div className="flex items-center gap-2.5 font-mono text-[11.5px] text-ink-500">
+        <div className="flex items-center gap-2.5 font-mono text-[12px] text-ink-500">
           <span className="truncate">{decision.dispatch_ref}</span>
           <span className="ml-auto">{formatNumber(decision.latency_ms)} ms</span>
         </div>

@@ -61,7 +61,7 @@ export default function ErpLayout() {
               key={label}
               aria-current={active ? 'page' : undefined}
               className={[
-                'grid w-full cursor-default justify-items-center gap-1 rounded-[10px] pb-[7px] pt-[9px] text-[11px] font-semibold tracking-[-0.01em] transition-colors',
+                'grid w-full cursor-default justify-items-center gap-1 rounded-[10px] pb-[7px] pt-[9px] text-[12px] font-semibold tracking-[-0.01em] transition-colors',
                 active ? 'bg-[#e7f0fc] text-[#165bb4]' : 'text-[#5b6676] hover:bg-[#f7f9fc] hover:text-[#111827]',
               ].join(' ')}
             >

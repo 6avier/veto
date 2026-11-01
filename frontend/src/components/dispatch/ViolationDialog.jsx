@@ -57,7 +57,7 @@ export default function ViolationDialog({ decision, onClose, onOverridden }) {
       dismissOnBackdrop={false}
       maxWidth="720px"
       header={
-        <div className="flex items-center gap-2.5 font-mono text-[11.5px] text-ink-500">
+        <div className="flex items-center gap-2.5 font-mono text-[12px] text-ink-500">
           <VetoMark className="h-4 w-auto" />
           <b className="font-satoshi text-[15px] font-extrabold tracking-[-0.01em] text-ink-900">VETO</b>
           <span className="truncate">{decision.dispatch_ref}</span>
@@ -109,7 +109,7 @@ export default function ViolationDialog({ decision, onClose, onOverridden }) {
           <p id="veto-hold-summary" className="mt-2 text-[14px] text-ink-600">
             Surat jalan tidak dapat dicetak. {count} ketentuan dilanggar oleh angka yang dideklarasikan.
           </p>
-          <p className="font-mono text-[11px] text-[#687385]">
+          <p className="font-mono text-[12px] text-[#687385]">
             {(decision.rule_packs_applied ?? [])
               .map((p) => `${p.origin === 'CLIENT' ? 'Perusahaan' : 'Pusat'} v${p.version}`)
               .join(', ')}
@@ -131,7 +131,7 @@ export default function ViolationDialog({ decision, onClose, onOverridden }) {
               </p>
               <p className="flex flex-wrap items-center gap-2 font-mono text-[12px] text-ink-500">
                 <span
-                  className={`rounded-full px-2 py-0.5 font-satoshi text-[11.5px] font-extrabold ${
+                  className={`rounded-full px-2 py-0.5 font-satoshi text-[12px] font-extrabold ${
                     violation.rule_origin === 'CLIENT' ? 'bg-accent-soft text-accent-ink' : 'bg-ink-100 text-ink-700'
                   }`}
                 >
@@ -161,7 +161,7 @@ export default function ViolationDialog({ decision, onClose, onOverridden }) {
             }}
             placeholder="Contoh: muatan dibongkar sebagian di dok 2 dan ditimbang ulang 23.800 kg"
             className={`min-h-[72px] w-full resize-y rounded-xl border bg-white px-3 py-2.5 text-[16px] sm:text-[14px] focus:border-transparent focus:outline-2 focus:outline-accent ${
-              invalid ? 'border-hold' : 'border-ink-200'
+              invalid ? 'border-hold' : 'border-[#8a95a5]'
             }`}
           />
           <p id="override-error" aria-live="polite" className="text-[13px] font-bold text-hold-ink">

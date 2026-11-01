@@ -241,7 +241,7 @@ export default function Dispatch() {
 
         <div className="ml-auto flex flex-wrap items-center gap-2.5">
           <span className="flex items-center gap-2 text-[12.5px] text-[#5b6676]">
-            <span aria-hidden className="grid h-8 w-8 place-items-center rounded-full bg-[#e7f0fc] text-[11px] font-bold text-[#165bb4]">
+            <span aria-hidden className="grid h-8 w-8 place-items-center rounded-full bg-[#e7f0fc] text-[12px] font-bold text-[#165bb4]">
               BS
             </span>
             <span>

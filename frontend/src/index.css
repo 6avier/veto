@@ -123,6 +123,9 @@
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;
+    /* The dispatch check bar is fixed to the bottom; a field scrolled into
+       view by Tab must land above it, not under it. */
+    scroll-padding-block-end: 7rem;
   }
 
   /* Every numeric holds its column. DESIGN.md §2. */

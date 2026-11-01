@@ -332,7 +332,7 @@ function Section({ n, title, cols, children }) {
   return (
     <fieldset aria-labelledby={id} className="min-w-0 border-b border-[#eef1f5] px-[18px] pb-[18px] pt-4 lg:border-b-0">
       <p id={id} className="mb-3 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-[#687385]">
-        <span aria-hidden className="grid h-5 w-5 place-items-center rounded-full border border-[#cdd5e0] text-[11px] tracking-normal">
+        <span aria-hidden className="grid h-5 w-5 place-items-center rounded-full border border-[#cdd5e0] text-[12px] tracking-normal">
           {n}
         </span>
         {title}
@@ -370,7 +370,7 @@ function Field({ label, unit, error, violation, note, children }) {
         <span className="text-[12.5px] font-bold text-[#8a5200]">
           Lebih {formatNumber(violation.excess_value)} {violation.unit} dari batas{' '}
           {formatNumber(violation.limit_value)} {violation.unit}
-          <span className="mt-0.5 block font-mono text-[11.5px] font-normal text-[#687385]">
+          <span className="mt-0.5 block font-mono text-[12px] font-normal text-[#687385]">
             {violation.legal_citation}
           </span>
         </span>
@@ -416,7 +416,7 @@ function Readout({ label, value, hint, share = 0 }) {
 const inputBase =
   'h-10 w-full rounded-[10px] border px-3 pr-10 text-[16px] font-semibold transition-[border-color,box-shadow] sm:text-[14px]'
 
-const inputClass = `${inputBase} border-[#cdd5e0] bg-white text-[#111827] hover:border-[#8a95a5] focus:border-[#1f74e0] focus:outline-none focus:ring-[3px] focus:ring-[#e7f0fc] aria-[invalid=true]:border-[#f2a93b] aria-[invalid=true]:ring-[3px] aria-[invalid=true]:ring-[#fdf2df]`
+const inputClass = `${inputBase} border-[#8a95a5] bg-white text-[#111827] hover:border-[#5b6676] focus:border-[#1f74e0] focus:outline-none focus:ring-[3px] focus:ring-[#e7f0fc] aria-[invalid=true]:border-[#f2a93b] aria-[invalid=true]:ring-[3px] aria-[invalid=true]:ring-[#fdf2df]`
 
 const inputLockedClass = `${inputBase} cursor-not-allowed border-[#e2e7ee] bg-[#f7f9fc] text-[#5b6676] aria-[invalid=true]:border-[#f2a93b]`
 

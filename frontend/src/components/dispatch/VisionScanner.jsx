@@ -377,7 +377,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
           <span className="text-white/45">Dimensi muatan</span>
           {cam1Settled && (
             <span
-              className="ml-auto rounded-md px-2 py-0.5 font-sans text-[11.5px] font-bold text-white"
+              className="ml-auto rounded-md px-2 py-0.5 font-sans text-[12px] font-bold text-white"
               style={{ background: colour }}
             >
               {overload ? 'Kemungkinan overload' : 'Normal'}
@@ -438,7 +438,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
           </label>
         )}
 
-        <div className="grid gap-2 px-4 py-3 font-mono text-[11.5px]">
+        <div className="grid gap-2 px-4 py-3 font-mono text-[12px]">
           <dl className="flex flex-wrap items-end gap-x-6 gap-y-1">
             <Telemetry label="KEYAKINAN" value={top ? `${formatNumber((top.confidence * 100).toFixed(1))}%` : '–'} />
             <Telemetry label="FRAME" value={formatNumber(cam1Frames)} />
@@ -566,7 +566,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
           </div>
 
           <div className="grid min-w-0 flex-1 content-center gap-1.5 px-4 py-3">
-            <p className="flex items-center gap-2 font-mono text-[11.5px] text-white/45">
+            <p className="flex items-center gap-2 font-mono text-[12px] text-white/45">
               <span className={`h-2 w-2 rounded-full ${cam2Fleet ? 'bg-[#2f8f4e]' : 'bg-white/25'}`} aria-hidden />
               CAM-02 Gerbang
               {cam2Latency && (
@@ -584,7 +584,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
                     {plate || 'Pelat tidak terbaca'}
                   </b>
                   <span
-                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11.5px] font-bold ${
+                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[12px] font-bold ${
                       cam2Fleet.identity_status === 'VERIFIED'
                         ? 'bg-[#2f8f4e]/20 text-[#7fdc9b]'
                         : cam2Fleet.identity_status === 'MISMATCH_ALERT'

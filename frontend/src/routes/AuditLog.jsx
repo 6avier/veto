@@ -244,7 +244,7 @@ function DecisionRow({ row, expanded, onToggle }) {
         </Td>
         <Td className="whitespace-nowrap font-mono text-[13px] text-ink-700">
           {row.dispatch_ref}
-          <small className="block text-[11.5px] text-ink-400">{row.decision_id.slice(0, 8)}</small>
+          <small className="block text-[12px] text-ink-400">{row.decision_id.slice(0, 8)}</small>
         </Td>
         <Td className="max-w-[52ch] text-[13.5px]">
           {row.violation_count
@@ -283,7 +283,7 @@ function DecisionRow({ row, expanded, onToggle }) {
                             {formatNumber(violation.actual_value)} / batas{' '}
                             {formatNumber(violation.limit_value)} {violation.unit}
                           </p>
-                          <p className="flex flex-wrap items-center gap-1.5 font-mono text-[11.5px] text-ink-400">
+                          <p className="flex flex-wrap items-center gap-1.5 font-mono text-[12px] text-ink-400">
                             <OriginChip origin={violation.rule_origin} />
                             {violation.legal_citation}
                           </p>
@@ -321,7 +321,7 @@ function DecisionRow({ row, expanded, onToggle }) {
 function OriginChip({ origin }) {
   return (
     <span
-      className={`rounded-full px-2 py-0.5 font-satoshi text-[11px] font-extrabold ${
+      className={`rounded-full px-2 py-0.5 font-satoshi text-[12px] font-extrabold ${
         origin === 'CLIENT' ? 'bg-accent-soft text-accent-ink' : 'bg-ink-100 text-ink-700'
       }`}
     >
@@ -334,7 +334,7 @@ function Meta({ label, value, mono }) {
   return (
     <div>
       <dt className="text-ink-400">{label}</dt>
-      <dd className={mono ? 'font-mono text-[11.5px] break-all text-ink-700' : 'text-ink-900'}>
+      <dd className={mono ? 'font-mono text-[12px] break-all text-ink-700' : 'text-ink-900'}>
         {value}
       </dd>
     </div>

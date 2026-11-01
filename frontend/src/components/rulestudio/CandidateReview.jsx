@@ -69,7 +69,7 @@ export default function CandidateReview({
             {label} {op} {value}
           </span>
         </span>
-        <span className="ml-auto font-mono text-[11.5px] text-ink-400">
+        <span className="ml-auto font-mono text-[12px] text-ink-400">
           {approved && result.rule_pack_version ? `Perusahaan v${result.rule_pack_version}, ` : ''}hal. {candidate.source_page}
         </span>
       </div>
@@ -121,7 +121,7 @@ export default function CandidateReview({
         {counterpart && (
           <span>
             Pusat {formatNumber(counterpart.threshold)} {counterpart.unit}{' '}
-            <span className="font-mono text-[11.5px] text-ink-400">{counterpart.legal_citation}</span>
+            <span className="font-mono text-[12px] text-ink-400">{counterpart.legal_citation}</span>
           </span>
         )}
       </div>
@@ -145,7 +145,7 @@ export default function CandidateReview({
 
       {!rejecting && !confirming && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="mr-auto font-mono text-[11.5px] text-ink-400">hal. {candidate.source_page}</span>
+          <span className="mr-auto font-mono text-[12px] text-ink-400">hal. {candidate.source_page}</span>
           <button type="button" onClick={() => setRejecting(true)} disabled={busy} className={BTN_GHOST}>
             <XIcon size={16} aria-hidden />
             Tolak
@@ -209,10 +209,10 @@ export default function CandidateReview({
             rows={2}
             autoFocus
             placeholder="mis. ambang batas tidak jelas pada sumber"
-            className="w-full rounded-xl border border-ink-200 bg-white px-3 py-2.5 text-[16px] sm:text-[14px] focus:border-transparent focus:outline-2 focus:outline-accent"
+            className="w-full rounded-xl border border-[#8a95a5] bg-white px-3 py-2.5 text-[16px] sm:text-[14px] focus:border-transparent focus:outline-2 focus:outline-accent"
           />
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <span className="mr-auto font-mono text-[11.5px] text-ink-400">Dicatat di jejak audit</span>
+            <span className="mr-auto font-mono text-[12px] text-ink-400">Dicatat di jejak audit</span>
             <button type="button" onClick={() => setRejecting(false)} className={BTN_GHOST}>
               <ArrowCounterClockwiseIcon size={16} aria-hidden />
               Batal

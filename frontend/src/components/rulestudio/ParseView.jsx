@@ -134,7 +134,7 @@ export default function ParseView({ document: doc, result, startedAt, central, o
               <li
                 key={n}
                 className={[
-                  'relative grid h-9 w-7 place-items-center rounded-md border-[1.5px] text-[11px] font-extrabold transition-colors',
+                  'relative grid h-9 w-7 place-items-center rounded-md border-[1.5px] text-[12px] font-extrabold transition-colors',
                   now_ ? 'border-accent text-accent ring-4 ring-accent/15' : done ? 'border-accent-soft bg-accent-soft text-accent-ink' : 'border-ink-200 bg-white text-ink-400',
                 ].join(' ')}
               >
@@ -199,7 +199,7 @@ export default function ParseView({ document: doc, result, startedAt, central, o
                     {formatNumber(c.threshold)} {c.unit}
                   </div>
                 </div>
-                <span className="font-mono text-[11px] text-ink-400">hal. {c.source_page}</span>
+                <span className="font-mono text-[12px] text-ink-400">hal. {c.source_page}</span>
                 <span className="ml-auto">
                   <CompareChip verdict={verdict} />
                 </span>
