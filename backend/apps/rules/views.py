@@ -135,37 +135,18 @@ class DocumentUploadView(APIView):
         if file.size > 10 * 1024 * 1024:
             return Response({"error": {"code": "VALIDATION_ERROR", "message": "File exceeds 10MB limit"}}, status=status.HTTP_400_BAD_REQUEST)
             
-        # Save file locally. MEDIA_ROOT is gitignored, so the directory does not
-        # exist on a fresh clone or a new deploy and has to be created here.
-        upload_dir = os.path.join(settings.MEDIA_ROOT, 'documents')
-        os.makedirs(upload_dir, exist_ok=True)
+        # Kept in the database, not on disk: see Document.content.
+        data = b"".join(file.chunks())
 
-        # The name on disk is generated, never the uploader's. basename() already
-        # stopped the path from escaping this directory, but it did not stop two
-        # people uploading "SOP.pdf" from overwriting each other's document — the
-        # second upload silently replaced the source page the first one's rules
-        # were still pointing at. The original name is kept on the record for
-        # display; only the path is ours.
-        file_path = os.path.join(upload_dir, f"{uuid.uuid4()}.pdf")
-        with open(file_path, 'wb+') as destination:
-            for chunk in file.chunks():
-                destination.write(chunk)
-                
         # Triage using PyMuPDF (fitz)
         page_count = 0
         first_page_text = ""
         try:
-            with fitz.open(file_path) as pdf_doc:
+            with fitz.open(stream=data, filetype="pdf") as pdf_doc:
                 page_count = pdf_doc.page_count
                 if page_count > 0:
                     first_page_text = pdf_doc[0].get_text().lower()
         except Exception:
-            # A file that is not a readable PDF is the uploader's problem, not
-            # the server's, and it is not kept: nothing will ever point at it.
-            try:
-                os.remove(file_path)
-            except OSError:
-                pass
             return Response({"error": {"code": "VALIDATION_ERROR", "message": "File is not a readable PDF", "field": "file"}}, status=status.HTTP_400_BAD_REQUEST)
             
         # Check text for relevance
@@ -175,7 +156,7 @@ class DocumentUploadView(APIView):
             # filename is a CharField(255); a longer name is a write error, not
             # a validation one, so it is cut here rather than left to the DB.
             filename=file.name[:255],
-            file_path=file_path,
+            content=data,
             page_count=page_count,
             classification=DocumentClassification.INTERNAL_POLICY if is_relevant else DocumentClassification.OPERATIONAL_DOC,
             classification_confidence=0.95 if is_relevant else 0.98,
@@ -243,7 +224,7 @@ class DocumentExtractView(APIView):
         # Read text from PDF
         pdf_text = ""
         try:
-            with fitz.open(doc.file_path) as pdf_doc:
+            with _open_pdf(doc) as pdf_doc:
                 for i in range(pdf_doc.page_count):
                     pdf_text += f"\n--- Page {i+1} ---\n" + pdf_doc[i].get_text()
         except Exception:
@@ -554,12 +535,24 @@ class RuleCandidateRejectView(APIView):
         })
 
 
+def _has_pdf(doc):
+    return bool(doc.content) or bool(doc.file_path and os.path.exists(doc.file_path))
+
+
+def _open_pdf(doc):
+    """The document's PDF, from the database or, for older rows, from disk."""
+    if doc.content:
+        return fitz.open(stream=bytes(doc.content), filetype="pdf")
+    return fitz.open(doc.file_path)
+
+
 @lru_cache(maxsize=32)
-def _render_page_png(file_path, page_number, dpi):
-    """A page as base64 PNG. Upload names are generated per file and never
-    rewritten, so (path, page) always means the same pixels; flipping between
-    pages in Rule Studio used to re-rasterise each one on every visit."""
-    with fitz.open(file_path) as pdf_doc:
+def _render_page_png(document_id, page_number, dpi):
+    """A page as base64 PNG. A document's PDF is never rewritten, so
+    (document, page) always means the same pixels; flipping between pages in
+    Rule Studio used to re-rasterise each one on every visit."""
+    doc = Document.objects.only("content", "file_path").get(document_id=document_id)
+    with _open_pdf(doc) as pdf_doc:
         pixmap = pdf_doc[page_number - 1].get_pixmap(dpi=dpi)
         return base64.b64encode(pixmap.tobytes("png")).decode("ascii")
 
@@ -663,9 +656,9 @@ class DocumentPageView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if not doc.file_path or not os.path.exists(doc.file_path):
+        if not _has_pdf(doc):
             return Response(
-                {"error": {"code": "NOT_FOUND", "message": "Document file is no longer on disk"}},
+                {"error": {"code": "NOT_FOUND", "message": "Document file is no longer available"}},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -682,10 +675,10 @@ class DocumentPageView(APIView):
             )
 
         try:
-            with fitz.open(doc.file_path) as pdf_doc:
+            with _open_pdf(doc) as pdf_doc:
                 page = pdf_doc[page_number - 1]
                 box = page.rect
-                image_b64 = _render_page_png(doc.file_path, page_number, self.DPI)
+                image_b64 = _render_page_png(doc.document_id, page_number, self.DPI)
 
                 # Candidates that cite this page. A clause the extractor
                 # paraphrased beyond recognition still returns nothing, which

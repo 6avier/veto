@@ -178,15 +178,15 @@ MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_BYTES
 FILE_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_BYTES
 
-# Throttle state lives here. The default backend is per-process and in-memory,
-# which is stated rather than inherited: it resets when the service restarts,
-# and Render's free plan restarts on every wake from sleep. That is the right
-# trade for one gunicorn worker serving a demo — it holds for as long as
-# traffic keeps arriving, which is exactly when it is needed.
+# Throttle state, and the daily extraction cap, live here. It is in the
+# database rather than process memory because a serverless host runs many
+# short-lived instances: a per-process count would give each one its own
+# allowance, and the cap on what the OpenAI key can spend would stop holding.
+# The table is created by apps/rules/migrations/0011.
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "veto-throttle",
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "veto_cache",
     }
 }
 

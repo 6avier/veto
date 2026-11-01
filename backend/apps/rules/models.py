@@ -67,6 +67,10 @@ class Document(models.Model):
     document_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     filename = models.CharField(max_length=255)
     file_path = models.CharField(max_length=500, blank=True, null=True)
+    # The PDF itself. Serverless hosts give each request a fresh, throwaway
+    # disk, so a file written by the upload is gone by the time extract or the
+    # page view asks for it. file_path is kept for rows uploaded before this.
+    content = models.BinaryField(null=True, blank=True, editable=False)
     page_count = models.IntegerField()
     classification = models.CharField(max_length=50, choices=DocumentClassification.choices)
     classification_confidence = models.FloatField()
