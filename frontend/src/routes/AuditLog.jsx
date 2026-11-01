@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { ApiError, getDecision, listDecisions } from '@/api'
+import { BTN_DARK, BTN_QUIET, PANEL } from '@/components/rulestudio/ui'
 import { formatNumber, formatTimestamp } from '@/lib/format'
 import { dayBoundary, latest, resetSession, sessionStart } from '@/lib/session'
 
@@ -16,7 +17,7 @@ import { dayBoundary, latest, resetSession, sessionStart } from '@/lib/session'
 const OUTCOMES = [
   { value: '', label: 'Semua' },
   { value: 'PASS', label: 'Lolos' },
-  { value: 'HOLD', label: 'Tahan' },
+  { value: 'HOLD', label: 'Ditahan' },
 ]
 
 export default function AuditLog() {
@@ -65,19 +66,19 @@ export default function AuditLog() {
   const rows = data?.results ?? []
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 py-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="mx-auto grid max-w-[1400px] gap-4 px-4 py-5">
+      <header className="flex flex-wrap items-end justify-between gap-4 px-1">
         <div>
-          <h1 className="text-h1">Jejak Audit</h1>
-          <p className="mt-1 max-w-[65ch] text-body text-ink-500">
-            Setiap keputusan pengiriman tercatat beserta versi aturan dan dasar hukum yang
-            berlaku saat itu. Catatan tidak dapat diubah maupun dihapus.
+          <h1 className="text-[32px] font-bold leading-tight tracking-[-0.02em]">Jejak Audit</h1>
+          <p className="mt-1 max-w-[60ch] text-[14px] text-ink-500">
+            Setiap keputusan tercatat beserta versi aturan dan pasalnya. Catatan tidak dapat
+            diubah atau dihapus.
           </p>
         </div>
         <Readout from={scopedFrom} to={scopedTo} />
-      </div>
+      </header>
 
-      <div className="mt-5 flex flex-wrap items-end gap-4 border-y border-ink-200 py-3">
+      <div className={`${PANEL} flex flex-wrap items-end gap-x-4 gap-y-3 px-4 py-3.5`}>
         {/*
           The scope, stated rather than implied. A trail that quietly showed a
           subset under a heading promising the complete record would be the one
@@ -89,7 +90,7 @@ export default function AuditLog() {
           <select
             value={scope}
             onChange={(event) => setScope(event.target.value)}
-            className="rounded-veto border border-ink-300 bg-white px-2 py-1.5 text-data"
+            className={CONTROL}
           >
             <option value="session">Sesi ini</option>
             <option value="all">Semua catatan</option>
@@ -99,7 +100,7 @@ export default function AuditLog() {
           <select
             value={outcome}
             onChange={(event) => setOutcome(event.target.value)}
-            className="rounded-veto border border-ink-300 bg-white px-2 py-1.5 text-data"
+            className={CONTROL}
           >
             {OUTCOMES.map((option) => (
               <option key={option.value} value={option.value}>
@@ -122,7 +123,7 @@ export default function AuditLog() {
               setFrom('')
               setTo('')
             }}
-            className="pb-1.5 text-label text-ink-500 underline underline-offset-4 hover:text-ink-900"
+            className={BTN_QUIET}
           >
             Bersihkan filter
           </button>
@@ -134,40 +135,36 @@ export default function AuditLog() {
               setSince(resetSession())
               setExpanded(null)
             }}
-            className="pb-1.5 text-label text-ink-500 underline underline-offset-4 hover:text-ink-900"
+            className={BTN_QUIET}
           >
             Mulai sesi baru
           </button>
         )}
-        <p className="ml-auto pb-1.5 font-mono text-mono-xs text-ink-500">
-          HANYA-BACA · TIDAK DAPAT DIUBAH
+        <p className="ml-auto inline-flex items-center gap-1.5 self-center rounded-full bg-ink-100 px-2.5 py-1 text-[12px] font-bold text-ink-600">
+          Hanya baca
         </p>
       </div>
 
       {loading && <RowSkeleton />}
 
       {error && !loading && (
-        <div className="mt-6 border border-ink-200 bg-white px-4 py-5">
-          <p className="font-mono text-mono-xs text-hold-ink">{error.code}</p>
-          <p className="mt-1 text-body">{error.message}</p>
-          <button
-            type="button"
-            onClick={load}
-            className="mt-3 rounded-veto bg-ink-900 px-3 py-1.5 text-label text-white"
-          >
+        <div role="alert" className={`${PANEL} px-5 py-4`}>
+          <p className="text-[15px] font-bold">Jejak audit tidak dapat dimuat</p>
+          <p className="mt-1 text-[14px] text-ink-600">{error.message}</p>
+          <button type="button" onClick={load} className={`${BTN_DARK} mt-3`}>
             Coba lagi
           </button>
         </div>
       )}
 
       {!loading && !error && rows.length === 0 && (
-        <div className="mt-6 border border-dashed border-ink-300 px-4 py-10 text-center">
-          <p className="text-body text-ink-500">
+        <div className={`${PANEL} px-5 py-10 text-center`}>
+          <p className="text-[16px] font-bold text-ink-900">
             {scope === 'session'
               ? 'Belum ada keputusan pada sesi ini.'
               : 'Belum ada keputusan yang tercatat.'}
           </p>
-          <p className="mt-1 text-label text-ink-500">
+          <p className="mt-1 text-[14px] text-ink-500">
             Jalankan validasi di Client ERP, lalu catatannya muncul di sini.
             {scope === 'session' && ' Pilih Semua catatan untuk melihat riwayat sebelumnya.'}
           </p>
@@ -175,10 +172,10 @@ export default function AuditLog() {
       )}
 
       {!loading && !error && rows.length > 0 && (
-        <div className="mt-2 overflow-x-auto">
+        <div className={`${PANEL} overflow-x-auto px-2`}>
         <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b border-ink-200 text-left">
+            <tr className="border-b border-ink-100 text-left">
               <Th>Waktu</Th>
               <Th>Surat Jalan</Th>
               <Th>Hasil</Th>
@@ -203,21 +200,14 @@ export default function AuditLog() {
             ))}
           </tbody>
         </table>
-        </div>
-      )}
-
-      {/*
-        A closing boundary, and an honest one. The cap is 100 server-side, so a
-        long enough trail still truncates — when it does this says so rather
-        than letting the rows just stop.
-      */}
-      {!loading && !error && rows.length > 0 && (
-        <p className="mt-3 border-t border-ink-200 pt-2 text-label text-ink-500">
+        <p className="border-t border-ink-100 px-3 py-3 text-[13px] text-ink-500">
           Menampilkan {formatNumber(rows.length)} dari {formatNumber(data.total)} keputusan
           {scope === 'session' ? ' pada sesi ini' : ''}
           {rows.length < data.total && ' · persempit rentang tanggal untuk melihat sisanya'}.
         </p>
+        </div>
       )}
+
     </div>
   )
 }
@@ -240,24 +230,25 @@ function DecisionRow({ row, expanded, onToggle }) {
 
   return (
     <>
-      <tr className="border-b border-ink-100 align-baseline">
-        <Td className="font-mono text-mono-xs text-ink-500">{formatTimestamp(row.evaluated_at)}</Td>
-        <Td className="font-mono text-mono">{row.dispatch_ref}</Td>
+      <tr className={`border-b border-ink-100 align-middle ${expanded ? 'bg-console' : ''}`}>
+        <Td className="font-mono text-[12px] text-ink-500">{formatTimestamp(row.evaluated_at)}</Td>
+        <Td className="whitespace-nowrap font-mono text-[13px] text-ink-900">{row.dispatch_ref}</Td>
         <Td>
-          <span className="inline-flex items-baseline gap-1.5">
-            {held && <span aria-hidden className="h-2 w-2 self-center bg-hold" />}
-            <span className={held ? 'text-label text-ink-900' : 'text-label text-ink-500'}>
-              {held ? 'TAHAN' : 'LOLOS'}
-            </span>
+          <span
+            className={`inline-flex rounded-full px-2.5 py-0.5 text-[12px] font-extrabold tracking-[0.02em] ${
+              held ? 'bg-[#fdf2df] text-hold-ink' : 'bg-[#e6f4ea] text-[#11692f]'
+            }`}
+          >
+            {held ? 'DITAHAN' : 'LOLOS'}
           </span>
         </Td>
-        <Td align="right" className="tnum text-data">
+        <Td align="right" className="text-[14px] font-bold tabular-nums">
           {formatNumber(row.violation_count)}
         </Td>
-        <Td secondary className="text-label text-ink-500">
+        <Td secondary className="text-[13px] text-ink-600">
           {row.override ? row.override.overridden_by : ''}
         </Td>
-        <Td align="right" secondary className="tnum text-data text-ink-500">
+        <Td align="right" secondary className="text-[13px] tabular-nums text-ink-500">
           {formatNumber(row.latency_ms)} ms
         </Td>
         <Td align="right">
@@ -265,7 +256,7 @@ function DecisionRow({ row, expanded, onToggle }) {
             type="button"
             onClick={onToggle}
             aria-expanded={expanded}
-            className="text-label text-ink-500 underline underline-offset-4 hover:text-ink-900"
+            className={`${BTN_QUIET} ml-auto`}
           >
             {expanded ? 'Tutup' : 'Rincian'}
           </button>
@@ -273,64 +264,61 @@ function DecisionRow({ row, expanded, onToggle }) {
       </tr>
 
       {expanded && (
-        <tr className="border-b border-ink-200 bg-white">
-          <td colSpan={7} className="px-3 py-4">
+        <tr className="border-b border-ink-100 bg-console">
+          <td colSpan={7} className="px-3 pb-4 pt-1">
             {detailError && (
-              <p className="text-label text-hold-ink">{detailError.message}</p>
+              <p className="text-[13px] font-bold text-hold-ink">{detailError.message}</p>
             )}
 
             {!detail && !detailError && (
-              <p className="font-mono text-mono-xs text-ink-400">memuat rincian…</p>
+              <p className="text-[13px] text-ink-400">Memuat rincian…</p>
             )}
 
             {detail && (
-              <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
+              <div className="grid gap-5 rounded-2xl bg-white p-4 lg:grid-cols-[minmax(0,1fr)_260px]">
                 <div>
                   {detail.violations?.length > 0 ? (
-                    <ul className="space-y-3">
+                    <ul className="divide-y divide-ink-100">
                       {detail.violations.map((violation, index) => (
-                        <li key={index} className="border-l border-hold pl-3">
-                          <p className="text-body">{violation.directive}</p>
-                          <p className="mt-1 tnum text-data text-ink-500">
+                        <li key={index} className="grid gap-1 py-2.5 first:pt-0">
+                          <p className="text-[14px] font-bold">{violation.directive}</p>
+                          <p className="text-[13px] tabular-nums text-ink-500">
                             {formatNumber(violation.actual_value)} / batas{' '}
                             {formatNumber(violation.limit_value)} {violation.unit}
                           </p>
-                          <p className="mt-0.5 font-mono text-mono-xs text-ink-400">
-                            {violation.rule_origin === 'CLIENT'
-                              ? `[ SOP KLIEN ] ${violation.legal_citation}`
-                              : violation.legal_citation}
+                          <p className="flex flex-wrap items-center gap-1.5 font-mono text-[11.5px] text-ink-400">
+                            <OriginChip origin={violation.rule_origin} />
+                            {violation.legal_citation}
                           </p>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-label text-ink-500">
+                    <p className="text-[14px] text-ink-500">
                       Tidak ada pelanggaran. Muatan sesuai seluruh aturan aktif.
                     </p>
                   )}
 
                   {row.override && (
-                    <div className="mt-4 border-t border-ink-100 pt-3">
-                      <p className="font-mono text-mono-xs tracking-[0.12em] text-ink-400">
-                        OVERRIDE
-                      </p>
-                      <p className="mt-1 text-body">{row.override.reason}</p>
-                      <p className="mt-1 font-mono text-mono-xs text-ink-400">
+                    <div className="mt-3 rounded-xl border border-ink-100 p-3">
+                      <p className="text-[12px] font-extrabold text-ink-500">Override</p>
+                      <p className="mt-1 text-[14px]">{row.override.reason}</p>
+                      <p className="mt-1 font-mono text-[11.5px] text-ink-400">
                         {row.override.overridden_by} · {formatTimestamp(row.override.created_at)}
                       </p>
-                      <p className="mt-1.5 text-label text-ink-500">
-                        Keputusan tetap tercatat TAHAN. Override ditambahkan, bukan mengganti.
+                      <p className="mt-1.5 text-[13px] text-ink-500">
+                        Keputusan tetap tercatat DITAHAN. Override ditambahkan, bukan mengganti.
                       </p>
                     </div>
                   )}
                 </div>
 
-                <dl className="space-y-2 text-label">
+                <dl className="space-y-2 text-[13px]">
                   <Meta label="ID Keputusan" value={detail.decision_id} mono />
                   {detail.rule_packs_applied?.map((pack) => (
                     <Meta
                       key={pack.id}
-                      label={`Rule pack ${pack.origin}`}
+                      label={`Aturan ${pack.origin === 'CLIENT' ? 'Perusahaan' : 'Pusat'}`}
                       value={`${pack.domain} v${pack.version}`}
                       mono
                     />
@@ -397,7 +385,7 @@ function Readout({ from, to }) {
   if (!counts) return null
 
   return (
-    <dl className="flex items-baseline divide-x divide-ink-200">
+    <dl className="flex items-baseline gap-6">
       <Figure label="keputusan" value={counts.total} />
       <Figure label="ditahan" value={counts.held} marked={counts.held > 0} />
       <Figure label="override" value={counts.overridden} />
@@ -407,11 +395,28 @@ function Readout({ from, to }) {
 
 function Figure({ label, value, marked = false }) {
   return (
-    <div className="flex items-baseline gap-2 px-4 first:pl-0 last:pr-0">
-      {marked && <span aria-hidden className="h-2 w-2 self-center bg-hold" />}
-      <dd className="tnum text-data-lg text-ink-900">{formatNumber(value)}</dd>
-      <dt className="text-label text-ink-500">{label}</dt>
+    <div className="flex flex-col-reverse">
+      <dt className="text-[13px] font-bold text-ink-500">{label}</dt>
+      <dd
+        className={`text-[34px] font-extrabold leading-none tracking-[-0.03em] tabular-nums ${
+          marked ? 'text-hold-ink' : 'text-accent'
+        }`}
+      >
+        {formatNumber(value)}
+      </dd>
     </div>
+  )
+}
+
+function OriginChip({ origin }) {
+  return (
+    <span
+      className={`rounded-full px-2 py-0.5 font-satoshi text-[11px] font-extrabold ${
+        origin === 'CLIENT' ? 'bg-accent-soft text-accent-ink' : 'bg-ink-100 text-ink-700'
+      }`}
+    >
+      {origin === 'CLIENT' ? 'Perusahaan' : 'Pusat'}
+    </span>
   )
 }
 
@@ -419,17 +424,20 @@ function Meta({ label, value, mono }) {
   return (
     <div>
       <dt className="text-ink-400">{label}</dt>
-      <dd className={mono ? 'font-mono text-mono-xs break-all text-ink-700' : 'text-ink-900'}>
+      <dd className={mono ? 'font-mono text-[11.5px] break-all text-ink-700' : 'text-ink-900'}>
         {value}
       </dd>
     </div>
   )
 }
 
+const CONTROL =
+  'h-10 rounded-[10px] border border-ink-200 bg-white px-3 text-[14px] font-semibold text-ink-900 transition-[border-color,box-shadow] hover:border-ink-400 focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-accent-soft'
+
 function Filter({ label, children }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-label text-ink-500">{label}</span>
+      <span className="text-[12px] font-bold text-ink-500">{label}</span>
       {children}
     </label>
   )
@@ -440,7 +448,7 @@ function DateInput(props) {
     <input
       type="date"
       {...props}
-      className="tnum rounded-veto border border-ink-300 bg-white px-2 py-1.5 text-data"
+      className={`${CONTROL} tabular-nums`}
     />
   )
 }
@@ -457,7 +465,7 @@ function Th({ children, align = 'left', secondary = false }) {
     <th
       scope="col"
       className={[
-        'py-2 pr-3 text-label font-medium text-ink-500',
+        'px-3 py-3 text-[12px] font-bold text-ink-500',
         align === 'right' ? 'text-right' : '',
         secondary ? 'hidden md:table-cell' : '',
       ].join(' ')}
@@ -471,7 +479,7 @@ function Td({ children, align = 'left', className = '', secondary = false }) {
   return (
     <td
       className={[
-        'py-2.5 pr-3',
+        'px-3 py-2.5',
         align === 'right' ? 'text-right' : '',
         secondary ? 'hidden md:table-cell' : '',
         className,
@@ -484,9 +492,9 @@ function Td({ children, align = 'left', className = '', secondary = false }) {
 
 function RowSkeleton() {
   return (
-    <div className="mt-4 space-y-2" aria-hidden>
+    <div className="space-y-2" aria-hidden>
       {[0, 1, 2].map((i) => (
-        <div key={i} className="h-8 animate-pulse rounded-veto bg-ink-100" />
+        <div key={i} className="h-11 animate-pulse rounded-xl bg-white" />
       ))}
     </div>
   )
