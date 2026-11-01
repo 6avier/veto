@@ -208,10 +208,10 @@ export default function Dispatch() {
 
   return (
     <>
-    <div className="mx-auto max-w-[1400px] px-4 py-5 print:hidden">
+    <div className="mx-auto max-w-[1400px] px-4 pt-5 pb-28 print:hidden">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-h1 font-bold tracking-[-0.02em] text-[#1f2933]">Buat Surat Jalan</h1>
+          <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.02em] text-[#111827]">Buat Surat Jalan</h1>
           <p className="mt-0.5 text-label text-[#5a646e]">
             Gudang Cikarang 01 · Pengiriman keluar
           </p>
@@ -248,10 +248,10 @@ export default function Dispatch() {
               setWaybillOpen(true)
             }}
             className={[
-              'rounded-veto px-4 py-2 text-label transition-colors',
+              'min-h-[42px] rounded-xl px-4 text-[14px] font-bold transition-[background-color,transform] active:scale-[.97]',
               released
-                ? 'bg-[#1f2933] text-white hover:bg-[#111820]'
-                : 'cursor-not-allowed border border-[#c9ced4] bg-[#e3e7ea] text-[#98a0a9]',
+                ? 'bg-[#111827] text-white hover:bg-black'
+                : 'cursor-not-allowed border border-[#e2e7ee] bg-[#eef1f5] text-[#8a95a5]',
             ].join(' ')}
           >
             Cetak Surat Jalan
@@ -282,6 +282,7 @@ export default function Dispatch() {
           error={error}
           pending={pending}
           settled={Boolean(decision) && !dialogOpen && !passOpen && !waybillOpen}
+          overridden={Boolean(override)}
         />
       </div>
 

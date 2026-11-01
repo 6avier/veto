@@ -13,24 +13,17 @@ import nusantaraLogo from '@/assets/brand/nusantara-wms.png'
 /**
  * Chrome for the client's warehouse system.
  *
- * DESIGN.md §1 — this is the host, not VETO. It gets its own identity: SAP 72,
- * the SAP Fiori typeface, over the forest green sampled from the proposal's WMS
- * mockup (#2d613b). Real enterprise typography, so the surface reads as
- * software someone already uses.
+ * DESIGN.md §1 — this is the host, not VETO, so it keeps an identity of its
+ * own: Plus Jakarta Sans over a deep navy rail with its own sky blue, a
+ * different blue from VETO's royal accent so the verdict still reads as a
+ * second system arriving inside the first.
  *
  * No monospace anywhere in this chrome. Mono set in uppercase with wide
  * tracking is a terminal signature, and no shipping ERP uses it.
  *
- * That green is the documented exception to VETO's one-accent lock. It belongs
- * to NUSANTARA WMS, and it earns its place by making VETO's amber unmistakably
- * foreign to this system.
- *
- * The green used to be a top strip with a separate white tab row beneath it.
- * It is now a single left rail carrying both, which is the shape warehouse and
- * logistics consoles actually take, and buys back two horizontal bars of
- * vertical space on the surface where the dispatch form lives. DESIGN.md §1's
- * retired "green sidebar" note is about not distinguishing VETO from the ERP by
- * hue; this is the host's own chrome relocated, so that rule is untouched.
+ * A single left rail carries brand, nav and operator, which is the shape
+ * warehouse and logistics consoles actually take, and leaves the full height
+ * to the dispatch screen.
  */
 
 const NAV = [
@@ -46,12 +39,12 @@ const OPERATOR = { name: 'Budi Santoso', role: 'Petugas Gudang', initials: 'BS' 
 
 export default function ErpLayout() {
   return (
-    <div className="flex min-h-[calc(100dvh-2.75rem)] bg-[#eef0f2] font-erp text-[#1f2933]">
+    <div className="flex min-h-[calc(100dvh-2.75rem)] bg-[#f3f6fa] font-erp text-[#111827]">
       {/* The green is painted by this column, which stretches the full page,
           rather than by the sticky nav inside it. The nav is one viewport tall,
           so at the bottom of a long scroll it would otherwise leave a sliver of
           page ground showing under the rail. */}
-      <div className="w-16 shrink-0 bg-[#2d613b]">
+      <div className="w-16 shrink-0 bg-[#0f2a4a]">
       <nav
         aria-label="Navigasi NUSANTARA WMS"
         className="sticky top-0 flex h-[calc(100dvh-2.75rem)] w-16 flex-col items-center gap-1 py-3"
@@ -97,7 +90,7 @@ function RailItem({ label, Icon, active = false }) {
       <span
         aria-current={active ? 'page' : undefined}
         className={[
-          'flex h-10 w-10 items-center justify-center rounded-veto transition-[transform,background-color,color] duration-150 ease-out',
+          'flex h-10 w-10 items-center justify-center rounded-[10px] transition-[transform,background-color,color] duration-150 ease-out',
           'group-hover:-translate-y-0.5 motion-reduce:transform-none motion-reduce:transition-none',
           active
             ? 'bg-white/15 text-white'
@@ -114,7 +107,7 @@ function RailItem({ label, Icon, active = false }) {
           hairline plate at the rail's own radius. */}
       <span
         aria-hidden
-        className="pointer-events-none absolute left-full z-20 ml-2 origin-left whitespace-nowrap rounded-veto border border-[#c9ced4] bg-white px-2 py-1 text-label text-[#1f2933] opacity-0 shadow-[0_2px_8px_rgba(31,41,51,0.14)] transition-opacity duration-150 ease-out group-hover:opacity-100"
+        className="pointer-events-none absolute left-full z-20 ml-2 origin-left whitespace-nowrap rounded-[10px] border border-[#c9ced4] bg-white px-2 py-1 text-label text-[#1f2933] opacity-0 shadow-[0_2px_8px_rgba(31,41,51,0.14)] transition-opacity duration-150 ease-out group-hover:opacity-100"
       >
         {label}
       </span>
@@ -137,7 +130,7 @@ function RailItem({ label, Icon, active = false }) {
 function RailBrand() {
   return (
     <span className="group relative flex cursor-default items-center">
-      <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-veto bg-white">
+      <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-[10px] bg-white">
         <img
           src={nusantaraLogo}
           width={256}
@@ -150,7 +143,7 @@ function RailBrand() {
       </span>
       <span
         aria-hidden
-        className="pointer-events-none absolute left-full z-20 ml-2 whitespace-nowrap rounded-veto border border-[#c9ced4] bg-white px-2 py-1 text-label text-[#1f2933] opacity-0 shadow-[0_2px_8px_rgba(31,41,51,0.14)] transition-opacity duration-150 ease-out group-hover:opacity-100"
+        className="pointer-events-none absolute left-full z-20 ml-2 whitespace-nowrap rounded-[10px] border border-[#c9ced4] bg-white px-2 py-1 text-label text-[#1f2933] opacity-0 shadow-[0_2px_8px_rgba(31,41,51,0.14)] transition-opacity duration-150 ease-out group-hover:opacity-100"
       >
         NUSANTARA WMS <span className="text-[#6b757f]">v4.2.1</span>
       </span>
@@ -168,12 +161,12 @@ function RailBrand() {
 function RailOperator() {
   return (
     <span className="group relative flex cursor-default items-center">
-      <span className="flex h-9 w-9 items-center justify-center rounded-veto border border-white/25 bg-white/10 text-label font-semibold text-white transition-transform duration-150 ease-out group-hover:-translate-y-0.5 motion-reduce:transform-none motion-reduce:transition-none">
+      <span className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/25 bg-white/10 text-label font-semibold text-white transition-transform duration-150 ease-out group-hover:-translate-y-0.5 motion-reduce:transform-none motion-reduce:transition-none">
         {OPERATOR.initials}
       </span>
       <span
         aria-hidden
-        className="pointer-events-none absolute bottom-0 left-full z-20 ml-2 whitespace-nowrap rounded-veto border border-[#c9ced4] bg-white px-2 py-1.5 text-label leading-tight text-[#1f2933] opacity-0 shadow-[0_2px_8px_rgba(31,41,51,0.14)] transition-opacity duration-150 ease-out group-hover:opacity-100"
+        className="pointer-events-none absolute bottom-0 left-full z-20 ml-2 whitespace-nowrap rounded-[10px] border border-[#c9ced4] bg-white px-2 py-1.5 text-label leading-tight text-[#1f2933] opacity-0 shadow-[0_2px_8px_rgba(31,41,51,0.14)] transition-opacity duration-150 ease-out group-hover:opacity-100"
       >
         <span className="block font-semibold">{OPERATOR.name}</span>
         <span className="block text-[#6b757f]">{OPERATOR.role}</span>

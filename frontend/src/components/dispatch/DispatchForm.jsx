@@ -1,5 +1,6 @@
+import { CaretDownIcon } from '@phosphor-icons/react'
+
 import { axleCountFor, formatKg, formatNumber, formatTonnes } from '@/lib/format'
-import { deltaFromLimit } from '@/lib/limits'
 
 /**
  * The dispatch entry form, inside the client's ERP.
@@ -82,6 +83,11 @@ export default function DispatchForm({
   }
 
   const axleSum = value.axleLoads.reduce((total, load) => total + (Number(load) || 0), 0)
+  // By load, not by closeness to a limit, so the answer does not change when
+  // a verdict arrives.
+  const heaviest = value.axleLoads
+    .map((load, index) => ({ index, kg: Number(load) || 0 }))
+    .reduce((top, axle) => (axle.kg > (top?.kg ?? 0) ? axle : top), null)
   const gross = Number(value.grossWeight) || 0
 
   // Balance Check (Proportional Distribution)
@@ -135,7 +141,7 @@ export default function DispatchForm({
       // before onSubmit fires, so the button goes dead and no message renders.
       // min/max stay for the steppers and for clamping.
       noValidate
-      className="divide-y divide-[#c9ced4] border border-[#c9ced4] bg-white"
+      className="rounded-2xl border border-[#e2e7ee] bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04),0_8px_24px_-12px_rgba(17,24,39,0.12)]"
     >
       <Section title="1. Identifikasi Kendaraan">
         <Field label="Nomor Surat Jalan" error={errors.dispatchRef}>
@@ -145,11 +151,11 @@ export default function DispatchForm({
             className="font-mono"
           />
         </Field>
-        <Field label="Konfigurasi Sumbu">
+        <Field label="Konfigurasi Sumbu" unit={<CaretDownIcon size={14} weight="bold" aria-hidden />}>
           <select
             value={value.axleConfig}
             onChange={(e) => setAxleConfig(e.target.value)}
-            className={`${inputClass} appearance-none`}
+            className={`${inputClass} cursor-pointer appearance-none`}
           >
             {AXLE_CONFIGS.map((config) => (
               <option key={config.value} value={config.value}>
@@ -180,11 +186,14 @@ export default function DispatchForm({
           unit="kg"
           error={errors.grossWeight}
           violation={violations.grossWeight}
-          limit={limits.grossWeight}
-          current={value.grossWeight}
           note="Dihitung dari jumlah beban sumbu."
         >
-          <NumberInput value={value.grossWeight} readOnly maxDigits={MAX_DIGITS.weight} />
+          <NumberInput
+            value={value.grossWeight}
+            readOnly
+            maxDigits={MAX_DIGITS.weight}
+            aria-invalid={Boolean(errors.grossWeight || violations.grossWeight)}
+          />
         </Field>
         {value.axleLoads.map((load, index) => (
           <Field
@@ -193,13 +202,12 @@ export default function DispatchForm({
             unit="kg"
             error={errors[`axle${index}`]}
             violation={violations[`axle${index}`]}
-            limit={limits[`axle${index}`]}
-            current={load}
           >
             <NumberInput
               value={load}
               onChange={(e) => setAxle(index, e.target.value)}
               maxDigits={MAX_DIGITS.weight}
+              aria-invalid={Boolean(errors[`axle${index}`] || violations[`axle${index}`])}
             />
           </Field>
         ))}
@@ -217,36 +225,41 @@ export default function DispatchForm({
             unit="mm"
             error={errors[key]}
             violation={violations[key]}
-            limit={limits[key]}
-            current={value[key]}
           >
             <NumberInput
               value={value[key]}
               onChange={(e) => set({ [key]: e.target.value })}
               maxDigits={MAX_DIGITS.dimension}
+              aria-invalid={Boolean(errors[key] || violations[key])}
             />
           </Field>
         ))}
       </Section>
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 bg-[#f4f6f7] px-[18px] py-3.5">
-        <p className="text-label text-[#5a646e]">
-          Total beban sumbu{' '}
-          <span className="tnum text-data font-medium text-[#1f2933]">{formatKg(axleSum)}</span>
-          <span className="text-[#8b949d]"> · {formatTonnes(axleSum)}</span>
+      {balanceWarning && (
+        <p className="mx-[18px] mb-4 rounded-[10px] bg-[#fdf2df] px-3 py-2 text-[13px] text-[#8a5200]">
+          Peringatan keseimbangan: {balanceWarning}
         </p>
-        {balanceWarning && (
-          <p className="text-label text-[#8a5200]">
-            Peringatan Keseimbangan: {balanceWarning}
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={pending}
-          className="ml-auto rounded-veto bg-[#2d613b] px-4 py-2 text-label text-white transition-colors hover:bg-[#244f30] focus-visible:outline-offset-2 disabled:opacity-50"
-        >
-          {pending ? 'Memvalidasi…' : 'Validasi ke VETO'}
-        </button>
+      )}
+
+      {/* The check bar stays on screen, so the one action that matters is
+          always one tap away while the officer reads the truck above. */}
+      <div className="fixed inset-x-0 bottom-0 left-16 z-20 border-t border-[#e2e7ee] bg-white/90 px-4 py-3 backdrop-blur-md print:hidden">
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-7 gap-y-2">
+          <Readout label="Berat kotor" value={formatKg(axleSum)} hint={formatTonnes(axleSum)} />
+          <Readout
+            label="Sumbu terberat"
+            value={heaviest ? `Sumbu ${heaviest.index + 1}, ${formatTonnes(heaviest.kg)}` : '-'}
+          />
+          <Readout label="Tinggi" value={value.height ? `${formatNumber(value.height)} mm` : '-'} />
+          <button
+            type="submit"
+            disabled={pending}
+            className="ml-auto min-h-[46px] rounded-xl bg-[#1f74e0] px-6 text-[15px] font-bold text-white shadow-[0_8px_18px_-10px_rgba(31,116,224,0.9)] transition-[background-color,transform] hover:bg-[#165bb4] active:scale-[.97] disabled:opacity-50"
+          >
+            {pending ? 'Mengirim ke VETO…' : 'Validasi ke VETO'}
+          </button>
+        </div>
       </div>
     </form>
   )
@@ -265,8 +278,8 @@ export default function DispatchForm({
 function Section({ title, children }) {
   const id = `sec-${title.replace(/[^a-zA-Z]+/g, '-').toLowerCase()}`
   return (
-    <fieldset aria-labelledby={id} className="px-[18px] pt-5 pb-[18px]">
-      <p id={id} className="mb-3 text-label font-semibold text-[#1f2933]">
+    <fieldset aria-labelledby={id} className="border-b border-[#eef1f5] px-[18px] pt-5 pb-[18px] last-of-type:border-b-0">
+      <p id={id} className="mb-3 text-[12px] font-semibold uppercase tracking-[0.06em] text-[#687385]">
         {title}
       </p>
       <div className="grid gap-x-6 gap-y-[18px] sm:grid-cols-2 lg:grid-cols-3">{children}</div>
@@ -282,38 +295,46 @@ function Section({ title, children }) {
  *
  * The note sits last because it is the only one of the four that is never news.
  */
-function Field({ label, unit, error, violation, limit, current, note, children }) {
-  const gap = deltaFromLimit(current, limit)
-
+function Field({ label, unit, error, violation, note, children }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="text-label text-[#4a545e]">
-        {label}
-        {unit && <span className="text-[#98a0a9]"> ({unit})</span>}
-      </span>
+    <label className="flex flex-col gap-1.5">
+      <span className="text-[13px] font-bold text-[#111827]">{label}</span>
 
-      <span className={violation ? 'block rounded-veto ring-2 ring-[#c0392b]/30' : 'block'}>
+      <span className="relative block">
         {children}
+        {unit && (
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] font-medium text-[#687385]">
+            {unit}
+          </span>
+        )}
       </span>
 
       {error ? (
-        <span className="text-label text-[#a02a1f]">{error}</span>
+        <span className="text-[12.5px] font-semibold text-[#a02a1f]">{error}</span>
       ) : violation ? (
-        <span className="text-label text-[#a02a1f]">
-          {violation.directive}
-          <span className="mt-0.5 block font-mono text-mono-xs text-[#8b949d]">
+        <span className="text-[12.5px] font-bold text-[#8a5200]">
+          Lebih {formatNumber(violation.excess_value)} {violation.unit} dari batas{' '}
+          {formatNumber(violation.limit_value)} {violation.unit}
+          <span className="mt-0.5 block font-mono text-[11.5px] font-normal text-[#687385]">
             {violation.legal_citation}
           </span>
         </span>
-      ) : gap?.over ? (
-        <span className="tnum text-label font-medium text-[#a02a1f]">
-          +{formatNumber(gap.delta)} {gap.unit}
-          <span className="text-[#98a0a9]"> melebihi batas</span>
-        </span>
       ) : note ? (
-        <span className="text-label text-[#6b757f]">{note}</span>
+        <span className="text-[12px] text-[#687385]">{note}</span>
       ) : null}
     </label>
+  )
+}
+
+function Readout({ label, value, hint }) {
+  return (
+    <div className="min-w-0">
+      <div className="text-[12px] text-[#5b6676]">{label}</div>
+      <div className="text-[14px] font-bold tabular-nums text-[#111827]">
+        {value}
+        {hint && <span className="ml-1 font-medium text-[#687385]">{hint}</span>}
+      </div>
+    </div>
   )
 }
 
@@ -325,11 +346,11 @@ function Field({ label, unit, error, violation, limit, current, note, children }
  * strings cannot conflict with each other.
  */
 const inputBase =
-  'w-full rounded-veto border px-2.5 py-1.5 text-data transition-colors'
+  'h-10 w-full rounded-[10px] border px-3 pr-10 text-[16px] font-semibold transition-[border-color,box-shadow] sm:text-[14px]'
 
-const inputClass = `${inputBase} border-[#a9b1b9] bg-white text-[#1f2933] hover:border-[#8b949d] focus:border-[#2d613b]`
+const inputClass = `${inputBase} border-[#cdd5e0] bg-white text-[#111827] hover:border-[#8a95a5] focus:border-[#1f74e0] focus:outline-none focus:ring-[3px] focus:ring-[#e7f0fc] aria-[invalid=true]:border-[#f2a93b] aria-[invalid=true]:ring-[3px] aria-[invalid=true]:ring-[#fdf2df]`
 
-const inputLockedClass = `${inputBase} cursor-not-allowed border-[#c9ced4] bg-[#eef1f2] text-[#4a545e]`
+const inputLockedClass = `${inputBase} cursor-not-allowed border-[#e2e7ee] bg-[#f7f9fc] text-[#5b6676] aria-[invalid=true]:border-[#f2a93b]`
 
 function TextInput({ className = '', ...props }) {
   return <input type="text" {...props} className={`${inputClass} ${className}`} />
@@ -355,9 +376,8 @@ function NumberInput({ onChange, maxDigits, readOnly, ...props }) {
       // read. The steppers go with it, since there is nothing to step.
       onChange={readOnly ? undefined : limitDigits}
       {...props}
-      className={`${readOnly ? inputLockedClass : inputClass} tnum ${
-        readOnly ? '[&::-webkit-inner-spin-button]:appearance-none' : ''
-      }`}
+      // Steppers are hidden everywhere: the unit sits where they would be.
+      className={`${readOnly ? inputLockedClass : inputClass} tnum [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
     />
   )
 }

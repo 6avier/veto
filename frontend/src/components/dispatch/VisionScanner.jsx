@@ -554,7 +554,7 @@ export default function VisionScanner({ form, limits, onApply }) {
           {/* Media Viewport */}
           <div>
             {cam2Url ? (
-              <div className="relative aspect-video w-full overflow-hidden bg-ink-950">
+              <div className="relative aspect-[21/9] w-full overflow-hidden bg-ink-950">
                 {cam2Type === 'video' ? (
                   <video
                     ref={cam2MediaRef}
@@ -584,7 +584,7 @@ export default function VisionScanner({ form, limits, onApply }) {
                   e.preventDefault()
                   pickCam2File(e.dataTransfer.files?.[0])
                 }}
-                className="flex aspect-video w-full cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-ink-300 bg-white text-center transition-colors hover:bg-ink-100/70"
+                className="flex aspect-[21/9] w-full cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-ink-300 bg-white text-center transition-colors hover:bg-ink-100/70"
               >
                 <IdentificationCardIcon size={26} className="text-ink-400" aria-hidden />
                 <span className="text-body font-medium text-ink-900">Foto / Video Depan Truk (Pelat)</span>
