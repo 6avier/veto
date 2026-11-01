@@ -579,7 +579,8 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
 
             {cam2Fleet ? (
               <>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                {/* Keyed on the plate so it rises in once per new read, not on every rescan. */}
+                <div key={plate || 'none'} className="veto-rise-in flex flex-wrap items-center gap-x-3 gap-y-1">
                   <b className="font-mono text-[22px] font-semibold tracking-[0.06em] text-white">
                     {plate || 'Pelat tidak terbaca'}
                   </b>

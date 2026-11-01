@@ -145,7 +145,7 @@ export default function ViolationDialog({ decision, onClose, onOverridden }) {
       </div>
 
       {overriding && (
-        <div className="grid gap-2 border-t border-ink-100 px-5 py-4">
+        <div className="veto-rise-in grid gap-2 border-t border-ink-100 px-5 py-4">
           <label htmlFor="override-reason" className="text-[13px] font-bold text-ink-700">
             Alasan override, dicatat atas nama {OPERATOR}
           </label>

@@ -272,7 +272,7 @@ function DecisionRow({ row, expanded, onToggle }) {
             )}
 
             {detail && (
-              <div className="grid gap-5 rounded-2xl bg-white p-4 lg:grid-cols-[minmax(0,1fr)_260px]">
+              <div className="veto-page-in grid gap-5 rounded-2xl bg-white p-4 lg:grid-cols-[minmax(0,1fr)_260px]">
                 <div>
                   {detail.violations?.length > 0 ? (
                     <ul className="divide-y divide-ink-100">

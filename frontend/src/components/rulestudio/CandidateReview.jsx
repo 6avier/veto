@@ -158,7 +158,7 @@ export default function CandidateReview({
       )}
 
       {confirming && (
-        <div className="grid gap-2.5 rounded-xl bg-accent-soft px-3.5 py-3">
+        <div className="veto-rise-in grid gap-2.5 rounded-xl bg-accent-soft px-3.5 py-3">
           <p className="text-[14px] font-bold text-accent-ink">
             Setujui {label.toLowerCase()} {op} {value}? Langsung dipakai untuk dispatch berikutnya.
           </p>
@@ -198,7 +198,7 @@ export default function CandidateReview({
       )}
 
       {rejecting && (
-        <div className="grid gap-2">
+        <div className="veto-rise-in grid gap-2">
           <label htmlFor={`why-${candidate.candidate_id}`} className="text-[13px] font-bold">
             Alasan penolakan
           </label>
