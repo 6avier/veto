@@ -76,10 +76,38 @@ export function compareToCentral(candidate, counterpart) {
   return 'same'
 }
 
+/**
+ * Vehicle classes the backend can turn into axle configurations on approval.
+ * Mirrors VEHICLE_CLASS_AXLE_CONFIGS in backend/apps/rules/candidates.py; keep
+ * the two in step. Only the names are needed here, to know in advance which
+ * candidates the server will refuse.
+ */
+const MAPPED_CLASSES = ['tronton', 'trailer', 'trailer combination', 'truk gandeng', 'gandengan']
+
+const classOf = (candidate) => {
+  const name = candidate?.applies_to?.vehicle_class
+  return typeof name === 'string' && name.trim() ? name.trim() : null
+}
+
+/**
+ * The vehicle class a candidate names when the backend cannot map it to axle
+ * configurations ("Medium Truck", "Pickup"), else null. Approved as-is, such a
+ * rule would bind every truck, so approval answers 409 and the only decision
+ * left is to reject it.
+ */
+export function unmappedClass(candidate) {
+  const name = classOf(candidate)
+  if (!name || configsOf(candidate.applies_to).length) return null
+  return MAPPED_CLASSES.includes(name.toLowerCase()) ? null : name
+}
+
 /** What a candidate applies to, in the reviewer's words. */
 export function scopeOf(candidate) {
   const configs = configsOf(candidate.applies_to)
   if (configs.length) return `Konfigurasi ${configs.join(', ')}`
+  // "Semua kendaraan" for a rule written for one class was wrong on its face.
+  const name = classOf(candidate)
+  if (name) return `Kelas ${name}`
   const index = candidate.applies_to?.axle_index
   if (index !== undefined && index !== null) return `Sumbu ${index + 1}`
   if (candidate.dimension === 'AXLE_LOAD') return 'Semua sumbu'

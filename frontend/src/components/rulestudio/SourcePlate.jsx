@@ -1,4 +1,5 @@
 import PageSheet from './PageSheet'
+import { rectsFor } from './regions'
 import { PANEL } from './ui'
 
 /**
@@ -9,27 +10,10 @@ import { PANEL } from './ui'
  * clause it read. Rectangles arrive as percentages of the page box, so the
  * overlay tracks the image at any width without measuring it.
  *
- * Only the clause behind the rule under review is marked. The endpoint returns
- * every candidate on the page, and drawing all of them lit most of a table at
- * once. Identical rectangles are collapsed because a phrase repeated inside an
- * excerpt otherwise stacks several boxes in the same place.
+ * Only the clause behind the rule under review is marked (see `rectsFor`).
  */
 export default function SourcePlate({ page, loading, error, activeCandidateId }) {
-  const regions = page?.regions ?? []
-  const active = activeCandidateId
-    ? regions.filter((region) => region.candidate_id === activeCandidateId)
-    : regions
-  const shown = active.length > 0 ? active : regions
-
-  const seen = new Set()
-  const rects = shown
-    .flatMap((region) => region.rects ?? [])
-    .filter((rect) => {
-      const key = `${rect.x}:${rect.y}:${rect.w}:${rect.h}`
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
+  const rects = rectsFor(page, activeCandidateId)
 
   return (
     <figure className={`${PANEL} m-0 flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden`}>

@@ -3,8 +3,8 @@
  *
  * `sweep` is how far down the page the reader has got, 0 to 100. Everything
  * below it sits under a pale veil, so the part already read is the part that
- * looks crisp. It is driven by real page fetches during extraction, never by a
- * loop that runs on its own.
+ * looks crisp. ParseView drives it across the whole document while the
+ * extraction request is in flight.
  *
  * `rects` are percentages of the page box, as /documents/{id}/pages/{n} returns
  * them, so they stay aligned at any rendered width.

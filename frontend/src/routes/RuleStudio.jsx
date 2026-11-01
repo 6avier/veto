@@ -128,9 +128,13 @@ export default function RuleStudio() {
     }
   }
 
+  // Keyed by document as well as page: a page fetched late for a document the
+  // reviewer has since replaced must never stand in for the new one's.
+  const pageKey = (documentId, pageNumber) => `${documentId}:${pageNumber}`
+
   async function loadPage(pageNumber) {
     if (!pageNumber || !document) return
-    const cached = pageCache.current.get(pageNumber)
+    const cached = pageCache.current.get(pageKey(document.document_id, pageNumber))
     if (cached) {
       setPage(cached)
       setPageError(false)
@@ -142,7 +146,7 @@ export default function RuleStudio() {
     try {
       // Fetched after extraction, so the page carries the candidates' regions.
       const fetched = await getDocumentPage(document.document_id, pageNumber)
-      pageCache.current.set(pageNumber, fetched)
+      pageCache.current.set(pageKey(document.document_id, pageNumber), fetched)
       setPage(fetched)
     } catch {
       // A missing page is a degraded view, not a failed review.
@@ -187,7 +191,9 @@ export default function RuleStudio() {
       }
     } catch (caught) {
       const apiError = caught instanceof ApiError ? caught : ApiError.from(caught)
-      setSubmitError({ id, message: apiError.message })
+      // A 409 is the server refusing this decision, not failing to make it;
+      // trying again gets the same answer, so the card must not suggest it.
+      setSubmitError({ id, message: apiError.message, retry: apiError.code !== 'CONFLICT' })
     } finally {
       setSubmittingId(null)
     }
@@ -230,6 +236,8 @@ export default function RuleStudio() {
       {stage === 'extracting' && document && (
         <ParseView
           document={document}
+          cover={cover}
+          onPageLoaded={(n, fetched) => pageCache.current.set(pageKey(document.document_id, n), fetched)}
           result={extraction}
           startedAt={startedAt}
           central={central}
@@ -279,7 +287,7 @@ export default function RuleStudio() {
                   submitDecision(item.candidate_id, () => rejectCandidate(item.candidate_id, REVIEWER, note))
                 }
                 busy={submittingId === item.candidate_id}
-                error={submitError?.id === item.candidate_id ? submitError.message : null}
+                error={submitError?.id === item.candidate_id ? submitError : null}
                 result={outcomes[item.candidate_id] ?? null}
               />
             ))}

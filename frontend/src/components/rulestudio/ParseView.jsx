@@ -6,85 +6,73 @@ import { formatNumber } from '@/lib/format'
 
 import CompareChip from './CompareChip'
 import PageSheet from './PageSheet'
+import { rectsFor } from './regions'
 import { Spinner } from './TriageResult'
 import { centralCounterpart, compareToCentral, dimensionOf } from './dimensions'
 import { BTN_PRIMARY, PANEL } from './ui'
 
 /**
- * Extraction, paced by the real request (PRODUCT.md F3b: discrete stages, not
- * a spinner). Every page is fetched and swept while POST /extract is in flight,
- * because reading the pages is genuinely what the server does first. If the
- * model answers early, the remaining pages go by quickly. If it is still
- * working when the last page is read, the view holds on "Menyusun aturan" with
- * a real elapsed counter instead of inventing progress. Findings appear only
- * once the answer exists, because that is the first moment anything is known.
+ * Extraction, in three beats (PRODUCT.md F3b: discrete stages, not a spinner).
+ *
+ * 1. Membaca: the page strip is swept quickly, in a few seconds whatever the
+ *    page count, over the cover page triage already fetched. It used to fetch
+ *    and sweep every page in turn, which on a 26-page SOP and a slow API took
+ *    minutes and rendered 26 PNGs nobody needed.
+ * 2. Menyusun: if the model is still working, the view holds here with a real
+ *    elapsed counter. This is the one wait the reviewer sees, and it is honest:
+ *    nothing is known until the answer exists.
+ * 3. Menandai: each finding is revealed on its own page with its clause boxed,
+ *    so the reviewer sees where every rule came from before reviewing it. The
+ *    pages are fetched once the answer is in, because only then do they carry
+ *    the candidates' regions, and they are handed up so review opens instantly.
  */
 
-const SWEEP_MS = 900
-const FAST_MS = 120
-const REVEAL_MS = 260
+const SCAN_PAGE_MS = 110
+const SCAN_MIN_MS = 1200
+const SCAN_MAX_MS = 3200
+const REVEAL_MAX_MS = 900
+const REVEAL_TOTAL_MS = 7000
+// How long the reveal waits for the first finding's page before going ahead
+// without it. A slow page never holds the findings back for long.
+const PAGE_WAIT_MS = 1500
 
-export default function ParseView({ document: doc, result, startedAt, central, onReview }) {
+export default function ParseView({ document: doc, cover, result, startedAt, central, onPageLoaded, onReview }) {
   const pageCount = doc.page_count || 1
-  const [current, setCurrent] = useState(1)
   const [scanned, setScanned] = useState(0)
-  const [image, setImage] = useState(null)
-  const [sweep, setSweep] = useState({ at: 0, ms: 0 })
   const [phase, setPhase] = useState('scan')
   const [shown, setShown] = useState(0)
+  const [pages, setPages] = useState({})
   const [now, setNow] = useState(() => Date.now())
-  const resultRef = useRef(result)
-  resultRef.current = result
+  const onPageLoadedRef = useRef(onPageLoaded)
+  onPageLoadedRef.current = onPageLoaded
 
   const reducedMotion =
     typeof window !== 'undefined' &&
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
-  // Read the pages. Each page is fetched, shown, then swept; the next one is
-  // fetched while the current one sweeps.
-  useEffect(() => {
-    let alive = true
-    const wait = (ms) => new Promise((r) => setTimeout(r, reducedMotion ? 0 : ms))
-    const fetchPage = (n) => getDocumentPage(doc.document_id, n).catch(() => null)
+  const scanMs = Math.min(SCAN_MAX_MS, Math.max(SCAN_MIN_MS, pageCount * SCAN_PAGE_MS))
+  const stepMs = scanMs / pageCount
+  const candidates = result?.candidates ?? []
+  const fallback = result?.used_fallback
 
-    async function run() {
-      let next = fetchPage(1)
-      for (let n = 1; n <= pageCount; n += 1) {
-        if (!alive) return
-        if (resultRef.current) {
-          // The answer is in, so the server has read every page already. The
-          // rest still pass by on the strip, quickly, so the read stays visible.
-          const shownPage = await next
-          if (!alive) return
-          if (shownPage?.image) setImage((prev) => prev ?? shownPage.image)
-          for (let m = n; m <= pageCount; m += 1) {
-            if (!alive) return
-            setCurrent(m)
-            setScanned(m)
-            await wait(70)
-          }
-          break
-        }
-        const fetched = await next
-        if (!alive) return
-        if (n < pageCount) next = fetchPage(n + 1)
-        setCurrent(n)
-        setImage(fetched?.image ?? null)
-        setSweep({ at: 0, ms: 0 })
-        await wait(40)
-        // Under reduced motion the veil steps instead of sliding.
-        const ms = reducedMotion ? 0 : resultRef.current ? FAST_MS : SWEEP_MS
-        setSweep({ at: 100, ms })
-        await wait(ms + 60)
-        setScanned(n)
+  // 1. Sweep the strip.
+  useEffect(() => {
+    if (reducedMotion) {
+      setScanned(pageCount)
+      setPhase('wait')
+      return undefined
+    }
+    let n = 0
+    const id = setInterval(() => {
+      n += 1
+      setScanned(n)
+      if (n >= pageCount) {
+        clearInterval(id)
+        setPhase('wait')
       }
-      if (alive) setPhase('wait')
-    }
-    run()
-    return () => {
-      alive = false
-    }
-  }, [doc.document_id, pageCount, reducedMotion])
+    }, stepMs)
+    return () => clearInterval(id)
+  }, [pageCount, stepMs, reducedMotion])
 
   // The elapsed counter runs until the model has answered.
   useEffect(() => {
@@ -93,33 +81,69 @@ export default function ParseView({ document: doc, result, startedAt, central, o
     return () => clearInterval(id)
   }, [result])
 
+  // Fetch the pages the findings sit on, in parallel, as soon as the answer
+  // lands. A fallback answer has no regions to show, so it fetches nothing.
   useEffect(() => {
-    if (phase === 'wait' && result) setPhase('reveal')
-  }, [phase, result])
+    if (!result || result.used_fallback) return undefined
+    let alive = true
+    const wanted = [...new Set((result.candidates ?? []).map((c) => c.source_page).filter(Boolean))]
+    for (const n of wanted) {
+      getDocumentPage(doc.document_id, n)
+        .then((page) => {
+          // Cached upstream even after this view has gone, so review is instant.
+          onPageLoadedRef.current?.(n, page)
+          if (alive) setPages((prev) => ({ ...prev, [n]: page }))
+        })
+        .catch(() => {})
+    }
+    return () => {
+      alive = false
+    }
+  }, [result, doc.document_id])
 
-  const candidates = result?.candidates ?? []
+  // 2 -> 3. Start revealing once the first finding's page is here, or after a
+  // short wait without it.
+  const firstPage = candidates[0]?.source_page
+  const firstReady = Boolean(fallback || !firstPage || pages[firstPage])
+  useEffect(() => {
+    if (phase !== 'wait' || !result) return undefined
+    if (firstReady || reducedMotion) {
+      setPhase('reveal')
+      return undefined
+    }
+    const id = setTimeout(() => setPhase('reveal'), PAGE_WAIT_MS)
+    return () => clearTimeout(id)
+  }, [phase, result, firstReady, reducedMotion])
 
-  // Reveal the findings one by one, faster when there are many.
+  // 3. One finding at a time, each held long enough to see where it is.
   useEffect(() => {
     if (phase !== 'reveal') return undefined
     if (shown >= candidates.length) {
       setPhase('done')
       return undefined
     }
-    const step = Math.min(REVEAL_MS, 3000 / Math.max(candidates.length, 1))
-    const id = setTimeout(() => setShown((n) => n + 1), reducedMotion ? 0 : step)
+    const dwell = reducedMotion ? 0 : Math.min(REVEAL_MAX_MS, REVEAL_TOTAL_MS / candidates.length)
+    // The first one appears at once; each later one waits out the previous dwell.
+    const id = setTimeout(() => setShown((n) => n + 1), shown === 0 ? 0 : dwell)
     return () => clearTimeout(id)
   }, [phase, shown, candidates.length, reducedMotion])
 
   const elapsed = Math.max(0, Math.floor(((result ? startedAt + (result.extraction_ms ?? 0) : now) - startedAt) / 1000))
   const visible = candidates.slice(0, shown)
+  const spot = visible[visible.length - 1] ?? null
   const perPage = visible.reduce((acc, c) => ({ ...acc, [c.source_page]: (acc[c.source_page] ?? 0) + 1 }), {})
-  const fallback = result?.used_fallback
+
+  // What the sheet shows: the cover while reading, then each finding's page.
+  const spotPage = spot && !fallback ? pages[spot.source_page] ?? null : null
+  const sheet = spot && !fallback ? spotPage : cover
+  const sheetNumber = spot && !fallback ? spot.source_page : 1
+  const scanning = phase === 'scan'
+  const currentStrip = scanning ? Math.min(scanned + 1, pageCount) : spot && !fallback ? spot.source_page : null
 
   let status
-  if (phase === 'scan') status = `Membaca halaman ${current} dari ${pageCount}`
+  if (phase === 'scan') status = `Membaca ${pageCount} halaman`
   else if (phase === 'wait') status = `Menyusun aturan dari ${pageCount} halaman`
-  else if (phase === 'reveal') status = 'Menandai ketentuan'
+  else if (phase === 'reveal') status = spot ? `Menandai ketentuan di hal. ${spot.source_page}` : 'Menandai ketentuan'
   else status = null
 
   return (
@@ -128,19 +152,23 @@ export default function ParseView({ document: doc, result, startedAt, central, o
         <ol className="mb-3 flex flex-wrap gap-1.5" aria-label="Halaman dokumen">
           {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => {
             const done = n <= scanned
-            const now_ = phase === 'scan' && n === current
+            const here = n === currentStrip
             const found = perPage[n]
             return (
               <li
                 key={n}
                 className={[
-                  'relative grid h-9 w-7 place-items-center rounded-md border-[1.5px] text-[12px] font-extrabold transition-colors',
-                  now_ ? 'border-accent text-accent ring-4 ring-accent/15' : done ? 'border-accent-soft bg-accent-soft text-accent-ink' : 'border-ink-200 bg-white text-ink-400',
+                  'relative grid h-9 w-7 place-items-center rounded-md border-[1.5px] text-[12px] font-extrabold transition-colors duration-150',
+                  here
+                    ? 'border-accent bg-white text-accent ring-4 ring-accent/15'
+                    : done
+                      ? 'border-accent-soft bg-accent-soft text-accent-ink'
+                      : 'border-ink-200 bg-white text-ink-400',
                 ].join(' ')}
               >
                 {n}
                 {found && (
-                  <span className="absolute -right-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] text-white">
+                  <span className="veto-chip-in absolute -right-1.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[10px] text-white">
                     {found}
                   </span>
                 )}
@@ -149,10 +177,13 @@ export default function ParseView({ document: doc, result, startedAt, central, o
           })}
         </ol>
         <PageSheet
-          image={image}
-          alt={`Halaman ${current} dari ${doc.filename}`}
-          sweep={phase === 'scan' ? sweep.at : null}
-          sweepMs={sweep.ms}
+          key={sheetNumber}
+          image={sheet?.image ?? null}
+          alt={`Halaman ${sheetNumber} dari ${doc.filename}`}
+          sweep={scanning ? (scanned / pageCount) * 100 : null}
+          sweepMs={stepMs}
+          rects={spot && spotPage ? rectsFor(spotPage, spot.candidate_id) : []}
+          className="veto-page-in"
         />
       </div>
 
@@ -188,8 +219,14 @@ export default function ParseView({ document: doc, result, startedAt, central, o
           {visible.map((c) => {
             const { label, Icon } = dimensionOf(c.dimension)
             const verdict = compareToCentral(c, centralCounterpart(c, central))
+            const lit = phase === 'reveal' && c === spot
             return (
-              <li key={c.candidate_id} className="veto-slide-in flex flex-wrap items-center gap-3 rounded-xl border border-ink-100 bg-white p-2.5">
+              <li
+                key={c.candidate_id}
+                className={`veto-slide-in flex flex-wrap items-center gap-3 rounded-xl border bg-white p-2.5 transition-colors duration-200 ${
+                  lit ? 'border-accent' : 'border-ink-100'
+                }`}
+              >
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-accent-soft text-accent">
                   <Icon size={17} aria-hidden />
                 </span>

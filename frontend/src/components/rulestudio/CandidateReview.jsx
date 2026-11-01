@@ -11,6 +11,7 @@ import {
   dimensionOf,
   isUnverified,
   scopeOf,
+  unmappedClass,
 } from './dimensions'
 import { BTN_DARK, BTN_GHOST, BTN_PRIMARY } from './ui'
 
@@ -51,6 +52,8 @@ export default function CandidateReview({
    * needs a deliberate acknowledgement.
    */
   const unverified = isUnverified(candidate)
+  // Said before the reviewer reaches for Setujui, not after a refused request.
+  const unmapped = unmappedClass(candidate)
 
   // A decided candidate shrinks to one row: the outcome, the figure it settled
   // and where it landed.
@@ -77,6 +80,8 @@ export default function CandidateReview({
   }
 
   const warns = [
+    unmapped &&
+      `Kelas "${unmapped}" tidak menyebut konfigurasi sumbu, jadi VETO tidak tahu truk mana yang diatur. Disetujui apa adanya, batas ini akan menahan semua truk. Usulan ini hanya bisa ditolak.`,
     unverified && 'Angka cadangan, bukan hasil baca dokumen. Belum diverifikasi.',
     verdict === 'looser' &&
       `Lebih longgar dari pusat. Saat validasi, batas pusat ${formatNumber(counterpart.threshold)} ${counterpart.unit} yang dipakai.`,
@@ -139,21 +144,32 @@ export default function CandidateReview({
 
       {error && (
         <p role="alert" className="rounded-[10px] bg-hold/15 px-2.5 py-2 text-[13px] text-hold-ink">
-          {error} Aturan ini belum tersimpan. Coba lagi.
+          {error.message} {error.retry ? 'Aturan ini belum tersimpan. Coba lagi.' : 'Keputusan ini belum tersimpan.'}
         </p>
       )}
 
       {!rejecting && !confirming && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="mr-auto font-mono text-[12px] text-ink-400">hal. {candidate.source_page}</span>
-          <button type="button" onClick={() => setRejecting(true)} disabled={busy} className={BTN_GHOST}>
+          <button
+            type="button"
+            onClick={() => {
+              // The reason is already known, so it is written for them.
+              if (unmapped && !note) setNote(`Kelas "${unmapped}" belum bisa dipetakan ke konfigurasi sumbu.`)
+              setRejecting(true)
+            }}
+            disabled={busy}
+            className={unmapped ? BTN_DARK : BTN_GHOST}
+          >
             <XIcon size={16} aria-hidden />
             Tolak
           </button>
-          <button type="button" onClick={() => setConfirming(true)} disabled={busy} className={BTN_PRIMARY}>
-            <CheckIcon size={16} aria-hidden />
-            Setujui
-          </button>
+          {!unmapped && (
+            <button type="button" onClick={() => setConfirming(true)} disabled={busy} className={BTN_PRIMARY}>
+              <CheckIcon size={16} aria-hidden />
+              Setujui
+            </button>
+          )}
         </div>
       )}
 
