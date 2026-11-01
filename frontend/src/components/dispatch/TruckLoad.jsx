@@ -119,7 +119,7 @@ export default function TruckLoad({ axleConfig, axleLoads = [], grossWeight, hei
 
   const targetFill = Math.min(inner * pct, inner + MAXOVER)
   const fill = useAnimatedNumber(targetFill, reducedMotion)
-  const inBox = Math.min(fill, inner)
+  const inBox = Math.max(0, Math.min(fill, inner))
   const over = Math.max(0, fill - inner)
   const topY = base - targetFill
 
