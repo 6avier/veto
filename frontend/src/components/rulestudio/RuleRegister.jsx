@@ -302,7 +302,7 @@ function ResetClient({ count, onDone }) {
  * Closed by default. The register's job on arrival is to say what exists, not
  * to recite it.
  */
-function Bucket({ group, client }) {
+function Bucket({ group, _client }) {
   return (
     <details className="group">
       <summary className="flex cursor-pointer list-none items-baseline gap-2 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">

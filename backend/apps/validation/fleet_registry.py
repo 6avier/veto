@@ -204,7 +204,9 @@ def lookup_or_match_fleet(detected_plate=None, detected_body_type=None):
         "tare_weight_kg": None,
         "max_jbi_kg": None,
         "standard_dimensions_mm": None,
-        "detected_body_type": normalized_body,
+        # No plate means nothing was identified; reporting a body type here
+        # would put a guessed "BAK_TERPAL" on screen as if it were observed.
+        "detected_body_type": None,
         "identity_status": "NO_PLATE_DETECTED",
         "identity_verified": False,
         "body_type_match": False,

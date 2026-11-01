@@ -1,3 +1,8 @@
+import { formatNumber } from '@/lib/format'
+
+/** Blank reads as "-", never as a measured zero. */
+const figure = (value) => (value === '' || value === null || value === undefined ? '-' : formatNumber(value))
+
 export default function PrintableWaybill({ form }) {
   const today = new Date().toLocaleDateString('id-ID', {
     weekday: 'long',
@@ -49,7 +54,7 @@ export default function PrintableWaybill({ form }) {
             <td className="border border-black p-2">{form?.grossWeight ? `${form.grossWeight} kg` : '-'}</td>
             <td className="border border-black p-2 font-semibold bg-gray-100">Dimensi (P x L x T)</td>
             <td className="border border-black p-2">
-              {form?.length || 0} x {form?.width || 0} x {form?.height || 0} mm
+              {figure(form?.length)} x {figure(form?.width)} x {figure(form?.height)} mm
             </td>
           </tr>
         </tbody>

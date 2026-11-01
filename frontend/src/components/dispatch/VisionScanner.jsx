@@ -200,10 +200,13 @@ export default function VisionScanner({ form, limits, onApply }) {
       const targetGross = isOver ? Math.round(grossLimit * 1.15) : Math.round(grossLimit * 0.88)
       const payloadWeight = Math.max(1000, targetGross - tare)
       const perAxlePayload = Math.round(payloadWeight / count)
+      // A single-axle config would divide by zero and write NaN into the form.
+      const rear = Math.max(1, count - 1)
 
       axleLoads = Array.from({ length: count }, (_, i) => {
-        const baseAxle = i === 0 ? Math.round(tare * 0.45) : Math.round((tare * 0.55) / (count - 1))
-        const load = baseAxle + (i === 0 ? Math.round(perAxlePayload * 0.25) : Math.round((perAxlePayload * 1.75) / (count - 1)))
+        if (count === 1) return String(Math.round((tare + payloadWeight) / 50) * 50)
+        const baseAxle = i === 0 ? Math.round(tare * 0.45) : Math.round((tare * 0.55) / rear)
+        const load = baseAxle + (i === 0 ? Math.round(perAxlePayload * 0.25) : Math.round((perAxlePayload * 1.75) / rear))
         return String(Math.round(load / 50) * 50)
       })
       totalGross = String(axleLoads.reduce((sum, a) => sum + Number(a), 0))

@@ -63,7 +63,9 @@ def _config_matches(rule_config: Any, axle_config: Optional[str]) -> bool:
         return False
     if isinstance(rule_config, list):
         return axle_config in rule_config
-    return rule_config == axle_config
+    return str(rule_config) == str(axle_config)
+
+_matches_axle_config = _config_matches
 
 def _get_applicable_rule(rules: List[Any], origin: str, axle_index: Optional[int], axle_config: Optional[str]) -> Any:
     origin_rules = [r for r in rules if r.rule_pack.origin == origin]
