@@ -139,3 +139,68 @@ class RuleStudioTests(TestCase):
         self.assertIsNotNone(row["reviewed_at"])
         self.assertIsNotNone(row["rule_id"])
         self.assertEqual(row["document_filename"], "SOP-Gudang.pdf")
+
+    # --- Structured outputs and class-to-configuration mapping ---
+
+    def _structured(self, **overrides):
+        entry = {
+            "dimension": "GROSS_WEIGHT",
+            "operator": "LTE",
+            "threshold": 10000,
+            "unit": "kg",
+            "vehicle_class": "Medium Truck",
+            "axle_config": ["1.2"],
+            "axle_config_basis": "Medium Truck: Truk sedang (6 roda) standar komersial. (hal. 5)",
+            "axle_index": None,
+            "source_text_excerpt": "Medium Truck 10,000 kg",
+            "source_page": 1,
+        }
+        entry.update(overrides)
+        self.mock_response.choices[0].message.content = json.dumps({"rules": [entry]})
+        self.mock_response.choices[0].message.refusal = None
+
+    def _extract_one(self):
+        file_obj = self._create_mock_pdf("SOP-Gudang.pdf", "SOP")
+        doc_id = self.client.post("/api/v1/documents", {"file": file_obj}).json()["document_id"]
+        return self.client.post(f"/api/v1/documents/{doc_id}/extract").json()
+
+    def _approve(self, candidate_id):
+        return self.client.post(
+            f"/api/v1/rule-candidates/{candidate_id}/approve",
+            json.dumps({"reviewed_by": "Test User"}),
+            content_type="application/json",
+        )
+
+    def test_extraction_asks_for_strict_schema(self):
+        self._structured()
+        self._extract_one()
+        kwargs = self.mock_client.chat.completions.create.call_args.kwargs
+        self.assertEqual(kwargs["response_format"]["type"], "json_schema")
+        self.assertTrue(kwargs["response_format"]["json_schema"]["strict"])
+
+    def test_class_defined_in_document_maps_with_its_basis(self):
+        self._structured()
+        candidate = self._extract_one()["candidates"][0]
+        self.assertEqual(candidate["applies_to"]["axle_config"], ["1.2"])
+        self.assertIn("6 roda", candidate["applies_to"]["axle_config_basis"])
+        res = self._approve(candidate["candidate_id"])
+        self.assertEqual(res.status_code, 200)
+        rule = Rule.objects.get(id=res.json()["rule_id"])
+        self.assertEqual(rule.axle_config, ["1.2"])
+
+    def test_inferred_config_without_basis_is_dropped(self):
+        self._structured(axle_config_basis=None)
+        candidate = self._extract_one()["candidates"][0]
+        self.assertNotIn("axle_config", candidate["applies_to"])
+        self.assertEqual(self._approve(candidate["candidate_id"]).status_code, 409)
+
+    def test_ambiguous_class_stays_unmapped(self):
+        self._structured(vehicle_class="Light Truck", axle_config=None, axle_config_basis=None)
+        candidate = self._extract_one()["candidates"][0]
+        self.assertNotIn("axle_config", candidate["applies_to"])
+        self.assertEqual(self._approve(candidate["candidate_id"]).status_code, 409)
+
+    def test_unknown_configuration_is_dropped(self):
+        self._structured(vehicle_class=None, axle_config=["1.22"], axle_config_basis=None)
+        candidate = self._extract_one()["candidates"][0]
+        self.assertIsNone(candidate["applies_to"])

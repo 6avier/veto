@@ -55,14 +55,22 @@ def axle_configs_for_class(vehicle_class):
     return VEHICLE_CLASS_AXLE_CONFIGS.get(vehicle_class.strip().lower())
 
 
+# The configurations the central pack sets a gross weight for (rules
+# migrations 0002, 0005). A rule bound to any other string could never match a
+# dispatch, so one is dropped rather than stored.
+KNOWN_AXLE_CONFIGS = ["1.1", "1.2", "1.2.2", "1.1-2.2", "1.2-2.2", "1.2.2-2.2", "1.2.2-2.2.2"]
+
+MAX_BASIS_CHARS = 300
+
+
 def normalize_axle_config(value):
-    """A list of configuration strings, or None. The engine reads a list as
-    "any of these"."""
+    """A list of known configuration strings, or None. The engine reads a list
+    as "any of these"."""
     if isinstance(value, str):
         value = [value]
     if not isinstance(value, list):
         return None
-    configs = [v.strip() for v in value if isinstance(v, str) and v.strip()]
+    configs = [v.strip() for v in value if isinstance(v, str) and v.strip() in KNOWN_AXLE_CONFIGS]
     return configs or None
 
 
@@ -76,10 +84,21 @@ def normalize_applies_to(value):
         applies["vehicle_class"] = vehicle_class.strip()[:60]
 
     axle_config = normalize_axle_config(value.get("axle_config"))
+    basis = value.get("axle_config_basis")
+    basis = basis.strip()[:MAX_BASIS_CHARS] if isinstance(basis, str) and basis.strip() else None
+    # A configuration the model worked out from a class name is a claim about
+    # the document, so it has to arrive with the sentence it rests on: that is
+    # what the reviewer checks before approving. Without one, it is dropped and
+    # the class goes through the fixed table below like any other.
+    if axle_config and "vehicle_class" in applies and not basis:
+        axle_config = None
     if axle_config is None and "vehicle_class" in applies:
         axle_config = axle_configs_for_class(applies["vehicle_class"])
+        basis = None
     if axle_config:
         applies["axle_config"] = axle_config
+        if basis:
+            applies["axle_config_basis"] = basis
 
     axle_index = value.get("axle_index")
     if isinstance(axle_index, int) and not isinstance(axle_index, bool) and 0 <= axle_index < 12:
@@ -140,6 +159,21 @@ def sanitize_candidate(raw, page_count):
         "source_page": page,
         "tags": tags,
     }
+
+
+def structured_entry(raw):
+    """A flat entry from the structured-output schema, reshaped into the
+    nested form sanitize_candidate reads. Strict schemas cannot have optional
+    keys, so the scope fields arrive at the top level, null when absent."""
+    if not isinstance(raw, dict) or "applies_to" in raw:
+        return raw
+    entry = dict(raw)
+    entry["applies_to"] = {
+        key: entry.pop(key)
+        for key in ("vehicle_class", "axle_config", "axle_config_basis", "axle_index")
+        if key in entry
+    }
+    return entry
 
 
 def entries_from_model_output(parsed):

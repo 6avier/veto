@@ -105,8 +105,10 @@ from .candidates import (
     axle_configs_for_class,
     entries_from_model_output,
     normalize_axle_config,
+    KNOWN_AXLE_CONFIGS,
     reviewer_name,
     sanitize_candidate,
+    structured_entry,
 )
 from .models import Document, DocumentClassification, RuleCandidate, CandidateStatus
 
@@ -114,6 +116,90 @@ from .models import Document, DocumentClassification, RuleCandidate, CandidateSt
 # characters and its weight table starts around 7,000; the old 10,000 ceiling
 # cut the dimension table off mid-row.
 EXTRACT_TEXT_LIMIT = 60_000
+
+# What the extractor is allowed to answer. Strict mode needs every key listed
+# as required, so optional scope fields are nullable instead of absent;
+# structured_entry() folds them back into applies_to.
+EXTRACT_SCHEMA = {
+    "name": "rule_candidates",
+    "strict": True,
+    "schema": {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["rules"],
+        "properties": {
+            "rules": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": [
+                        "dimension", "operator", "threshold", "unit",
+                        "vehicle_class", "axle_config", "axle_config_basis", "axle_index",
+                        "source_text_excerpt", "source_page",
+                    ],
+                    "properties": {
+                        "dimension": {
+                            "type": "string",
+                            "enum": [
+                                "GROSS_WEIGHT", "AXLE_LOAD",
+                                "DIMENSION_LENGTH", "DIMENSION_WIDTH", "DIMENSION_HEIGHT",
+                            ],
+                        },
+                        "operator": {"type": "string", "enum": ["LTE", "GTE", "EQ"]},
+                        "threshold": {"type": "number"},
+                        "unit": {"type": "string", "enum": ["kg", "mm"]},
+                        "vehicle_class": {"type": ["string", "null"]},
+                        "axle_config": {
+                            "type": ["array", "null"],
+                            "items": {"type": "string", "enum": KNOWN_AXLE_CONFIGS},
+                        },
+                        "axle_config_basis": {"type": ["string", "null"]},
+                        "axle_index": {"type": ["integer", "null"]},
+                        "source_text_excerpt": {"type": "string"},
+                        "source_page": {"type": "integer"},
+                    },
+                },
+            }
+        },
+    },
+}
+
+# Doubled braces are literal; {document} is the only placeholder.
+EXTRACT_PROMPT = """You are a logistics compliance officer. Read the SOP document text below and
+extract every rule that limits vehicle loading: gross weight, axle load, length, width, height.
+Answer with a JSON object {{"rules": [...]}} and nothing else.
+
+Fields:
+- dimension: GROSS_WEIGHT is the total vehicle weight (GVW / JBI / JBB). A payload or
+  cargo-only limit is not GROSS_WEIGHT; skip it. Skip parameters outside the enum (e.g. overhang).
+- threshold: a raw number in the unit given (24 ton -> 24000 kg, 12.0 m -> 12000 mm).
+- vehicle_class: the row label when the limit comes from a table of vehicle classes
+  (e.g. "Tronton"), else null.
+- axle_index: 0 for the front axle, 1 for the second, and so on, only when the document
+  names one axle; else null. "per axle" means every axle: null.
+- source_text_excerpt: the exact text or table row the limit comes from.
+- source_page: the page number from the '--- Page N ---' markers.
+
+axle_config, in Indonesian axle notation (each group of digits is one axle group, 1 = single
+tyres, 2 = dual tyres, a dash separates the trailer):
+  1.1 = 2 axles, 4 wheels.  1.2 = 2 axles, rear dual tyres, 6 wheels.
+  1.2.2 = 3 axles (tronton), 10 wheels.  1.1-2.2 and 1.2-2.2 = truck with trailer.
+  1.2.2-2.2 and 1.2.2-2.2.2 = tractor with semi-trailer.
+Fill it in either of two cases, otherwise null:
+  a) the rule itself states the configuration, or
+  b) the rule names a vehicle class and the document defines that class elsewhere
+     (e.g. a list of vehicle categories) precisely enough for exactly one configuration
+     above, such as a stated wheel or axle count.
+A definition that gives a range ("4-6 roda", "6-10 roda") or only a size word fits more
+than one configuration: leave axle_config null. Never guess from the class name alone.
+
+axle_config_basis: when axle_config is filled, quote the sentence it rests on, with its page
+(e.g. "Medium Truck: Truk sedang (6 roda) standar komersial. (hal. 5)"); else null.
+
+Document text:
+{document}
+"""
 
 # Tagged on the placeholder the fallback produces. Approving it is allowed, so
 # the booth demo survives the model being down, but the rule it makes says so.
@@ -251,37 +337,32 @@ class DocumentExtractView(APIView):
                     cache.set(cap_key, 1, 60 * 60 * 26)
 
                 client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-                prompt = f"""
-                You are a logistics compliance officer. Read the following SOP document text.
-                Extract any rules related to vehicle payload limits (Gross Weight, Axle Load, Dimensions).
-                
-                Respond ONLY with a valid JSON array of objects. Do not wrap in markdown or backticks.
-                Each object must have these exact keys:
-                - dimension: enum (GROSS_WEIGHT, AXLE_LOAD, DIMENSION_LENGTH, DIMENSION_WIDTH, DIMENSION_HEIGHT)
-                - operator: enum (LTE, GTE, EQ)
-                - threshold: integer (convert to raw number, e.g. 24 ton -> 24000, 12.0 m -> 12000)
-                - unit: string (must be "kg" or "mm")
-                - applies_to: object or null. Keys, all optional:
-                    vehicle_class: the row label when the limit comes from a table of vehicle classes (e.g. "Tronton")
-                    axle_config: array of axle configurations, only when the document states them (e.g. ["1.2.2"])
-                - source_text_excerpt: string (the exact text snippet or table row from the document)
-                - source_page: integer (guess the page number based on '--- Page N ---' markers)
-                
-                GROSS_WEIGHT is the total vehicle weight (GVW / JBI / JBB). A payload or
-                cargo-only limit is not GROSS_WEIGHT; skip it. Skip any parameter that is not
-                one of the dimensions above (for example overhang).
-                
-                Document Text:
-                {pdf_text[:EXTRACT_TEXT_LIMIT]}
-                """
-                
-                response = client.chat.completions.create(
-                    model=settings.OPENAI_MODEL,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.1,
-                )
-                
-                raw_json = (response.choices[0].message.content or "").strip()
+                prompt = EXTRACT_PROMPT.format(document=pdf_text[:EXTRACT_TEXT_LIMIT])
+                request = {
+                    "model": settings.OPENAI_MODEL,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.1,
+                }
+                try:
+                    # Structured outputs: the API itself only lets the model
+                    # write tokens that fit EXTRACT_SCHEMA, so the enums are
+                    # enforced rather than asked for.
+                    response = client.chat.completions.create(
+                        **request,
+                        response_format={"type": "json_schema", "json_schema": EXTRACT_SCHEMA},
+                    )
+                except openai.BadRequestError as e:
+                    # A model set through OPENAI_MODEL that has no structured
+                    # outputs still gets a plain JSON answer; the sanitiser
+                    # below checks it either way.
+                    logger.warning("Structured outputs refused, retrying without: %s", e)
+                    response = client.chat.completions.create(**request)
+
+                message = response.choices[0].message
+                refusal = getattr(message, "refusal", None)
+                if isinstance(refusal, str) and refusal:
+                    raise RuntimeError("Model refused the extraction")
+                raw_json = (message.content or "").strip()
                 if raw_json.startswith('```json'):
                     raw_json = raw_json[7:-3]
                 elif raw_json.startswith('```'):
@@ -290,7 +371,7 @@ class DocumentExtractView(APIView):
                 candidates_data = [
                     clean
                     for clean in (
-                        sanitize_candidate(entry, doc.page_count)
+                        sanitize_candidate(structured_entry(entry), doc.page_count)
                         for entry in entries_from_model_output(json.loads(raw_json))
                     )
                     if clean

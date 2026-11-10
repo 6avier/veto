@@ -131,6 +131,14 @@ export default function CandidateReview({
         )}
       </div>
 
+      {/* When the configuration was worked out from the document's own class
+          definition, the sentence it rests on is the thing to check. */}
+      {candidate.applies_to?.axle_config_basis && (
+        <p className="rounded-[10px] bg-accent-soft px-2.5 py-2 text-[13px] text-accent-ink">
+          <b>Konfigurasi dari definisi di dokumen:</b> “{candidate.applies_to.axle_config_basis}”
+        </p>
+      )}
+
       {candidate.source_text_excerpt && !unverified && (
         <p className="line-clamp-3 text-[13px] text-ink-500">“{candidate.source_text_excerpt}”</p>
       )}

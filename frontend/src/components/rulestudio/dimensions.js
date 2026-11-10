@@ -104,9 +104,10 @@ export function unmappedClass(candidate) {
 /** What a candidate applies to, in the reviewer's words. */
 export function scopeOf(candidate) {
   const configs = configsOf(candidate.applies_to)
+  const name = classOf(candidate)
+  if (configs.length && name) return `Kelas ${name} · konfigurasi ${configs.join(', ')}`
   if (configs.length) return `Konfigurasi ${configs.join(', ')}`
   // "Semua kendaraan" for a rule written for one class was wrong on its face.
-  const name = classOf(candidate)
   if (name) return `Kelas ${name}`
   const index = candidate.applies_to?.axle_index
   if (index !== undefined && index !== null) return `Sumbu ${index + 1}`
