@@ -12,10 +12,12 @@ import { useState } from 'react'
  */
 
 // Context kept around the marks, in % of the page, and the narrowest crop
-// allowed, so a single number still shows its row label beside it.
+// allowed. MIN_W caps the zoom: at 50 a table row filled the plate at 2x and
+// read as a blow-up rather than a reference; 75 keeps it near 1.3x with the
+// rows either side still legible.
 const PAD_X = 12
-const PAD_Y = 3
-const MIN_W = 50
+const PAD_Y = 5
+const MIN_W = 75
 
 function cropAround(rects) {
   if (!rects?.length) return null
