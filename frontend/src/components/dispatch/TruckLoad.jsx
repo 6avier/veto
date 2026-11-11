@@ -14,6 +14,11 @@ import { axleCountFor, formatNumber } from '@/lib/format'
  * may rise past the rim when it is heavier, but nothing is coloured as a
  * violation. Limit lines, hatching and amber tags appear only with a HOLD, and
  * only for the limits that HOLD actually names. A PASS leaves the truck clean.
+ *
+ * `seen` is what CAM-01 currently sees ('overload' | 'normal' | null). The
+ * camera classifies, it does not weigh, so it never changes a figure: when it
+ * sees an overload the load is drawn heaped past the rim and turns red, with a
+ * tag saying the camera is the source.
  */
 
 const S = 0.0705
@@ -23,6 +28,10 @@ const R = 520
 const X = (mm) => OX + mm * S
 const Y = (mm) => GROUND - mm * S
 const MAXOVER = 70
+/** How far past the rim a camera-seen overload is drawn when the declared figures do not already put it there. */
+const SEEN_OVER = 46
+/** Where the load sits when the camera sees a normal truck and nothing is declared yet. */
+const SEEN_NORMAL = 0.7
 
 const COLORS = {
   body: '#ffffff',
@@ -36,6 +45,8 @@ const COLORS = {
   hub: '#c7cfd9',
   line: '#cdd5e0',
   muted: '#5b6676',
+  seenA: '#f0655a',
+  seenB: '#d92d20',
   hold: '#f2a93b',
   holdInk: '#8a5200',
   holdSoft: '#fdf2df',
@@ -90,7 +101,7 @@ function useAnimatedNumber(target, reducedMotion) {
   return value
 }
 
-export default function TruckLoad({ axleConfig, axleLoads = [], grossWeight, height, limits = {}, decision, focusAxle = -1 }) {
+export default function TruckLoad({ axleConfig, axleLoads = [], grossWeight, height, limits = {}, decision, focusAxle = -1, seen = null }) {
   const reducedMotion =
     typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
@@ -117,7 +128,10 @@ export default function TruckLoad({ axleConfig, axleLoads = [], grossWeight, hei
   const inner = bh - 10
   const base = by + bh - 5
 
-  const targetFill = Math.min(inner * pct, inner + MAXOVER)
+  const seenOver = seen === 'overload'
+  let targetFill = Math.min(inner * pct, inner + MAXOVER)
+  if (seenOver) targetFill = Math.max(targetFill, inner + SEEN_OVER)
+  else if (seen === 'normal' && !gross) targetFill = inner * SEEN_NORMAL
   const fill = useAnimatedNumber(targetFill, reducedMotion)
   const inBox = Math.max(0, Math.min(fill, inner))
   const over = Math.max(0, fill - inner)
@@ -138,6 +152,13 @@ export default function TruckLoad({ axleConfig, axleLoads = [], grossWeight, hei
       right: true,
     })
     top = Math.min(top, topY - 30)
+  }
+  // The camera's tag yields to a HOLD's own gross tag: same corner, and the
+  // engine's finding is the one that carries a rule.
+  if (seenOver && !grossV) {
+    const y = Math.max(4, topY - 30)
+    tags.push({ kind: 'camera', text: 'Kamera: kemungkinan overload', x: bx + bw - 4, y, right: true })
+    top = Math.min(top, y)
   }
   let heightLineY = null
   if (heightV) {
@@ -185,7 +206,11 @@ export default function TruckLoad({ axleConfig, axleLoads = [], grossWeight, hei
   const vbRight = Math.min(800, Math.ceil(Math.max(X(boxX1) + 40, xs[xs.length - 1] - shift + TW + 8, tagRight + 8)))
   const vbLeft = 12
 
-  const label = `Truk konfigurasi ${axleConfig}, berat kotor ${formatNumber(gross)} kg${capacity ? ` dari JBI ${formatNumber(capacity)} kg` : ''}${decision?.outcome === 'HOLD' ? ', ditahan VETO' : ''}`
+  // The red is a second layer faded over the blue, so the colour change is a
+  // transition rather than a swap.
+  const seenStyle = { opacity: seenOver ? 1 : 0, transition: reducedMotion ? 'none' : 'opacity 320ms ease-out' }
+
+  const label = `Truk konfigurasi ${axleConfig}, berat kotor ${formatNumber(gross)} kg${capacity ? ` dari JBI ${formatNumber(capacity)} kg` : ''}${decision?.outcome === 'HOLD' ? ', ditahan VETO' : ''}${seenOver ? ', kamera melihat kemungkinan overload' : ''}`
 
   return (
     <svg viewBox={`${vbLeft} ${vbTop} ${vbRight - vbLeft} ${472 - vbTop}`} role="img" aria-label={label} className="block h-auto w-full">
@@ -201,6 +226,10 @@ export default function TruckLoad({ axleConfig, axleLoads = [], grossWeight, hei
         <linearGradient id="tl-fill" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stopColor={COLORS.fillA} />
           <stop offset="1" stopColor={COLORS.fillB} />
+        </linearGradient>
+        <linearGradient id="tl-fill-seen" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor={COLORS.seenA} />
+          <stop offset="1" stopColor={COLORS.seenB} />
         </linearGradient>
         <pattern id="tl-stripe" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
           <rect width="6" height="14" fill="#fff" opacity=".16" />
@@ -226,11 +255,13 @@ export default function TruckLoad({ axleConfig, axleLoads = [], grossWeight, hei
       <rect x={bx} y={by} width={bw} height={bh} rx="5" fill="url(#tl-body)" stroke={COLORS.trim} strokeWidth="1.2" />
       <g clipPath="url(#tl-box)">
         <rect x={bx + 5} y={base - inBox} width={bw - 10} height={inBox} fill="url(#tl-fill)" />
+        <rect x={bx + 5} y={base - inBox} width={bw - 10} height={inBox} fill="url(#tl-fill-seen)" style={seenStyle} />
         <rect x={bx + 5} y={base - inBox} width={bw - 10} height={inBox} fill="url(#tl-stripe)" />
       </g>
       {over > 0 && (
         <g>
           <rect x={bx + 16} y={by + 5 - over} width={bw - 32} height={over + 6} rx="8" fill="url(#tl-fill)" stroke={COLORS.fillB} strokeWidth="1.5" />
+          <rect x={bx + 16} y={by + 5 - over} width={bw - 32} height={over + 6} rx="8" fill="url(#tl-fill-seen)" stroke={COLORS.seenB} strokeWidth="1.5" style={seenStyle} />
           <rect x={bx + 16} y={by + 5 - over} width={bw - 32} height={over + 6} rx="8" fill="url(#tl-stripe)" />
           <rect x={bx - 2} y={by - 2} width={bw + 4} height="7" rx="3" fill={COLORS.trim} />
         </g>
@@ -272,8 +303,8 @@ export default function TruckLoad({ axleConfig, axleLoads = [], grossWeight, hei
         const tx = t.right ? t.x - tw : t.x
         return (
           <g key={t.kind}>
-            <rect x={tx} y={t.y} width={tw} height="24" rx="6" fill={COLORS.hold} />
-            <text x={tx + tw / 2} y={t.y + 16.5} textAnchor="middle" fontSize="12.5" fontWeight="700" fill="#2a1a00">
+            <rect x={tx} y={t.y} width={tw} height="24" rx="6" fill={t.kind === 'camera' ? COLORS.seenB : COLORS.hold} />
+            <text x={tx + tw / 2} y={t.y + 16.5} textAnchor="middle" fontSize="12.5" fontWeight="700" fill={t.kind === 'camera' ? '#fff' : '#2a1a00'}>
               {t.text}
             </text>
           </g>

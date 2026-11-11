@@ -296,7 +296,7 @@ export default function Dispatch() {
           form={form}
           limits={limits}
           onApply={applyDetection}
-          aside={<DeclaredLoad form={form} limits={limits} decision={decision} />}
+          aside={(seen) => <DeclaredLoad form={form} limits={limits} decision={decision} seen={seen} />}
         />
       </div>
 
@@ -385,9 +385,11 @@ export default function Dispatch() {
 /**
  * The declared load against the configuration's JBI, as a figure and on the
  * truck. Neutral until VETO answers; the truck draws VETO's marks only for the
- * limits a HOLD names.
+ * limits a HOLD names. `seen` is CAM-01's current class: the drawing follows
+ * it, but the figures stay the declared ones, because the camera classifies
+ * and does not weigh.
  */
-function DeclaredLoad({ form, limits, decision }) {
+function DeclaredLoad({ form, limits, decision, seen }) {
   const gross = Number(form.grossWeight) || 0
   const capacity = limits.grossWeight?.threshold
   const pct = capacity ? Math.round((gross / capacity) * 100) : null
@@ -423,6 +425,7 @@ function DeclaredLoad({ form, limits, decision }) {
           height={form.height}
           limits={limits}
           decision={decision}
+          seen={seen}
         />
       </div>
     </section>

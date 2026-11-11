@@ -572,7 +572,10 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
       </section>
 
       <div className="flex min-w-0 flex-col gap-4">
-        <div className="flex flex-1 flex-col [&>*]:flex-1">{aside}</div>
+        <div className="flex flex-1 flex-col [&>*]:flex-1">
+          {/* The declared-load drawing follows what CAM-01 currently sees. */}
+          {typeof aside === 'function' ? aside(cam1Settled ? (overload ? 'overload' : 'normal') : null) : aside}
+        </div>
 
         {/* ===================== CAM-02: GATE / PLATE ===================== */}
         <section className="flex min-w-0 items-stretch overflow-hidden rounded-2xl bg-[#0b0e12] text-[#d6dee8]">
