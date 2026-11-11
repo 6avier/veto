@@ -3,7 +3,7 @@ import { PrinterIcon } from '@phosphor-icons/react'
 
 import { ApiError, listRules, validateDispatch } from '@/api'
 import DispatchForm from '@/components/dispatch/DispatchForm'
-import TruckLoad from '@/components/dispatch/TruckLoad'
+import TruckLoad, { shownRatio, useAnimatedNumber } from '@/components/dispatch/TruckLoad'
 import ViolationDialog from '@/components/dispatch/ViolationDialog'
 import PassDialog from '@/components/dispatch/PassDialog'
 import WaybillDialog from '@/components/dispatch/WaybillDialog'
@@ -392,7 +392,13 @@ export default function Dispatch() {
 function DeclaredLoad({ form, limits, decision, seen }) {
   const gross = Number(form.grossWeight) || 0
   const capacity = limits.grossWeight?.threshold
-  const pct = capacity ? Math.round((gross / capacity) * 100) : null
+  const declared = capacity ? gross / capacity : 0
+  const ratio = shownRatio(declared, seen)
+  const fromCamera = Boolean(seen) && ratio !== declared
+  const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  const shown = useAnimatedNumber(capacity ? ratio * 100 : 0, reduced)
+  const pct = capacity ? Math.round(shown) : null
+  const seenOver = seen === 'overload'
   const grossHeld = decision?.outcome === 'HOLD' && decision.violations.some((v) => v.dimension === 'GROSS_WEIGHT')
   return (
     <section className="flex min-w-0 flex-col rounded-2xl border border-[#e2e7ee] bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04),0_8px_24px_-12px_rgba(17,24,39,0.12)]">
@@ -403,13 +409,13 @@ function DeclaredLoad({ form, limits, decision, seen }) {
         </div>
         <div className="ml-auto flex items-center gap-3">
           <span
-            className={`text-[44px] font-extrabold leading-none tracking-[-0.04em] tabular-nums ${grossHeld ? 'text-[#8a5200]' : 'text-[#1f74e0]'}`}
+            className={`text-[44px] font-extrabold leading-none tracking-[-0.04em] tabular-nums ${grossHeld ? 'text-[#8a5200]' : seenOver ? 'text-[#d92d20]' : 'text-[#1f74e0]'}`}
           >
             {pct ?? '-'}
             <small className="ml-1 text-[18px] font-bold tracking-normal text-[#5b6676]">%</small>
           </span>
           <span className="text-[12.5px] leading-snug text-[#5b6676]">
-            dari JBI
+            {fromCamera ? 'dari JBI, perkiraan kamera' : 'dari JBI'}
             <br />
             <b className="tabular-nums text-[#111827]">
               {formatNumber(gross)} / {capacity ? formatNumber(capacity) : '-'} kg

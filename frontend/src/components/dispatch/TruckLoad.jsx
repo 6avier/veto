@@ -28,10 +28,17 @@ const R = 520
 const X = (mm) => OX + mm * S
 const Y = (mm) => GROUND - mm * S
 const MAXOVER = 70
-/** How far past the rim a camera-seen overload is drawn when the declared figures do not already put it there. */
-const SEEN_OVER = 46
-/** Where the load sits when the camera sees a normal truck and nothing is declared yet. */
-const SEEN_NORMAL = 0.7
+
+/**
+ * The share of JBI the drawing shows. Declared weight wins; the camera only
+ * fills in where nothing is declared (normal) or the declaration sits below
+ * what it sees (overload). An illustration of the camera's class, not a weight.
+ */
+export function shownRatio(declared, seen) {
+  if (seen === 'overload') return Math.max(declared, 1.25)
+  if (seen === 'normal' && !declared) return 0.7
+  return declared
+}
 
 const COLORS = {
   body: '#ffffff',
@@ -75,7 +82,7 @@ function geometry(config) {
   }
 }
 
-function useAnimatedNumber(target, reducedMotion) {
+export function useAnimatedNumber(target, reducedMotion) {
   const [value, setValue] = useState(target)
   const from = useRef(target)
   useEffect(() => {
@@ -129,9 +136,7 @@ export default function TruckLoad({ axleConfig, axleLoads = [], grossWeight, hei
   const base = by + bh - 5
 
   const seenOver = seen === 'overload'
-  let targetFill = Math.min(inner * pct, inner + MAXOVER)
-  if (seenOver) targetFill = Math.max(targetFill, inner + SEEN_OVER)
-  else if (seen === 'normal' && !gross) targetFill = inner * SEEN_NORMAL
+  const targetFill = Math.min(inner * shownRatio(pct, seen), inner + MAXOVER)
   const fill = useAnimatedNumber(targetFill, reducedMotion)
   const inBox = Math.max(0, Math.min(fill, inner))
   const over = Math.max(0, fill - inner)
