@@ -11,9 +11,9 @@ that would clear it.
 **Live demo:** [veto-gold.vercel.app](https://veto-gold.vercel.app) ·
 **API:** [veto-backend-ebon.vercel.app](https://veto-backend-ebon.vercel.app/health/)
 
-The API is hosted on a free tier that sleeps after ~15 minutes idle. The first
-request after a nap takes around 40 seconds to wake it; everything after that is
-immediate.
+The API runs as a serverless function in Vercel's Singapore region, next to its
+database. The first request after a quiet spell can take a few seconds while the
+function starts; everything after that answers in well under a second.
 
 ---
 
@@ -88,14 +88,25 @@ warehouse would ever deploy; accountability is.
 
 ## How it works
 
-Two flows that meet at the database and are never wired to each other.
+Two flows that meet at the database and are never wired to each other, plus an
+optional camera layer that only ever fills in the form.
 
 **Rule authoring — asynchronous, setup time, AI involved.**
 
 ```
-regulation PDF → text extraction → LLM structuring (constrained JSON)
-              → staging queue → human approval → versioned rule pack
+client SOP PDF → triage → text extraction
+              → LLM structuring (strict JSON schema, enums enforced by the API)
+              → staging queue → human approval → versioned company rule pack
 ```
+
+National ODOL rules are a **central** rule pack VETO maintains and seeds by
+migration; clients never upload government regulations. What a client uploads is
+its own SOP — internal limits, contract terms, anything stricter than the law.
+When an SOP names a vehicle class ("Medium Truck") rather than an axle
+configuration, the model copies the document's own definition of that class, and
+code — not the model — turns its wheel and axle count into a configuration,
+quoting the sentence it used so the reviewer can check it. A definition that
+gives a range ("4-6 roda") maps to nothing and can only be rejected.
 
 **Runtime validation — real time, zero AI.**
 
@@ -113,11 +124,25 @@ engine is boolean logic against versioned thresholds, which makes every decision
 deterministic, fast, and reproducible in an audit six months later.
 
 AI earns its place upstream instead, where a human still signs off: it reads a
-regulation PDF and drafts structured rules, and **nothing it drafts goes live
+client's SOP and drafts structured rules, and **nothing it drafts goes live
 until a person approves it**.
 
 Where a national rule and a stricter internal client policy both cover the same
 dimension, **the stricter threshold wins**.
+
+**VETO Vision — optional, perception only.**
+
+```
+CAM-01 (side)  → Roboflow object detection → Normal / Possible Overload
+CAM-02 (front) → OpenAI vision → licence plate + body type
+               → matched against the fleet registry → VERIFIED / MISMATCH_ALERT / …
+```
+
+A verified plate fills the truck's configuration and tare weight from the fleet
+registry; a body type that does not match the registered one is flagged as a
+possible plate swap. The cameras suggest inputs. The `PASS` / `HOLD` decision is
+still the deterministic engine's alone. In the demo, uploaded photos and video
+stand in for the CCTV feed.
 
 ## The three surfaces
 
@@ -126,9 +151,9 @@ products sharing a window — because that is what middleware is.
 
 | Route | What it is | Who uses it |
 |---|---|---|
-| `/dispatch` | The dispatch screen of a fictional host ERP ("NUSANTARA WMS"), with VETO's verdict panel embedded in it | Warehouse / dispatch officer — the primary user |
-| `/rule-studio` | Split screen: the source document on one side, the rule extracted from it on the other, Approve or Reject | Legal / compliance officer |
-| `/audit` | The append-only decision log — every PASS, HOLD and override, with citations | Compliance, auditors |
+| `/dispatch` | The dispatch screen of a fictional host ERP ("NUSANTARA WMS"): camera panel, a truck drawing filled to its load, the load form, and VETO's verdict arriving as a dialog — DITAHAN with the override, or LOLOS with the delivery order unlocked | Warehouse / dispatch officer — the primary user |
+| `/rule-studio` | Upload an SOP, watch it read, then review each proposed rule beside the page it came from, with its clause boxed; Approve or Reject. Below it, every active rule, central and company, and which one is in force | Legal / compliance officer |
+| `/audit` | The append-only log — every PASS, HOLD and override, and on the Aturan tab every rule a person approved or rejected | Compliance, auditors |
 
 `/dispatch` is drawn in the host ERP's visual language, down to the typeface, so
 the demo shows what integration actually feels like: the officer never opens
@@ -159,11 +184,13 @@ recorded in [DESIGN.md](DESIGN.md) before the UI was built rather than after.
 | Django 6.1 + Django REST Framework 3.18 | |
 | PostgreSQL in deployment, SQLite locally | via `dj-database-url`; nothing in the code changes between them |
 | PyMuPDF | PDF text extraction for Rule Studio |
-| OpenAI API | Rule authoring only — never the validation path |
+| OpenAI API (`gpt-4o-mini`) | Rule authoring with structured outputs, and plate reading for Vision — never the validation path |
+| Roboflow | Over-dimension detection for Vision |
 | gunicorn + WhiteNoise | |
 
-**Deployment** — frontend on Vercel, API and Postgres on Render
-([docs/DEPLOY.md](docs/DEPLOY.md)).
+**Deployment** — frontend and API are two Vercel projects; the API runs in the
+`sin1` region against Supabase Postgres. The frontend proxies `/api` to it, so
+the browser only ever talks to one origin.
 
 ## Running it locally
 
@@ -191,7 +218,7 @@ additionally needs an `OPENAI_API_KEY`; without one it falls back to an honest
 uv run --directory backend python manage.py test apps
 ```
 
-38 tests, all passing. They include contract tests that assert the live API's
+69 tests, all passing. They include contract tests that assert the live API's
 responses against the canonical fixtures in `contract/*.json`, which is what
 stops the frontend and backend drifting apart.
 
@@ -206,6 +233,13 @@ none.
   excuse of not knowing.
 - **Road class is not part of validation.** Legal limits vary by road class under
   PM 18/2021. Routes are stored as profile data and are not yet evaluated.
+- **Tandem axles are checked one axle at a time.** The tandem limit is applied to
+  a single axle rather than to the axle group, which needs modelling of axle
+  groups and a verified figure.
+- **Camera dimensions are estimates, not measurements.** The Vision detector
+  classifies a truck as Normal or Possible Overload; it does not measure length,
+  width or height, and the figures it puts in the form are placeholders for that
+  class.
 - **There is no authentication.** No login, no API keys, no permission classes.
   This was a scoped decision for a four-day competition build, and it means the
   audit trail must not be described as access-controlled: anything the hosted
@@ -224,7 +258,8 @@ none.
 ```
 frontend/          Vite + React + Tailwind. One app, three routed surfaces.
 backend/
-  apps/validation  engine.py — the deterministic evaluator
+  apps/validation  engine.py — the deterministic evaluator; vision.py and
+                   fleet_registry.py — the camera layer and the fleet registry
   apps/rules       Rule Studio: upload, triage, extraction, candidate approval
   apps/audit       DispatchDecision, Violation, override
   apps/profiles    vehicle profile CRUD
@@ -239,7 +274,7 @@ docs/              Engineering context, deployment, handoff, design plans
 | [DESIGN.md](DESIGN.md) | The visual system — typography, colour, motion, and what is banned |
 | [api-contract.md](api-contract.md) | The binding frontend/backend contract |
 | [docs/ENGINEERING.md](docs/ENGINEERING.md) | Constraints, locked decisions, domain reference |
-| [docs/DEPLOY.md](docs/DEPLOY.md) | How the two halves are deployed |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | How the two halves are deployed — still describes the earlier Render setup and is being rewritten for Vercel |
 
 ## Team
 
@@ -247,7 +282,7 @@ docs/              Engineering context, deployment, handoff, design plans
 
 Code contributors: [@6avier](https://github.com/6avier) — frontend, design
 system, Rule Studio · [@iqbalvirdiansyah-commits](https://github.com/iqbalvirdiansyah-commits)
-— backend, validation engine.
+— backend, validation engine, VETO Vision.
 
 ## Licence
 
@@ -265,6 +300,6 @@ intact. If those terms do not suit you, ask us rather than assume.
 
 Third-party components carry their own terms and are **not** covered by the
 above: see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). The short version is
-that the fictional host ERP surface uses SAP's **72** typeface under Apache-2.0,
-VETO's own surfaces use Archivo and JetBrains Mono, and NUSANTARA WMS is invented
-for the demo and is not a real product.
+that the fictional host ERP surface uses Plus Jakarta Sans, VETO's own surfaces
+use Satoshi, Archivo and JetBrains Mono, and NUSANTARA WMS is invented for the
+demo and is not a real product.
