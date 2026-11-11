@@ -142,21 +142,28 @@ class RuleStudioTests(TestCase):
 
     # --- Structured outputs and class-to-configuration mapping ---
 
-    def _structured(self, **overrides):
+    MEDIUM = {
+        "name": "Medium Truck",
+        "definition": "Medium Truck: Truk sedang (6 roda) standar komersial.",
+        "page": 1,
+    }
+
+    def _structured(self, classes=(), **overrides):
         entry = {
             "dimension": "GROSS_WEIGHT",
             "operator": "LTE",
             "threshold": 10000,
             "unit": "kg",
             "vehicle_class": "Medium Truck",
-            "axle_config": ["1.2"],
-            "axle_config_basis": "Medium Truck: Truk sedang (6 roda) standar komersial. (hal. 5)",
+            "axle_config": None,
             "axle_index": None,
             "source_text_excerpt": "Medium Truck 10,000 kg",
             "source_page": 1,
         }
         entry.update(overrides)
-        self.mock_response.choices[0].message.content = json.dumps({"rules": [entry]})
+        self.mock_response.choices[0].message.content = json.dumps(
+            {"rules": [entry], "vehicle_classes": list(classes)}
+        )
         self.mock_response.choices[0].message.refusal = None
 
     def _extract_one(self):
@@ -179,7 +186,7 @@ class RuleStudioTests(TestCase):
         self.assertTrue(kwargs["response_format"]["json_schema"]["strict"])
 
     def test_class_defined_in_document_maps_with_its_basis(self):
-        self._structured()
+        self._structured(classes=[self.MEDIUM])
         candidate = self._extract_one()["candidates"][0]
         self.assertEqual(candidate["applies_to"]["axle_config"], ["1.2"])
         self.assertIn("6 roda", candidate["applies_to"]["axle_config_basis"])
@@ -188,19 +195,40 @@ class RuleStudioTests(TestCase):
         rule = Rule.objects.get(id=res.json()["rule_id"])
         self.assertEqual(rule.axle_config, ["1.2"])
 
-    def test_inferred_config_without_basis_is_dropped(self):
-        self._structured(axle_config_basis=None)
+    def test_range_definition_stays_unmapped(self):
+        light = dict(self.MEDIUM, name="Light Truck", definition="Light Truck: Truk ringan (4-6 roda).")
+        self._structured(classes=[light], vehicle_class="Light Truck")
         candidate = self._extract_one()["candidates"][0]
         self.assertNotIn("axle_config", candidate["applies_to"])
         self.assertEqual(self._approve(candidate["candidate_id"]).status_code, 409)
 
-    def test_ambiguous_class_stays_unmapped(self):
-        self._structured(vehicle_class="Light Truck", axle_config=None, axle_config_basis=None)
+    def test_definition_contradicting_its_axle_count_is_ignored(self):
+        odd = dict(self.MEDIUM, definition="Medium Truck: Truk 3 sumbu (6 roda).")
+        self._structured(classes=[odd])
+        candidate = self._extract_one()["candidates"][0]
+        self.assertNotIn("axle_config", candidate["applies_to"])
+
+    def test_inferred_config_not_in_the_quote_is_dropped(self):
+        self._structured(axle_config=["1.2"])
         candidate = self._extract_one()["candidates"][0]
         self.assertNotIn("axle_config", candidate["applies_to"])
         self.assertEqual(self._approve(candidate["candidate_id"]).status_code, 409)
+
+    def test_config_stated_in_the_quote_is_kept(self):
+        self._structured(axle_config=["1.2.2"], vehicle_class="Tronton",
+                         source_text_excerpt="Tronton (1.2.2): 24,000 kg")
+        candidate = self._extract_one()["candidates"][0]
+        self.assertEqual(candidate["applies_to"]["axle_config"], ["1.2.2"])
+
+    def test_class_named_inside_a_combined_heading_maps(self):
+        tronton = dict(self.MEDIUM, name="Tronton / Rigid 3 Axle",
+                       definition="Tronton: Truk rigid 3 sumbu (10 roda).")
+        self._structured(classes=[tronton], vehicle_class="Tronton", threshold=24000)
+        candidate = self._extract_one()["candidates"][0]
+        self.assertEqual(candidate["applies_to"]["axle_config"], ["1.2.2"])
+        self.assertIn("10 roda", candidate["applies_to"]["axle_config_basis"])
 
     def test_unknown_configuration_is_dropped(self):
-        self._structured(vehicle_class=None, axle_config=["1.22"], axle_config_basis=None)
+        self._structured(vehicle_class=None, axle_config=["1.22"])
         candidate = self._extract_one()["candidates"][0]
         self.assertIsNone(candidate["applies_to"])

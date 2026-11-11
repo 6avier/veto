@@ -106,6 +106,7 @@ from .candidates import (
     entries_from_model_output,
     normalize_axle_config,
     KNOWN_AXLE_CONFIGS,
+    apply_class_definitions,
     reviewer_name,
     sanitize_candidate,
     structured_entry,
@@ -126,7 +127,7 @@ EXTRACT_SCHEMA = {
     "schema": {
         "type": "object",
         "additionalProperties": False,
-        "required": ["rules"],
+        "required": ["rules", "vehicle_classes"],
         "properties": {
             "rules": {
                 "type": "array",
@@ -135,7 +136,7 @@ EXTRACT_SCHEMA = {
                     "additionalProperties": False,
                     "required": [
                         "dimension", "operator", "threshold", "unit",
-                        "vehicle_class", "axle_config", "axle_config_basis", "axle_index",
+                        "vehicle_class", "axle_config", "axle_index",
                         "source_text_excerpt", "source_page",
                     ],
                     "properties": {
@@ -154,13 +155,29 @@ EXTRACT_SCHEMA = {
                             "type": ["array", "null"],
                             "items": {"type": "string", "enum": KNOWN_AXLE_CONFIGS},
                         },
-                        "axle_config_basis": {"type": ["string", "null"]},
                         "axle_index": {"type": ["integer", "null"]},
                         "source_text_excerpt": {"type": "string"},
                         "source_page": {"type": "integer"},
                     },
                 },
-            }
+            },
+            # The document's own definitions of its vehicle classes, as facts.
+            # Turning a wheel count into a configuration is done in code
+            # (candidates.apply_class_definitions), not by the model: asked to
+            # infer it, gpt-4o-mini mapped one Tronton row and skipped the next.
+            "vehicle_classes": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["name", "definition", "page"],
+                    "properties": {
+                        "name": {"type": "string"},
+                        "definition": {"type": "string"},
+                        "page": {"type": "integer"},
+                    },
+                },
+            },
         },
     },
 }
@@ -181,21 +198,15 @@ Fields:
 - source_text_excerpt: the exact text or table row the limit comes from.
 - source_page: the page number from the '--- Page N ---' markers.
 
-axle_config, in Indonesian axle notation (each group of digits is one axle group, 1 = single
-tyres, 2 = dual tyres, a dash separates the trailer):
-  1.1 = 2 axles, 4 wheels.  1.2 = 2 axles, rear dual tyres, 6 wheels.
-  1.2.2 = 3 axles (tronton), 10 wheels.  1.1-2.2 and 1.2-2.2 = truck with trailer.
-  1.2.2-2.2 and 1.2.2-2.2.2 = tractor with semi-trailer.
-Fill it in either of two cases, otherwise null:
-  a) the rule itself states the configuration, or
-  b) the rule names a vehicle class and the document defines that class elsewhere
-     (e.g. a list of vehicle categories) precisely enough for exactly one configuration
-     above, such as a stated wheel or axle count.
-A definition that gives a range ("4-6 roda", "6-10 roda") or only a size word fits more
-than one configuration: leave axle_config null. Never guess from the class name alone.
+- axle_config: only when the rule itself states an axle configuration in Indonesian notation
+  (e.g. "1.2.2"); else null. Do not work it out from a class name or definition.
 
-axle_config_basis: when axle_config is filled, quote the sentence it rests on, with its page
-(e.g. "Medium Truck: Truk sedang (6 roda) standar komersial. (hal. 5)"); else null.
+vehicle_classes: every vehicle class the document defines anywhere, typically a list of vehicle
+categories. One entry per definition:
+- name: the class name as written (e.g. "Medium Truck").
+- definition: the definition sentence, copied exactly, including any wheel or axle counts.
+- page: its page number.
+Return an empty array when the document defines no classes.
 
 Document text:
 {document}
@@ -368,11 +379,16 @@ class DocumentExtractView(APIView):
                 elif raw_json.startswith('```'):
                     raw_json = raw_json[3:-3]
 
+                parsed = json.loads(raw_json)
+                entries = apply_class_definitions(
+                    entries_from_model_output(parsed),
+                    parsed.get("vehicle_classes") if isinstance(parsed, dict) else None,
+                )
                 candidates_data = [
                     clean
                     for clean in (
                         sanitize_candidate(structured_entry(entry), doc.page_count)
-                        for entry in entries_from_model_output(json.loads(raw_json))
+                        for entry in entries
                     )
                     if clean
                 ]

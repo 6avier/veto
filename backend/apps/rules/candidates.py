@@ -7,6 +7,8 @@ request with a 500. Everything is checked here, and an entry that cannot be made
 sound is dropped rather than guessed at.
 """
 
+import re
+
 from .models import RuleDimension, RuleOperator
 
 # Dimensions the validation engine actually evaluates. AXLE_CONFIG is in the
@@ -86,12 +88,6 @@ def normalize_applies_to(value):
     axle_config = normalize_axle_config(value.get("axle_config"))
     basis = value.get("axle_config_basis")
     basis = basis.strip()[:MAX_BASIS_CHARS] if isinstance(basis, str) and basis.strip() else None
-    # A configuration the model worked out from a class name is a claim about
-    # the document, so it has to arrive with the sentence it rests on: that is
-    # what the reviewer checks before approving. Without one, it is dropped and
-    # the class goes through the fixed table below like any other.
-    if axle_config and "vehicle_class" in applies and not basis:
-        axle_config = None
     if axle_config is None and "vehicle_class" in applies:
         axle_config = axle_configs_for_class(applies["vehicle_class"])
         basis = None
@@ -182,10 +178,104 @@ def entries_from_model_output(parsed):
     if isinstance(parsed, list):
         return parsed
     if isinstance(parsed, dict):
+        if isinstance(parsed.get("rules"), list):
+            return parsed["rules"]
         for value in parsed.values():
             if isinstance(value, list):
                 return value
     return []
+
+
+# A rigid truck's wheel count names one configuration: 4 wheels is two axles
+# on single tyres, 6 is two axles with a dual rear, 10 is a tronton. Any other
+# count, or a range, names none. Combinations are left to the class table above,
+# since their names say more than their wheel counts.
+# TODO: verify against the client's own fleet definitions.
+WHEELS_AXLE_CONFIG = {4: ("1.1", 2), 6: ("1.2", 2), 10: ("1.2.2", 3)}
+
+
+WHEELS_RE = re.compile(r"(\d+)\s*(?:-|–|sampai|s/d|to)?\s*(\d+)?\s*(?:roda|wheels?)\b", re.IGNORECASE)
+AXLES_RE = re.compile(r"(\d+)\s*(?:sumbu|gandar|axles?)\b", re.IGNORECASE)
+
+
+def config_from_definition(text):
+    """The one configuration a class definition's own words name, or None.
+
+    Counts are read from the sentence here rather than taken from the model,
+    which once reported "1 sumbu" for a definition that names no axles at all.
+    A range ("4-6 roda"), several counts, or an axle count that contradicts
+    the wheels all name no single configuration.
+    """
+    wheels = WHEELS_RE.findall(text)
+    if len(wheels) != 1:
+        return None
+    low, high = wheels[0]
+    if high and high != low:
+        return None
+    entry = WHEELS_AXLE_CONFIG.get(int(low))
+    if not entry:
+        return None
+    config, expected_axles = entry
+    axles = AXLES_RE.findall(text)
+    if axles and any(int(a) != expected_axles for a in axles):
+        return None
+    return config
+
+
+def _class_key(name):
+    return " ".join(name.lower().split()) if isinstance(name, str) else ""
+
+
+def apply_class_definitions(entries, classes):
+    """Fill axle_config for rules that name a class the document itself
+    defines with one exact wheel count, quoting the definition as the basis.
+
+    The model only reports what each definition says; the mapping is here, so
+    every row for "Medium Truck" gets the same answer and the reviewer sees the
+    sentence it came from. A definition that matches the name of a rule's class
+    only as part of a longer heading ("Trailer / Trailer Combination") counts.
+    """
+    definitions = {}
+    for item in classes if isinstance(classes, list) else []:
+        if not isinstance(item, dict):
+            continue
+        definition = item.get("definition")
+        if not isinstance(definition, str) or not definition.strip():
+            continue
+        found = config_from_definition(definition)
+        if not found:
+            continue
+        page = item.get("page")
+        name = str(item.get("name", "")).strip()
+        quote = definition.strip()
+        # The model sometimes copies the sentence without its "Name:" lead-in;
+        # the reviewer should still read which class it defines.
+        if name and not quote.lower().startswith(name.lower()):
+            quote = f"{name}: {quote}"
+        basis = (quote + (f" (hal. {page})" if isinstance(page, int) else ""))[:MAX_BASIS_CHARS]
+        for part in str(item.get("name", "")).split("/"):
+            if _class_key(part):
+                definitions[_class_key(part)] = (found, basis)
+
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        configs = entry.get("axle_config")
+        if configs and entry.get("vehicle_class"):
+            # The model is told to copy a configuration only when the rule
+            # states one. If the quoted text does not contain it, the model
+            # inferred it after all, so it goes and the class is mapped below.
+            excerpt = entry.get("source_text_excerpt") or ""
+            if not any(isinstance(c, str) and c in excerpt for c in configs):
+                entry["axle_config"] = configs = None
+                entry["axle_config_basis"] = None
+        if configs:
+            continue
+        found = definitions.get(_class_key(entry.get("vehicle_class")))
+        if found:
+            entry["axle_config"] = [found[0]]
+            entry["axle_config_basis"] = found[1]
+    return entries
 
 
 def reviewer_name(body):
