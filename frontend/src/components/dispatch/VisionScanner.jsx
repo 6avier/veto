@@ -1,5 +1,6 @@
 import {
   IdentificationCardIcon,
+  PlayIcon,
   ShieldCheckIcon,
   VideoCameraIcon,
   WarningCircleIcon,
@@ -16,6 +17,58 @@ import {
   stableClass,
   topPrediction,
 } from '@/lib/roboflow'
+
+/**
+ * Starts a freshly picked video, and reports when the browser refuses.
+ *
+ * React sets `muted` as a property, never as the attribute, so Safari does
+ * not count the element as muted when it decides on autoplay: the video sat
+ * black, `loadeddata` never fired, and the camera never scanned. Chrome let it
+ * through, which is why it only failed in Safari. The attribute is written by
+ * hand and play() is called explicitly; if the browser still says no, the
+ * caller shows a play button, because a click always counts as permission.
+ */
+function useStartVideo(ref, url, isVideo) {
+  const [blocked, setBlocked] = useState(false)
+
+  useEffect(() => {
+    const video = ref.current
+    if (!isVideo || !url || !video) return
+    setBlocked(false)
+    video.muted = true
+    video.defaultMuted = true
+    video.setAttribute('muted', '')
+    video.setAttribute('playsinline', '')
+    video.play()?.catch(() => setBlocked(true))
+  }, [ref, url, isVideo])
+
+  const start = useCallback(() => {
+    ref.current
+      ?.play()
+      ?.then(() => setBlocked(false))
+      .catch(() => setBlocked(true))
+  }, [ref])
+
+  return [blocked, start]
+}
+
+/** Shown over a video the browser would not start on its own. */
+function PlayPrompt({ onPlay, compact = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onPlay}
+      className="absolute inset-0 z-10 grid place-items-center bg-black/55 font-sans text-white"
+    >
+      <span
+        className={`inline-flex min-h-11 items-center gap-2 rounded-full bg-white font-semibold text-[#111827] ${compact ? 'px-3 text-[12px]' : 'px-4 text-[14px]'}`}
+      >
+        <PlayIcon size={compact ? 14 : 16} weight="fill" aria-hidden />
+        Putar video
+      </span>
+    </button>
+  )
+}
 
 const OVER_COLOUR = '#d92d20'
 const NEUTRAL_COLOUR = '#2f8f4e'
@@ -51,6 +104,9 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
   const [cam2Fleet, setCam2Fleet] = useState(null)
   const [cam2Latency, setCam2Latency] = useState(null)
   const [cam2Error, setCam2Error] = useState(null)
+
+  const [cam1Blocked, startCam1] = useStartVideo(cam1MediaRef, cam1Url, cam1Type === 'video')
+  const [cam2Blocked, startCam2] = useStartVideo(cam2MediaRef, cam2Url, cam2Type === 'video')
 
   // --- GLOBAL SETTINGS & SYNC ---
   const [autoSync, setAutoSync] = useState(true)
@@ -399,6 +455,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
                 onPause={() => setCam1Playing(false)}
                 onEnded={() => setCam1Playing(false)}
                 onLoadedMetadata={() => clearOverlay(cam1OverlayRef.current)}
+                preload="auto"
                 onLoadedData={() => scanCam1Once()}
                 onSeeked={() => !cam1Playing && scanCam1Once()}
                 className="absolute inset-0 h-full w-full object-contain"
@@ -413,6 +470,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
               />
             )}
             <canvas ref={cam1OverlayRef} className="pointer-events-none absolute inset-0 h-full w-full" />
+            {cam1Type === 'video' && cam1Blocked && <PlayPrompt onPlay={startCam1} />}
           </div>
         ) : (
           <label
@@ -529,6 +587,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
                     autoPlay
                     muted
                     playsInline
+                    preload="auto"
                     onLoadedData={() => scanCam2Once()}
                     onSeeked={() => scanCam2Once()}
                     className="absolute inset-0 h-full w-full object-contain"
@@ -542,6 +601,7 @@ export default function VisionScanner({ form, limits, onApply, aside }) {
                     className="absolute inset-0 h-full w-full object-contain"
                   />
                 )}
+                {cam2Type === 'video' && cam2Blocked && <PlayPrompt onPlay={startCam2} compact />}
               </div>
             ) : (
               <label
