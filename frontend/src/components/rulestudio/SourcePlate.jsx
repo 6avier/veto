@@ -1,3 +1,4 @@
+import ClauseCrop from './ClauseCrop'
 import PageSheet from './PageSheet'
 import { rectsFor } from './regions'
 import { PANEL } from './ui'
@@ -34,11 +35,25 @@ export default function SourcePlate({ page, loading, error, activeCandidateId })
             Halaman dokumen tidak dapat ditampilkan. Aturan di samping tetap bisa ditinjau.
           </p>
         ) : (
-          <PageSheet
-            image={loading ? null : page?.image}
-            alt={page ? `Halaman ${page.page_number} dari ${page.filename}` : 'Memuat halaman'}
-            rects={rects}
-          />
+          <>
+            {/* The clause, enlarged, first; the whole page under it for context. */}
+            {!loading && rects.length > 0 && (
+              <div className="mb-4">
+                <p className="mb-1.5 text-[12px] font-bold text-ink-500">Klausul yang dibaca</p>
+                <ClauseCrop
+                  key={activeCandidateId}
+                  image={page?.image}
+                  rects={rects}
+                  alt={`Klausul di halaman ${page?.page_number}, diperbesar`}
+                />
+              </div>
+            )}
+            <PageSheet
+              image={loading ? null : page?.image}
+              alt={page ? `Halaman ${page.page_number} dari ${page.filename}` : 'Memuat halaman'}
+              rects={rects}
+            />
+          </>
         )}
         {/* Does not claim a mark is the clause itself: a rule read out of a
             table is located by its row label and its figure. */}

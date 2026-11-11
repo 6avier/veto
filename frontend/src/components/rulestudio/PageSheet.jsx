@@ -25,7 +25,7 @@ export default function PageSheet({ image, alt, sweep = null, sweepMs = 0, rects
         <span
           key={`${rect.x}-${rect.y}-${index}`}
           aria-hidden
-          className="pointer-events-none absolute rounded-[3px] bg-accent/15 ring-[1.5px] ring-accent"
+          className="pointer-events-none absolute rounded-[3px] bg-accent/15 ring-2 ring-accent"
           style={{ left: `${rect.x}%`, top: `${rect.y}%`, width: `${rect.w}%`, height: `${rect.h}%` }}
         />
       ))}

@@ -162,6 +162,21 @@ export default function RuleStudio() {
     if (!extraction?.used_fallback) loadPage(candidate.source_page)
   }
 
+  /**
+   * The review replaces a short parse view with a long list, and the button
+   * that opens it sits low on the page. Left alone, the browser kept the
+   * scroll position (and anchored on the register below), so the reviewer
+   * landed ~4,000px under card 1 with its source page out of view. Bring the
+   * list's head into view and put focus on the active card.
+   */
+  const reviewRef = useRef(null)
+  useEffect(() => {
+    if (stage !== 'reviewing' || !reviewRef.current) return
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    reviewRef.current.scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' })
+    reviewRef.current.querySelector('article')?.focus({ preventScroll: true })
+  }, [stage])
+
   function startReview() {
     setStage('reviewing')
     const first = candidates[0]
@@ -246,8 +261,13 @@ export default function RuleStudio() {
       )}
 
       {stage === 'reviewing' && (
-        <div className={`grid gap-4 lg:items-start ${showPlate ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]' : ''}`}>
-          <div className="grid min-w-0 gap-3">
+        <div
+          ref={reviewRef}
+          className={`grid scroll-mt-4 grid-cols-[minmax(0,1fr)] gap-4 lg:items-start ${showPlate ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,0.95fr)]' : ''}`}
+        >
+          {/* minmax(0,1fr) on both grids: a long citation or basis quote set
+              the column's min-content and pushed the cards 11px past a phone. */}
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3">
             <div className="flex flex-wrap items-center gap-3 px-1">
               <h2 className="text-[20px] font-bold tracking-[-0.02em]">
                 {waiting ? `${waiting} usulan menunggu` : 'Semua sudah diputuskan'}
@@ -289,6 +309,8 @@ export default function RuleStudio() {
                 busy={submittingId === item.candidate_id}
                 error={submitError?.id === item.candidate_id ? submitError : null}
                 result={outcomes[item.candidate_id] ?? null}
+                reviewer={REVIEWER}
+                source={item.candidate_id === activeId && !extraction?.used_fallback ? { page, loading: pageLoading, error: pageError } : null}
               />
             ))}
 
@@ -299,8 +321,11 @@ export default function RuleStudio() {
             )}
           </div>
 
+          {/* Below lg the plate would sit after every card, thousands of pixels
+              from the one under review; the active card carries the clause
+              itself there instead. */}
           {showPlate && (
-            <div className="lg:sticky lg:top-4 lg:self-start">
+            <div className="hidden lg:sticky lg:top-4 lg:block lg:self-start">
               <SourcePlate page={page} loading={pageLoading} error={pageError} activeCandidateId={activeId} />
             </div>
           )}

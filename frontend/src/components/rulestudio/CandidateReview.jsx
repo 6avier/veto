@@ -3,7 +3,10 @@ import { useState } from 'react'
 
 import { formatNumber } from '@/lib/format'
 
+import ClauseCrop from './ClauseCrop'
 import CompareChip from './CompareChip'
+import PageSheet from './PageSheet'
+import { rectsFor } from './regions'
 import {
   OPERATOR_LABELS,
   centralCounterpart,
@@ -23,6 +26,19 @@ import { BTN_DARK, BTN_GHOST, BTN_PRIMARY } from './ui'
  * Approving writes straight into the live rule base, so approval takes a
  * second, explicit step that restates the consequence.
  */
+/**
+ * What approving does to the limit the engine enforces. Stricter wins
+ * (engine.py `_find_stricter_rule`), so only a stricter rule changes anything.
+ */
+function effectOf(verdict, counterpart) {
+  if (!counterpart) return 'Ditambahkan ke aturan Perusahaan; tidak ada satu batas pusat untuk dibandingkan.'
+  const central = `${formatNumber(counterpart.threshold)} ${counterpart.unit}`
+  if (verdict === 'stricter') return `Menggantikan batas pusat ${central} di lingkup ini.`
+  if (verdict === 'same') return `Sama dengan pusat ${central}; batas yang berlaku tidak berubah.`
+  if (verdict === 'looser') return `Lebih longgar; saat validasi batas pusat ${central} tetap yang dipakai.`
+  return `Ditambahkan ke aturan Perusahaan di samping pusat ${central}.`
+}
+
 export default function CandidateReview({
   candidate,
   central,
@@ -34,6 +50,8 @@ export default function CandidateReview({
   error,
   result,
   index,
+  reviewer,
+  source,
 }) {
   const [note, setNote] = useState('')
   const [rejecting, setRejecting] = useState(false)
@@ -126,7 +144,7 @@ export default function CandidateReview({
         {counterpart && (
           <span>
             Pusat {formatNumber(counterpart.threshold)} {counterpart.unit}{' '}
-            <span className="font-mono text-[12px] text-ink-400">{counterpart.legal_citation}</span>
+            <span className="break-words font-mono text-[12px] text-ink-400">{counterpart.legal_citation}</span>
           </span>
         )}
       </div>
@@ -137,6 +155,35 @@ export default function CandidateReview({
         <p className="rounded-[10px] bg-accent-soft px-2.5 py-2 text-[13px] text-accent-ink">
           <b>Konfigurasi dari definisi di dokumen:</b> “{candidate.applies_to.axle_config_basis}”
         </p>
+      )}
+
+      {/* Phones only: the source plate is hidden below lg, so the active card
+          shows its own clause, and the whole page on request. */}
+      {active && source && !source.error && (
+        <div className="grid gap-2 lg:hidden">
+          {source.loading || !source.page ? (
+            <div aria-hidden className="h-16 animate-pulse rounded-md bg-console" />
+          ) : (
+            <>
+              <ClauseCrop
+                image={source.page.image}
+                rects={rectsFor(source.page, candidate.candidate_id)}
+                alt={`Klausul di halaman ${candidate.source_page}, diperbesar`}
+              />
+              <details className="text-[13px]">
+                <summary className="cursor-pointer font-bold text-accent-ink">
+                  Lihat halaman {candidate.source_page} penuh
+                </summary>
+                <PageSheet
+                  className="mt-2"
+                  image={source.page.image}
+                  alt={`Halaman ${candidate.source_page}`}
+                  rects={rectsFor(source.page, candidate.candidate_id)}
+                />
+              </details>
+            </>
+          )}
+        </div>
       )}
 
       {candidate.source_text_excerpt && !unverified && (
@@ -183,8 +230,22 @@ export default function CandidateReview({
 
       {confirming && (
         <div className="veto-rise-in grid gap-2.5 rounded-xl bg-accent-soft px-3.5 py-3">
+          {/* The moment a judge probes: what exactly goes live, what it does to
+              the limit in force, and who answers for it. */}
           <p className="text-[14px] font-bold text-accent-ink">
-            Setujui {label.toLowerCase()} {op} {value}? Langsung dipakai untuk dispatch berikutnya.
+            Setujui {label.toLowerCase()} {op} {value}?
+          </p>
+          <ul className="grid gap-1 text-[13px] text-ink-900">
+            <li>
+              <span className="text-ink-500">Berlaku untuk</span> {scopeOf(candidate)}
+            </li>
+            <li>
+              <span className="text-ink-500">Efek</span> {effectOf(verdict, counterpart)}
+            </li>
+          </ul>
+          <p className="text-[13px] text-accent-ink">
+            Disetujui sebagai <b>{reviewer}</b>. Langsung dipakai untuk dispatch berikutnya dan dicatat di jejak
+            audit.
           </p>
           {unverified && (
             <label className="flex items-start gap-2.5 text-[13px] text-ink-900">
@@ -211,6 +272,9 @@ export default function CandidateReview({
             <button
               type="button"
               onClick={onApprove}
+              // Focus follows the confirmation, so a keyboard or screen-reader
+              // user lands on the decision instead of on <body>.
+              autoFocus={!unverified}
               disabled={busy || (unverified && !acknowledged)}
               className={BTN_PRIMARY}
             >
