@@ -1,4 +1,4 @@
-import { ArrowCounterClockwiseIcon } from '@phosphor-icons/react'
+import { ArrowCounterClockwiseIcon, ArrowDownIcon, ArrowUpIcon } from '@phosphor-icons/react'
 import { useEffect, useRef, useState } from 'react'
 
 import {
@@ -177,6 +177,29 @@ export default function RuleStudio() {
     reviewRef.current.querySelector('article')?.focus({ preventScroll: true })
   }, [stage])
 
+  /**
+   * After a decision the next open rule becomes active, but it can be far
+   * above or below where the reviewer is: the decided card shrinks to a row,
+   * and the next open one may be card 1. Follow it, and put focus on it so a
+   * keyboard user is not left on <body>. With nothing left open, return to
+   * the head of the list, where the "Aturan Perusahaan aktif" banner appears.
+   * Only a decision sets followRef; clicking a card never scrolls the page.
+   */
+  const followRef = useRef(false)
+  useEffect(() => {
+    if (!followRef.current || stage !== 'reviewing') return
+    followRef.current = false
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const behavior = reduced ? 'auto' : 'smooth'
+    const card = activeId && reviewRef.current?.querySelector(`[data-candidate="${activeId}"]`)
+    if (card) {
+      card.scrollIntoView({ block: 'start', behavior })
+      card.focus({ preventScroll: true })
+    } else {
+      reviewRef.current?.scrollIntoView({ block: 'start', behavior })
+    }
+  }, [activeId, outcomes, stage])
+
   function startReview() {
     setStage('reviewing')
     const first = candidates[0]
@@ -200,9 +223,12 @@ export default function RuleStudio() {
       const next = { ...outcomes, [id]: outcome }
       setOutcomes(next)
       const open = candidates.find((c) => !next[c.candidate_id])
+      followRef.current = true
       if (open) {
         setActiveId(open.candidate_id)
         if (!extraction?.used_fallback) loadPage(open.source_page)
+      } else {
+        setActiveId(null)
       }
     } catch (caught) {
       const apiError = caught instanceof ApiError ? caught : ApiError.from(caught)
@@ -339,8 +365,53 @@ export default function RuleStudio() {
         </div>
       )}
 
+      {stage === 'reviewing' && activeId && <JumpToActive activeId={activeId} root={reviewRef} />}
+
       {/* Remounted after each decision so a newly approved rule appears. */}
       <RuleRegister key={decided} />
     </div>
+  )
+}
+
+/**
+ * A way back to the rule under review once it has scrolled out of sight.
+ * Fifteen tall cards and a register below make that easy; the arrow says which
+ * way it is. Hidden whenever the card is on screen, so it never covers the
+ * thing it points at.
+ */
+function JumpToActive({ activeId, root }) {
+  const [away, setAway] = useState(null)
+
+  useEffect(() => {
+    const card = root.current?.querySelector(`[data-candidate="${activeId}"]`)
+    if (!card || typeof IntersectionObserver === 'undefined') return undefined
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setAway(null)
+      else setAway(entry.boundingClientRect.top < 0 ? 'up' : 'down')
+    })
+    observer.observe(card)
+    return () => observer.disconnect()
+  }, [activeId, root])
+
+  if (!away) return null
+
+  const go = () => {
+    const card = root.current?.querySelector(`[data-candidate="${activeId}"]`)
+    if (!card) return
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    card.scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' })
+    card.focus({ preventScroll: true })
+  }
+
+  const Arrow = away === 'up' ? ArrowUpIcon : ArrowDownIcon
+  return (
+    <button
+      type="button"
+      onClick={go}
+      className="veto-rise-in fixed bottom-5 left-1/2 z-30 inline-flex min-h-11 -translate-x-1/2 items-center gap-2 rounded-full bg-ink-900 px-4 text-[14px] font-bold text-white shadow-[0_10px_30px_-10px_rgba(13,21,38,0.5)] transition-colors hover:bg-ink-700"
+    >
+      <Arrow size={16} weight="bold" aria-hidden />
+      Ke usulan aktif
+    </button>
   )
 }

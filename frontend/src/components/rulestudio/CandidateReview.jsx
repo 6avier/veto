@@ -107,6 +107,7 @@ export default function CandidateReview({
 
   return (
     <article
+      data-candidate={candidate.candidate_id}
       tabIndex={0}
       onFocus={onActivate}
       onClick={(e) => {
@@ -114,7 +115,7 @@ export default function CandidateReview({
       }}
       aria-label={`Usulan ${index + 1}: ${label} ${op} ${value}`}
       className={[
-        'veto-rise-in grid cursor-pointer gap-3 rounded-2xl border-[1.5px] bg-white p-4 transition-[border-color,box-shadow] sm:px-5',
+        'veto-rise-in grid scroll-mt-4 cursor-pointer gap-3 rounded-2xl border-[1.5px] bg-white p-4 transition-[border-color,box-shadow] sm:px-5',
         active
           ? 'border-accent shadow-[0_2px_4px_rgba(13,21,38,0.04),0_16px_36px_-16px_rgba(36,87,245,0.3)]'
           : 'border-ink-100 hover:border-ink-200',
